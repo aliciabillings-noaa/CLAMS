@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>832</width>
-    <height>772</height>
+    <width>820</width>
+    <height>724</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -53,13 +53,13 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>400</width>
-            <height>300</height>
+            <width>350</width>
+            <height>250</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>400</width>
+            <width>350</width>
             <height>300</height>
            </size>
           </property>
@@ -78,6 +78,18 @@
            <layout class="QHBoxLayout" name="horizontalLayout_4">
             <item>
              <widget class="QListWidget" name="fullspcCList">
+              <property name="minimumSize">
+               <size>
+                <width>350</width>
+                <height>125</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>175</height>
+               </size>
+              </property>
               <property name="font">
                <font>
                 <pointsize>14</pointsize>
@@ -154,14 +166,14 @@
             <widget class="QLabel" name="picLabel">
              <property name="minimumSize">
               <size>
-               <width>300</width>
-               <height>175</height>
+               <width>400</width>
+               <height>125</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>300</width>
-               <height>175</height>
+               <width>400</width>
+               <height>125</height>
               </size>
              </property>
              <property name="frameShape">

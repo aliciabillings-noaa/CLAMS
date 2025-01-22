@@ -119,7 +119,7 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
             self.editBasket.setItem(0, 2, QTableWidgetItem(self.count))
         elif col == 3:
             # selected basket type
-            self.typeDlg.exec_()
+            self.typeDlg.exec()
             self.basketType = self.typeDlg.basketType
             self.editBasket.setItem(0, 3, QTableWidgetItem(self.basketType))
             if self.basketType == 'Count':

@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\AFSCGit\CLAMS\application\ui\ClipDlg.ui'
+# Form implementation generated from reading ui file 'ClipDlg.ui'
 #
 # Created by: PyQt6 UI code generator 6.4.0
 #
@@ -12,22 +12,29 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(264, 237)
+        Dialog.resize(258, 103)
+        self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
+        self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(Dialog)
-        self.label.setGeometry(QtCore.QRect(10, 40, 191, 20))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
-        font.setWeight(75)
         self.label.setFont(font)
         self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
         self.pb_clip = QtWidgets.QPushButton(Dialog)
-        self.pb_clip.setGeometry(QtCore.QRect(40, 110, 171, 51))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pb_clip.sizePolicy().hasHeightForWidth())
+        self.pb_clip.setSizePolicy(sizePolicy)
+        self.pb_clip.setMinimumSize(QtCore.QSize(100, 50))
         font = QtGui.QFont()
         font.setPointSize(14)
         self.pb_clip.setFont(font)
         self.pb_clip.setCheckable(False)
         self.pb_clip.setObjectName("pb_clip")
+        self.verticalLayout.addWidget(self.pb_clip)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -37,3 +44,13 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Fin Clips"))
         self.label.setText(_translate("Dialog", "Enter the cell number..."))
         self.pb_clip.setText(_translate("Dialog", "Click here"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Dialog = QtWidgets.QDialog()
+    ui = Ui_Dialog()
+    ui.setupUi(Dialog)
+    Dialog.show()
+    sys.exit(app.exec())
