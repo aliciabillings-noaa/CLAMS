@@ -115,9 +115,6 @@
     </layout>
    </item>
   </layout>
-  <zorder>verticalLayoutWidget</zorder>
-  <zorder>cardBtn</zorder>
-  <zorder>label</zorder>
  </widget>
  <resources/>
  <connections/>

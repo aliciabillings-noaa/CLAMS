@@ -54,9 +54,8 @@ class Ui_specimendelDlg(object):
         font.setWeight(50)
         self.label.setFont(font)
         self.label.setObjectName("label")
-        self.gridLayout.addWidget(self.label, 0, 0, 1, 2)
+        self.gridLayout.addWidget(self.label, 0, 0, 1, 3)
         self.verticalLayout.addLayout(self.gridLayout)
-        self.label.raise_()
 
         self.retranslateUi(specimendelDlg)
         QtCore.QMetaObject.connectSlotsByName(specimendelDlg)
