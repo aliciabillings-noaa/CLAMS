@@ -1,18 +1,52 @@
-"""
-Adapted from finclipyesnodlg.py for use by NWFSC
-Keeps track of whether a salmon has an adipose fin or not
+# coding=utf-8
 
-updated November 2022 to PyQt6 and Python 3 by Alicia Billings, NWFSC
-specific updates:
-- PyQt import statement
-- changed order of functions to put setup first
-- added some function explanation
-- fixed any PEP8 issues
-- added a main to test if works (commented out)
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
+
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
+"""
+.. module:: AdiposeYesNoDlg
+
+    :synopsis: Adapted from finclipyesnodlg.py for use by NWFSC;
+                Keeps track of whether a salmon has an adipose fin or not
+
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assessment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Mike Levine   <mike.levine@noaa.gov>
+|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+| Updated January 2025 by:
+|       Alicia Billings <alicia.billings@noaa.gov>
+|           specific updates:
+|               - PyQt import statement
+|               - signal/slot connections
+|               - moved variable declarations into __init__
+|               - added some function explanation
+|               - fixed any PEP8 issues
+|               - added a main to test if works (commented out)
 """
 
 from PyQt6.QtWidgets import *
-from ui.xga import ui_YesNoDlg
+from ui import ui_YesNoDlg
 from sys import argv
 
 
@@ -65,7 +99,7 @@ class AdiposeYesNoDlg(QDialog, ui_YesNoDlg.Ui_YesNoDlg):
         self.reject()
 
 
-#"""
+"""
 if __name__ == "__main__":
     #  create an instance of QApplication
     app = QApplication(argv)
@@ -75,4 +109,4 @@ if __name__ == "__main__":
     form.show()
     #  and start the application...
     app.exec()
-#"""
+"""

@@ -1,30 +1,62 @@
+# coding=utf-8
+
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
+
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
 """
-Special dialog for entering diet collection data - collection and contents
+.. module:: FEATDietTypeDlg
 
-created by: Alicia Billings - alicia.billings@noaa.gov
-date: April 2019
-notes:
+    :synopsis: Special dialog for entering diet collection data - collection and contents
 
-updated November 2022 to PyQt6 and Python 3 by Alicia Billings, NWFSC
-specific updates:
-- PyQt import statements
-- added some function explanation
-- fixed any PEP8 issues
-- added a main to test if works (commented out)
-
-todo: test this when able to connect to db
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assessment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Mike Levine   <mike.levine@noaa.gov>
+|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+| Created by:
+|       Alicia Billings - alicia.billings@noaa.gov
+|       date: April 2019
+| Updated January 2025 by:
+|       Alicia Billings <alicia.billings@noaa.gov>
+|           specific updates:
+|               - PyQt import statement
+|               - signal/slot connections
+|               - added some function explanation
+|               - fixed any PEP8 issues
+|               - added a main to test if works (commented out)
+|
+| NOTE: cannot test this until it is called with parent values
 """
+
 
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
-from PyQt6.QtSql import QSqlQuery
 from PyQt6.QtGui import QIcon, QImage, QPixmap
-from ui.xga import ui_FEATDietTypeDlg
-from ui.xga import ui_FEATDietSpDlg
+from ui import ui_FEATDietTypeDlg
+from ui import ui_FEATDietSpDlg
 import numpad
 import messagedlg
 from collections import OrderedDict
-import functions as fun
 from sys import argv
 
 
@@ -36,6 +68,7 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         self.message = messagedlg.MessageDlg(self)
 
         self.result = OrderedDict()
+
         self.survey = parent.survey
         self.ship = parent.ship
         self.activeSpcName = parent.activeSpcName
@@ -52,12 +85,19 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         self.port = parent.port
         self.printer_connected = parent.printer_connected
         self.printer = parent.printer
+        self.db = parent.db
+        self.called_enable = self.settings['called_enable']
+        # self.called_enable = False
+        self.settings = {}
+
         self.oto_present = False
         self.oto_last = 0
         self.tot_collect = 5
         self.tot_called = 5
         self.collected = ""
         self.called = ""
+
+        self.called_enable = False
 
         # hide the species code buttons
         self.pb_code_1.hide()
@@ -70,6 +110,9 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         self.pb_sp_3.setEnabled(False)
         self.pb_vol_3.setEnabled(False)
         self.pb_done.setEnabled(False)
+
+        # set the called table enabled/disabled
+        self.tw_stom_type.setTabEnabled(1, self.called_enable)
 
         #  connect signals
         self.pb_taken.clicked.connect(self.taken)
@@ -105,7 +148,7 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
             self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
                                     "You must enter an otolith vial number FIRST before collecting diet information. "
                                     "Please either scan or enter a vial number.", 'info')
-            self.message.exec_()
+            self.message.exec()
             return
 
         # if it is an edit, allow everything - there may be an instance where we end up with more stomach than
@@ -113,18 +156,21 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         if not self.edit_flag:
             # check collected and called numbers
             # get total already collected and called
-            collection_query = QSqlQuery("SELECT COUNT(*) FROM Measurements WHERE event_id = " + self.active_event +
-                                         " AND measurement_type = 'stomach_collect'"
-                                         " AND measurement_value NOT IN ('Blown', 'Nicked', 'Regurg', 'Unknown')")
+            collection_sql = "SELECT COUNT(*) FROM Measurements WHERE event_id = " + self.active_event + \
+                             " AND measurement_type = 'stomach_collect'"\
+                             " AND measurement_value NOT IN ('Blown', 'Nicked', 'Regurg', 'Unknown')"
+            collection_query = self.db.dbQuery(collection_sql)
+
             collection_query.first()
             self.collected = int(collection_query.value(0).toString())
             if self.collected >= self.tot_collect:
                 self.tw_stom_type.setTabEnabled(0, False)
 
             # get total already collected and called
-            called_query = QSqlQuery("SELECT COUNT(*) FROM Measurements WHERE event_id = " + self.active_event +
-                                     " AND measurement_type = 'stom_cont_1'"
-                                     " AND measurement_value NOT IN ('Blown', 'Nicked', 'Regurg', 'Unknown')")
+            called_sql = "SELECT COUNT(*) FROM Measurements WHERE event_id = " + self.active_event + \
+                         " AND measurement_type = 'stom_cont_1" \
+                         " AND measurement_value NOT IN ('Blown', 'Nicked', 'Regurg', 'Unknown')"
+            called_query = self.db.dbQuery(called_sql)
             called_query.first()
             self.called = int(called_query.value(0).toString())
             if self.called >= self.tot_called:
@@ -173,10 +219,11 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         """
         self.oto_present = False
         if self.specimen_key is not None:
-            exist_query = QSqlQuery("SELECT measurement_value FROM Measurements WHERE ship=" + self.ship +
-                                    " AND survey=" + self.survey + " AND event_id=" + self.active_event +
-                                    " AND sample_id=" + self.active_sample + " AND specimen_id=" +
-                                    self.specimen_key + " AND measurement_type = 'barcode'")
+            exist_sql = "SELECT measurement_value FROM Measurements WHERE ship=" + self.ship + \
+                        " AND survey=" + self.survey + " AND event_id=" + self.active_event + \
+                        " AND sample_id=" + self.active_sample + " AND specimen_id=" + self.specimen_key + \
+                        " AND measurement_type = 'barcode'"
+            exist_query = self.db.dbQuery(exist_sql)
             if exist_query.first():
                 self.oto_last = exist_query.value(0).toString()[-5:]
                 self.oto_present = True
@@ -195,7 +242,7 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         for measure in measures_to_load:
             query_txt = "SELECT measurement_value FROM Measurements WHERE measurement_type = '%s' " \
                         "AND specimen_id = %s" % (measure, self.specimen_key)
-            query = QSqlQuery(query_txt)
+            query = self.db.dbQuery(query_txt)
             if query.first():
                 value = query.value(0).toString()
                 if measure == 'stomach_collect':
@@ -252,7 +299,7 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         :return: species name - scientific
         """
         query_txt = "SELECT scientific_name FROM Species WHERE species_code = " + sp_code
-        query = QSqlQuery(query_txt)
+        query = self.db.dbQuery(query_txt)
         query.first()
         return query.value(0).toString()
 
@@ -303,7 +350,7 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         :return:
         """
         rst = numpad.NumPad()
-        rst.exec_()
+        rst.exec()
         self.pb_overall.setText(rst.value)
         self.result['stom_overall_wt'] = rst.value
 
@@ -314,7 +361,7 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         """
         cur_btn = self.sender()
         btn_num = cur_btn.objectName()[-1]
-        cur_sp = GetStomachSpecies(self.settings)
+        cur_sp = GetStomachSpecies(self.settings, self.db)
         if cur_sp.result() == 1:
             self.pb_done.setEnabled(True)
             cur_btn.setText(cur_sp.species[1])
@@ -341,7 +388,7 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         :return:
         """
         rst = numpad.NumPad()
-        rst.exec_()
+        rst.exec()
         btn_num = self.sender().objectName()[-1]
         self.pb_done.setEnabled(True)
         if btn_num == '1':
@@ -447,8 +494,9 @@ class GetLabel(QDialog):
         creates the small popup to prompt user to print the label
         :return:
         """
-
-        length, weight = fun.get_len_wt(self.specimen_key)
+        # todo: how to get length and weight to print on the label
+        # length, weight = fun.get_len_wt(self.specimen_key)
+        length = weight = None
         # create the barcode
         self.code = str(str(self.survey) + str(self.ship) + str(self.active_event)
                         + str(self.oto_last))
@@ -572,13 +620,14 @@ class GetReasons(QDialog):
 
 
 class GetStomachSpecies(QDialog, ui_FEATDietSpDlg.Ui_Dialog):
-    def __init__(self, settings):
+    def __init__(self, settings, db):
         super(GetStomachSpecies, self).__init__()
         self.setupUi(self)
         self.chars = ''
         self.updatingDigit = False
         self.species = []
         self.settings = settings
+        self.db = db
 
         #  put the keyboard buttons into a list to easily reference them
         self.digitBtns = [self.A_Btn, self.B_Btn, self.C_Btn, self.D_Btn, self.E_Btn, self.F_Btn,
@@ -597,7 +646,7 @@ class GetStomachSpecies(QDialog, ui_FEATDietSpDlg.Ui_Dialog):
         self.doneBtn.clicked.connect(self.go_exit)
         self.pb_cancel.clicked.connect(self.close)
         self.doneBtn.setEnabled(False)
-        self.r_com_stom.toggled.connect(self.clear_all_char)
+        self.r_com.toggled.connect(self.clear_all_char)
         self.r_full.toggled.connect(self.clear_all_char)
 
         self.get_list()
@@ -626,7 +675,7 @@ class GetStomachSpecies(QDialog, ui_FEATDietSpDlg.Ui_Dialog):
         gets names that contain the chars from both sci and common names
         :return:
         """
-        if self.r_com_stom.isChecked():
+        if self.r_com.isChecked():
             # if chars are empty, return full list of species in Species_Data that are stomach_species
             if self.chars == '':
                 com_query = "SELECT species.common_name FROM species WHERE species_code IN " \
@@ -657,13 +706,13 @@ class GetStomachSpecies(QDialog, ui_FEATDietSpDlg.Ui_Dialog):
                 sci_query = "SELECT species.scientific_name FROM species WHERE species_code != -1 AND " \
                             "upper(species.scientific_name) LIKE upper('%" + self.chars + \
                             "%') ORDER BY species.scientific_name"
-        query = QSqlQuery(com_query)
+        query = self.db.dbQuery(com_query)
         trunc = []
         while query.next():
             trunc.append(query.value(0).toString())
         self.lw_com.addItems(trunc)
 
-        query = QSqlQuery(sci_query)
+        query = self.db.dbQuery(sci_query)
         trunc1 = []
         while query.next():
             trunc1.append(query.value(0).toString())
@@ -682,7 +731,7 @@ class GetStomachSpecies(QDialog, ui_FEATDietSpDlg.Ui_Dialog):
         :return:
         """
         self.chars = self.chars[:-1]
-        self.lineEdit.setText(self.chars)
+        self.le_species.setText(self.chars)
         self.lw_com.clear()
         self.lw_sci.clear()
         self.get_list()
@@ -710,11 +759,11 @@ class GetStomachSpecies(QDialog, ui_FEATDietSpDlg.Ui_Dialog):
         list_origin = self.sender()
         active_name = list_origin.currentItem().text()
         if self.nameTab.currentIndex() == 0:
-            query = QSqlQuery("SELECT species_code "
-                              "FROM species WHERE common_name='" + active_name + "'")
+            sql = "SELECT species_code FROM species WHERE common_name='" + active_name + "'"
+            query = self.db.dbQuery(sql)
         else:
-            query = QSqlQuery("SELECT species_code "
-                              "FROM species WHERE scientific_name='" + active_name + "'")
+            sql = "SELECT species_code FROM species WHERE scientific_name='" + active_name + "'"
+            query = self.db.dbQuery(sql)
         query.first()
         sp_code = query.value(0).toString()
         img_name = sp_code
@@ -753,14 +802,13 @@ class GetStomachSpecies(QDialog, ui_FEATDietSpDlg.Ui_Dialog):
         self.reject()
 
 
-#"""
+"""
 if __name__ == "__main__":
     #  create an instance of QApplication
     app = QApplication(argv)
     #  create an instance of the dialog
-    parent_to_pass = {'survey': 202106}
-    form = GetLabel(parent_to_pass)
+    form = FEATDietTypeDlg()
     form.show()
     #  and start the application...
     app.exec()
-#"""
+"""
