@@ -58,7 +58,7 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
         self.speciesCodes=[]
         self.selectionList = []
         for value in query:
-            if value[4] is not 'None':
+            if value[4] != 'None':
                 species_tag=value[0]+'-'+value[4]
             else:
                 species_tag=value[0]
@@ -231,7 +231,7 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
                                 " AND partition='" + self.activePartition + "' "+self.filterString+" GROUP BY species_code, common_name, subcategory, sample_id ORDER BY species_code")
             query = self.db.dbQuery(sql)
             while query.next():
-                if query.value(2).toString() is not 'None':
+                if query.value(2).toString() != 'None':
                     species_tag=query.value(1).toString()+'-'+query.value(2).toString()
                 else:
                     species_tag=query.value(1).toString()

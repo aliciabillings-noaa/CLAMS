@@ -223,8 +223,9 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         #  check if the logging directory exists
         if not QDir().exists(self.settings['LoggingDir']):
             reply = QMessageBox.question(self, "ERROR", "<font size = 12>SQL logging directory not found. " +
-                    "Do you want to create it?", QMessageBox.Yes, QMessageBox.No)
-            if reply == QMessageBox.Yes:
+                    "Do you want to create it?", QMessageBox.StandardButton.Yes,
+                                         QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
                 QDir().mkdir(self.settings['LoggingDir'])
             else:
                 QMessageBox.critical(self, "ERROR", "<font size = 12>Sorry, CLAMS cannot operate without a " +
@@ -701,4 +702,3 @@ if __name__ == "__main__":
 
     #  and start the application...
     app.exec()
-
