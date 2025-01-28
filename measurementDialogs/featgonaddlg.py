@@ -1,30 +1,62 @@
+# coding=utf-8
+
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
+
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
 """
-Special dialog for entering gonad collection data - collection and weight
+.. module:: FEATGonadDlg
 
-created by: Alicia Billings - alicia.billings@noaa.gov
-date: April 2019
-notes:
+    :synopsis: Special dialog for entering gonad collection data
 
-updated November 2022 to PyQt6 and Python 3 by Alicia Billings, NWFSC
-specific updates:
-- PyQt import statements
-- added some function explanation
-- fixed any PEP8 issues
-- added a main to test if works (commented out)
-
-todo: test this when able to connect to db
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assessment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Mike Levine   <mike.levine@noaa.gov>
+|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+| Created by:
+|       Alicia Billings - alicia.billings@noaa.gov
+|       date: April 2019
+| Updated January 2025 by:
+|       Alicia Billings <alicia.billings@noaa.gov>
+|           specific updates:
+|               - PyQt import statement
+|               - signal/slot connections
+|               - added some function explanation
+|               - fixed any PEP8 issues
+|               - added a main to test if works (commented out)
+|
+| NOTE: cannot test this until it is called with parent values
 """
 
 from PyQt6.QtWidgets import *
-from PyQt6.QtSql import QSqlQuery
 from PyQt6.QtGui import QIcon
-from ui.xga import ui_FEATNadDlg
+from ui import ui_FEATGonadDlg
 import numpad
 import messagedlg
 from collections import OrderedDict
 
 
-class FEATNadDlg(QDialog, ui_FEATNadDlg.Ui_Dialog):
+class FEATNadDlg(QDialog, ui_FEATGonadDlg.Ui_Dialog):
     def __init__(self, parent=None):
         super(FEATNadDlg, self).__init__(parent)
         self.setupUi(self)
@@ -48,6 +80,7 @@ class FEATNadDlg(QDialog, ui_FEATNadDlg.Ui_Dialog):
         self.port = parent.port
         self.printer_connected = parent.printer_connected
         self.printer = parent.printer
+        self.db = parent.db
         # disable buttons
         self.pb_done.setEnabled(False)
 
@@ -67,7 +100,7 @@ class FEATNadDlg(QDialog, ui_FEATNadDlg.Ui_Dialog):
             self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
                                     "You must enter an otolith vial number FIRST before collecting gonad information. "
                                     "Please either scan or enter a vial number.", 'info')
-            self.message.exec_()
+            self.message.exec()
             return
         if self.edit_flag:
             # load all diet samples for that measurement
@@ -80,10 +113,10 @@ class FEATNadDlg(QDialog, ui_FEATNadDlg.Ui_Dialog):
         """
         rtn = False
         if self.specimen_key is not None:
-            exist_query = QSqlQuery("SELECT * FROM Measurements WHERE ship=" + self.ship +
-                                    " AND survey=" + self.survey + " AND event_id=" + self.active_event +
-                                    " AND sample_id=" + self.active_sample + " AND specimen_id="
-                                    + self.specimen_key + " AND measurement_type = 'barcode'")
+            exist_sql = "SELECT * FROM Measurements WHERE ship=" + self.ship + " AND survey=" + self.survey + \
+                        " AND event_id=" + self.active_event + " AND sample_id=" + self.active_sample + \
+                        " AND specimen_id=" + self.specimen_key + " AND measurement_type='barcode'"
+            exist_query = self.db.dbQuery(exist_sql)
             if exist_query.first():
                 rtn = True
 
@@ -98,7 +131,7 @@ class FEATNadDlg(QDialog, ui_FEATNadDlg.Ui_Dialog):
         for measure in measures_to_load:
             query_txt = "SELECT measurement_value FROM Measurements WHERE measurement_type = '%s' " \
                         "AND specimen_id = %s" % (measure, self.specimen_key)
-            query = QSqlQuery(query_txt)
+            query = self.db.dbQuery(query_txt)
             if query.first():
                 value = query.value(0).toString()
                 if measure == 'gonad_collect':
@@ -179,6 +212,7 @@ class GetLabel(QDialog):
         self.message = parent.message
         self.errorIcons = parent.errorIcons
         self.errorSounds = parent.errorSounds
+        self.db = parent.db
 
         # create the popup
         title = "Print Label"
@@ -209,10 +243,10 @@ class GetLabel(QDialog):
         """
         # create the barcode
         # get the last five of the otolith
-        query = QSqlQuery("SELECT measurement_value FROM Measurements WHERE ship=" + self.ship +
-                          " AND survey=" + self.survey + " AND event_id=" + self.active_event +
-                          " AND sample_id=" + self.active_sample + " AND specimen_id=" + self.specimen_key +
-                          " AND measurement_type = 'barcode'")
+        sql = "SELECT measurement_value FROM Measurements WHERE ship=" + self.ship + " AND survey=" + self.survey + \
+              " AND event_id=" + self.active_event + " AND sample_id=" + self.active_sample + \
+              " AND specimen_id=" + self.specimen_key + " AND measurement_type = 'barcode'"
+        query = self.db.dbQuery(sql)
         query.first()
         last_five = query.value(0).toString()[-5:]
         self.code = str(str(self.survey) + str(self.ship) + str(last_five))
@@ -222,7 +256,7 @@ class GetLabel(QDialog):
 
         # get the ship name
         query_txt = "SELECT name FROM Ships WHERE ship=" + self.ship
-        query = QSqlQuery(query_txt)
+        query = self.db.dbQuery(query_txt)
         query.first()
         ship_name = query.value(0).toString()
         if self.printer is not None:
