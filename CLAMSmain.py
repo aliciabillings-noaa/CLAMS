@@ -186,7 +186,7 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
             okIcon = QPixmap.fromImage(dialogImage)
             self.errorIcons = [errorIcon,  msgIcon,  overIcon, okIcon]
 
-        #  load base sound effects (devices sounds are handled elsewhere)
+        #  load base sound effects (device sounds are handled elsewhere)
         self.errorSounds = []
         self.startSound = None
         self.printSound = None

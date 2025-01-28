@@ -1,0 +1,5 @@
+"device_interface","description"
+"Software","User inputs data via the touchscreen"
+"Serial","The PC Serial Port Interface accessed via the pySerial library"
+"SCS"," SCS devices accessed though the pySCSClient"
+"Serial external","A serial device that is regularly plugged and unplugged (i.e. SBE)"

@@ -1,0 +1,6 @@
+"basket_type","description"
+"Subsample","designates a sample weight kept for further processing, i.e. length or specimens"
+"Toss","a sample that is weighed and tossed overboard"
+"Count","a sample that has an organism count and weight "
+"Preserve","a sample preserved for further processing"
+"Measure","a sample kept for further processing such as length or specimen processing"

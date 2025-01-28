@@ -8,3 +8,5 @@ THESE CHANGES NEED TO BE EXECUTED ON PRODUCTION:
 
 ALTER TABLE WORKSTATIONS
    ADD CURRENT_EVENT NUMBER(6,2);
+   
+INSERT INTO "CLAMSBASE2"."SAMPLE_PARAMETERS" (SAMPLE_PARAMETER, PARAMETER_TYPE, PARAMETER_UNIT, DESCRIPTION) VALUES ('sample_display_name', 'string', 'none', 'sample_display_name informs CLAMS of which name (scientific or common) to display in the UI for a specific sample.')

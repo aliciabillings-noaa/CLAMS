@@ -1,0 +1,4 @@
+"partition_type","description"
+"NonCatch","A trawl device partition that doesnt retain fish - typically used to refer to the body of the trawl."
+"Catch","A trawl device partition that retains fish. For example the codend or recapture device."
+"Image","A trawl partition construct to identify portions of a an image stream."

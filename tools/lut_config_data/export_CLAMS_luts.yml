@@ -1,0 +1,38 @@
+
+mode: export
+
+odbc_data_source: AFSCD1-64
+username: clamsbase2
+password: 27@MonkeyButler
+schema: clamsbase2
+
+query_interval: 2
+n_threads: 2
+where_clause:
+
+data_path: C:/Users/rick.towler/Work/noaa-afsc-mace/CLAMS/tools/lut_config_data/lut_data
+
+tables:
+  - basket_types
+  - device_interfaces
+  - device_parameters
+  - event_parameters
+  - event_performance
+  - event_types
+  - gear_accessory_types
+  - gear_partition_types
+  - gear_types
+  - haul_weight_types
+  - maturity_tables
+  - measurement_types
+  - parameter_types
+  - parameter_units
+  - protected_spp_event_parameters
+  - qc_types
+  - sample_parameters
+  - sample_types
+  - sampling_methods
+  - species_parameters
+  - species_subcategories
+  - survey_parameters
+

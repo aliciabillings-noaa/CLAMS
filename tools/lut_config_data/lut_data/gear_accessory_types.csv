@@ -1,0 +1,7 @@
+"gear_accessory","description","parameter_type","parameter_unit"
+"Doors","string","string",""
+"Netsounder","string","string",""
+"Liner","float","float","cm"
+"Tomweights","int","integer","lb"
+"Flowmeter","int","integer",""
+"RACE_accessory_code","int","integer",""

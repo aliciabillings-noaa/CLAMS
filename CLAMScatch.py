@@ -1,8 +1,48 @@
+# coding=utf-8
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4 import QtSql
-from ui.xga import ui_CLAMSCatch
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
+
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
+"""
+.. module:: CLAMScatch
+
+    :synopsis: CLAMScatch presents the CLAMS catch form. The catch form
+               is used to specify what was caught in the catch, as well
+               as if/how it will be further processed. The catch module
+               is used when the catch is sorted and weighed.
+
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assesment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Mike Levine   <mike.levine@noaa.gov>
+|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+"""
+
+#  imports
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
+from ui import ui_CLAMSCatch
 import addcatchspcdlg
 import numpad
 import typeseldialog
@@ -10,280 +50,399 @@ import basketeditdlg
 import keypad
 import transferdlg
 import messagedlg
-import QZebraPrinter
+import ZebraLabelPrinter
 import addspecdlg
+
 
 class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
     def __init__(self, parent=None):
+
+        #  call superclass init methods and GUI form setup method
         super(CLAMSCatch, self).__init__(parent)
         self.setupUi(self)
-        self.setAttribute(Qt.WA_DeleteOnClose)
-        self.db=parent.db
-        self.serMonitor=parent.serMonitor
-        if not self.db.isOpen():
-            self.db.open()
-        self.workStation=parent.workStation
-        self.activeHaul=parent.activeHaul
-        self.survey=parent.survey
-        self.ship=parent.ship
-        self.settings=parent.settings
-        self.activePartition=parent.activePartition
-        self.errorSounds=parent.errorSounds
-        self.errorIcons=parent.errorIcons
-        self.backLogger=parent.backLogger
-        self.scientist=parent.scientist
+
+        #  copy some info from parent for convenience
+        self.db = parent.db
+        self.serMonitor = parent.serMonitor
+        self.workStation = parent.workStation
+        self.activeHaul = parent.activeHaul
+        self.survey = parent.survey
+        self.ship = parent.ship
+        self.settings = parent.settings
+        self.activePartition = parent.activePartition
+        self.errorSounds = parent.errorSounds
+        self.errorIcons = parent.errorIcons
+        self.scientist = parent.scientist
+
+        # initialize variables
+        self.addspec_flag = True
+        self.planktonFlag = False
+        self.activeSampleKey = None
+        self.activeSpcName = None
+        self.activeSpcCode = None
+        self.comment = ''
+        self.validList = [1, 1, 1]# sets valid sample type choices
+        self.freeze = False
+        self.whHaulFlag = False
+        self.devices = []
+        self.sounds = {}
+        self.basketTypes = []
+        self.manualDevice ='0'
+        self.parentSamples = {}
+        self.mixtureNames = {'100000':'WholeHaul', '100001':'SortingTable',
+                '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2'}
+        self.wholeHaulKey=None
+
+        #  do some UI setup
         self.sciLabel.setText(self.scientist)
-        self.activeSampleKey=None
-        p=self.scientist.split(' ')
-        self.firstName=p[0]
-        self.message=messagedlg.MessageDlg(self)
+        self.firstName = self.scientist.split(' ')[0]
 
-        # get sample types
-        query=QtSql.QSqlQuery("SELECT gear_options.basket_type FROM gear_options INNER JOIN " +
-                "events ON gear_options.gear=events.gear WHERE events.ship="+self.ship+
-                " AND events.survey="+self.survey+" AND events.event_id="+self.activeHaul+
-                " AND gear_options.basket_type is not NULL ORDER BY gear_options.basket_type")
-        self.basketTypes=[]
-        while query.next(): # populate types list
-            self.basketTypes.append(query.value(0).toString())
-
-        #get special plankton treatment
-        query=QtSql.QSqlQuery("SELECT GEAR.GEAR_TYPE FROM events, GEAR WHERE (events.GEAR = "+
-                "GEAR.GEAR ) and  ((events.SHIP = "+self.ship+" ) AND (events.SURVEY = "+
-                self.survey+" ) AND (events.event_id = "+self.activeHaul+") )")
-        query.first() # populate types list
-        self.planktonFlag=False
-        if query.value(0).toString()=='PlanktonNet':
-            self.planktonFlag=True
-
-        # set up tables for data display
-        font=QFont('helvetica', 14, -1, False)
+        #  set up tables for data display
+        font = QFont("Arial Black", 14, -1, False)
         self.basketView.setFont(font)
         self.basketModel = QtSql.QSqlQueryModel()
-        self.basketView.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.basketView.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.basketView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.basketView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.basketView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.basketView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.basketView.setModel(self.basketModel)
-        self.selModel=QItemSelectionModel(self.basketModel, self.basketView)
+        self.selModel = QItemSelectionModel(self.basketModel, self.basketView)
         self.basketView.setSelectionModel(self.selModel)
-        self.basketView.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
+        self.basketView.horizontalHeader().setResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.basketView.show()
 
-        # set up dialog windows
+        self.sumTable.setColumnWidth(0, 100)
+        self.sumTable.setColumnWidth(1, 100)
+
+        # set up recurring dialogs
+        self.message = messagedlg.MessageDlg(self)
         self.numpad = numpad.NumPad(self)
+        self.addspec = addspecdlg.addspecedlg(self)
+        self.typeDlg = typeseldialog.TypeSelDialog(self)
+        self.spcDlg = addcatchspcdlg.AddCatchSpcDlg(self)
 
-        self.addspec=addspecdlg.addspecedlg(self)
-        self.addspec_flag = True
-        self.typeDlg=typeseldialog.TypeSelDialog(self)
+        #  connect signals and slots
+        self.addspcBtn.clicked.connect(self.getSpecies)
+        self.manualBtn.clicked.connect(self.getManual)
+        self.doneBtn.clicked.connect(self.close)
+        self.delBtn.clicked.connect(self.goDelete)
+        self.printBtn.clicked.connect(self.printLabel)
+        self.editBtn.clicked.connect(self.editTable)
+        self.speciesList.itemSelectionChanged.connect(self.getActiveSpc)
+        self.speciesList.itemActivated.connect(self.getSpeciesFocus)
+        self.selModel.selectionChanged[QItemSelection,QItemSelection].connect(self.getBasketRow)
+        self.transBtn.clicked.connect(self.transferSample)
+        self.commentBtn.clicked.connect(self.getComment)
+        self.spcDlg.changed.connect(self.addSpecies)
 
-        #  Check if we have a label printer attached at this workstation
-        query=QtSql.QSqlQuery("SELECT MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME " +
-                                         "FROM MEASUREMENT_SETUP INNER JOIN DEVICES ON " +
-                                         "MEASUREMENT_SETUP.DEVICE_ID = DEVICES.DEVICE_ID WHERE " +
-                                         "MEASUREMENT_SETUP.WORKSTATION_ID = " +  self.workStation +
-                                         " AND DEVICES.DEVICE_NAME = 'Label_Printer'" +
-                                         " GROUP BY MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME")
-        if query.first():
+        #  connect the SensorMonitor SerialDataReceived signal to the
+        #  getAuto method which processes input from devices.
+        self.serMonitor.SerialDataReceived.connect(self.getAuto)
+
+        #  restore the application state
+        self.appSettings = QSettings('CLAMS', 'CatchForm')
+        size = self.appSettings.value('winsize', QSize(950,665))
+        position = self.appSettings.value('winposition', QPoint(10,10))
+
+        #  check the current position and size to make sure the app is on the screen
+        position, size = self.checkWindowLocation(position, size)
+
+        #  now move and resize the window
+        self.move(position)
+        self.resize(size)
+
+        #  create a timer to complete init after initial form presentation
+        checkHaulTimer = QTimer(self)
+        checkHaulTimer.setSingleShot(True)
+        checkHaulTimer.timeout.connect(self.formInit)
+        checkHaulTimer.start(0)
+
+
+    def formInit(self):
+        '''formInit is called immediately after the form is presented on
+        screen and it continues form/module setup. It checks to make sure we
+        have completed the haul form for this partition and inserts/updates
+        some base samples table entries
+
+        '''
+
+        #  First, check to see if haul form has been checked for codend partition
+        if 'codend' in self.activePartition.lower():
+            sql = ("SELECT parameter_value FROM event_data WHERE ship="+self.ship+
+                " AND survey="+self.survey+" AND event_id="+self.activeHaul+
+                " AND partition='" + self.activePartition +
+                "' AND event_parameter='PartitionWeightType'")
+
+            query = self.db.dbQuery(sql)
+            pwt, = query.first()
+            if not pwt:
+                #  there isn't a partition weight type for this partition so
+                #  we can't go on.
+                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                        "You need to visit haul form before you can enter codend catch.",'info')
+                self.message.exec()
+                self.close()
+                return
+
+
+
+        # get sample types
+        sql = ("SELECT gear_options.basket_type FROM gear_options INNER JOIN " +
+                "events ON gear_options.gear=events.gear WHERE events.ship=" + self.ship+
+                " AND events.survey=" + self.survey + " AND events.event_id=" + self.activeHaul+
+                " AND gear_options.basket_type is not NULL ORDER BY gear_options.basket_type")
+        query = self.db.dbQuery(sql)
+        for basketType, in query.next():
+            self.basketTypes.append(basketType)
+
+        #  check if this is a plankton trawl  - they're handled a bit differently
+        sql = ("SELECT GEAR.GEAR_TYPE FROM events, GEAR WHERE (events.GEAR = "+
+                "GEAR.GEAR ) and  ((events.SHIP = "+self.ship+" ) AND (events.SURVEY = "+
+                self.survey+" ) AND (events.event_id = "+self.activeHaul+"))")
+        query = self.db.dbQuery(sql)
+        gearType, = query.first()
+        if gearType == 'PlanktonNet':
+            self.planktonFlag = True
+
+
+        #  Check if we have a label printer attached at this workstation. If so,
+        #  create the printer object and if not, disable the print button
+        sql = ("SELECT MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME " +
+                "FROM MEASUREMENT_SETUP INNER JOIN DEVICES ON " +
+                "MEASUREMENT_SETUP.DEVICE_ID = DEVICES.DEVICE_ID WHERE " +
+                "MEASUREMENT_SETUP.WORKSTATION_ID = " +  self.workStation +
+                " AND DEVICES.DEVICE_NAME = 'Label_Printer'" +
+                " GROUP BY MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME")
+        query = self.db.dbQuery(sql)
+        printerId, printerName = query.first()
+        if printerId:
             #  initialize the Label Printer
-            self.printer = QZebraPrinter.QZebraPrinter(self.serMonitor, str(query.value(0).toString()))
+            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.serMonitor, printerName)
         else:
             #  no printer configured
             self.printer = None
             self.printBtn.setEnabled(False)
 
-        query=QtSql.QSqlQuery("select a.parameter_value " +
-                                            "from device_configuration a, devices b " +
-                                            "where a.device_id=b.device_id " +
-                                            "and b.device_name='Label_Printer' "+
-                                            "and a.device_parameter='SoundFile'")
-        if query.first():
-            self.printSound=QSound(self.settings[QString('SoundsDir')] + '/' + query.value(0).toString() +'.wav')
+        #  set up the printer sound.
+        sql = ("select a.parameter_value from device_configuration a," +
+                "devices b where a.device_id=b.device_id " +
+                "and b.device_name='Label_Printer' and a.device_parameter='SoundFile'")
+        query = self.db.dbQuery(sql)
+        soundFile, = query.first()
+        if soundFile:
+            hasExt = soundFile.split('.')
+            if len(hasExt) > 1:
+                soundFile = self.settings['SoundsDir'] + soundFile
+            else:
+                soundFile = self.settings['SoundsDir'] + soundFile + '.wav'
+            soundEffect = QSoundEffect()
+            soundEffect.setSource(QUrl.fromLocalFile(soundFile))
+            self.printSound = soundEffect
         else:
             self.printSound = None
 
-        # initialize variables
-        self.activeSpcName=None
-        self.activeSpcCode=None
-        self.comment=''
-        self.validList=[1, 1, 1]# sets valid sample type choices
-        self.freeze=False
-        self.whHaulFlag=False
-        self.devices=[]
-        self.manualDevice='0'
-        self.parentSamples={}
-        self.mixtureNames={'100000':'WholeHaul', '100001':'SortingTable', '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2'}
-        # set up window position
-        screen=QDesktopWidget().screenGeometry()
-        window=self.geometry()
-        self.setGeometry((screen.width()-window.width())/2,parent.windowAnchor[0]+(parent.windowAnchor[1]-window.height()), window.width(), window.height())
-        self.setMinimumSize(window.width(), window.height())
-        self.setMaximumSize(window.width(), window.height())
-        # set up tables
-        self.sumTable.setColumnWidth(0, 100)
-        self.sumTable.setColumnWidth(1, 100)
 
-        # setup parent sample
-        self.wholeHaulKey=None
-        # if not present, create whole catch sample - top level sample with no parent
-        query=QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE ship="+self.ship+" AND survey="+
+
+        #  setup parent sample. if not present, create whole catch sample which is
+        #  the top level sample (no parent)
+        sql = ("SELECT sample_id FROM samples WHERE ship="+self.ship+" AND survey="+
                 self.survey+" AND event_id="+self.activeHaul+" AND partition ='"+self.activePartition+
                 "' AND species_code=100001")
-        if not query.first():
-            query =QtSql.QSqlQuery("INSERT INTO samples (ship, survey, event_id, partition, " +
-                    "sample_type,species_code, scientist) VALUES("+self.ship+","+self.survey+","+self.activeHaul+
-                    ",'"+self.activePartition+"','SortingTable',100001,'"+self.scientist+"')")
-            self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
+        query = self.db.dbQuery(sql)
+        sampleID, = query.first()
+        if not sampleID:
+            #  the parent sample doesn't exist yet, so create it.
+            sql = ("INSERT INTO samples (ship, survey, event_id, partition, " +
+                    "sample_type,species_code, scientist) VALUES("+self.ship+","+self.survey+
+                    ","+self.activeHaul+ ",'"+self.activePartition+"','SortingTable',100001,'"
+                    +self.scientist+"')")
+            self.db.dbExec(sql)
 
-            # retrieve newly created sample key from database
-            query=QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE ship="+self.ship+
+            #  now retrieve newly created sample ID from database
+            sql = ("SELECT sample_id FROM samples WHERE ship="+self.ship+
                     " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND partition ='"+self.activePartition+"' AND species_code=100001")
-            query.first()
+            query = self.db.dbQuery(sql)
+            sampleID, = query.first()
 
-        self.sortingTableKey=query.value(0).toString()
+        self.sortingTableKey = sampleID
+
         # is this a splitter?  if so create whole haul parent key
-        query=QtSql.QSqlQuery("SELECT event_data.PARAMETER_VALUE FROM event_data  WHERE " +
+        sql = ("SELECT event_data.PARAMETER_VALUE FROM event_data  WHERE " +
                 "(event_data.SHIP="+self.ship+") AND (event_data.SURVEY="+self.survey+
                 ") AND (event_data.event_id="+self.activeHaul+") AND "+
                 "(event_data.PARTITION='"+self.activePartition+"') AND "+
                 "(event_data.event_parameter='PartitionWeightType')")
-        if query.first():
-            if not query.value(0).toString()=='not_subsampled':
-                # create whole haul sample - top level sample if needed
-                query=QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE ship="+self.ship+
+
+        query = self.db.dbQuery(sql)
+        partitionWeightType, = query.first()
+
+        if partitionWeightType:
+            if partitionWeightType.lower() != 'not_subsampled':
+                #  this is a splitter - check if we have the whole haul
+                #  sample and if not, create it.
+                sql = ("SELECT sample_id FROM samples WHERE ship="+self.ship+
                         " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                         " AND partition ='"+self.activePartition+"' AND species_code=100000")
-                if not query.first():# we dont already have this sample id- first time in
-                    query =QtSql.QSqlQuery("INSERT INTO samples (ship, survey, event_id, partition, " +
+                query = self.db.dbQuery(sql)
+                wholeHaulID, = query.first()
+
+                if not wholeHaulID:
+                    #  we don't already have this sample id- first catch has been run
+                    #  for this event.
+                    sql = ("INSERT INTO samples (ship, survey, event_id, partition, " +
                             " sample_type, species_code,scientist) VALUES("+self.ship+","+self.survey+
                             ","+self.activeHaul+",'"+self.activePartition+"'"+
                             ",'WholeHaul',100000, '"+self.scientist+"')")
-                    self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
+                    self.db.dbExec(sql)
+
                     # retrieve newly created sample key from database
-                    query=QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE ship="+self.ship+
+                    sql = ("SELECT sample_id FROM samples WHERE ship="+self.ship+
                             " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                             " AND partition ='"+self.activePartition+"' AND species_code=100000")
 
-                    query.first()
-                self.wholeHaulKey=query.value(0).toString()
+                    query = self.db.dbQuery(sql)
+                    wholeHaulID, = query.first()
+
+                self.wholeHaulKey = wholeHaulID
+
                 # update parent key for 'sorting table' sample
-                query=QtSql.QSqlQuery("UPDATE samples SET parent_sample="+self.wholeHaulKey+" WHERE ship="+self.ship+
+                sql = ("UPDATE samples SET parent_sample="+self.wholeHaulKey+" WHERE ship="+self.ship+
                     " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND partition ='"+self.activePartition+"' AND species_code=100001")
+                self.db.dbExec(sql)
+
+                # set the wholeHaul flag since this is a splitter
                 self.whHaulFlag=True
             else:
+                #  catch not subsampled - unset wholeHaul flag
                 self.whHaulFlag=False
         else:
+            #  If we don't have a partition weight type, then we're not subsampling
             self.whHaulFlag=False
 
-        # the slots
-        self.connect(self.addspcBtn, SIGNAL("clicked()"), self.getSpecies)
-        self.connect(self.manualBtn, SIGNAL("clicked()"), self.getManual)
-        self.connect(self.doneBtn, SIGNAL("clicked()"), self.goExit)
-        self.connect(self.delBtn, SIGNAL("clicked()"), self.goDelete)
-        self.connect(self.printBtn, SIGNAL("clicked()"), self.printLabel)
-        self.connect(self.editBtn, SIGNAL("clicked()"), self.editTable)
-        self.connect(self.speciesList, SIGNAL("itemSelectionChanged()"), self.getActiveSpc)
-        self.connect(self.speciesList, SIGNAL("itemActivated()"), self.getSpeciesFocus)
-        self.connect(self.selModel, SIGNAL("selectionChanged(const QItemSelection &, const QItemSelection &)"), self.getBasketRow)
-        self.connect(self.serMonitor, SIGNAL("SerialDataReceived"), self.getAuto)
-        self.connect(self.transBtn, SIGNAL("clicked()"), self.transferSample)
-        self.connect(self.commentBtn, SIGNAL("clicked()"), self.getComment)
+        # set up device sounds
+        self.loadDeviceSounds()
 
-        # set up serial connections
-        self.openSerial()
+        #  reload the species list - this populates the species list
         self.reloadSpeciesList()
-        self.spcDlg = addcatchspcdlg.AddCatchSpcDlg(self)
-        self.connect(self.spcDlg, SIGNAL("changed"), self.addSpecies)
+
 
         self.updateParentKeys()
 
-        checkHaulTimer = QTimer(self)
-        checkHaulTimer.setSingleShot(True)
-        self.connect(checkHaulTimer, SIGNAL("timeout()"), self.checkHaulIsDone)
-        checkHaulTimer.start(1)
-
-
-    def checkHaulIsDone(self):
-            # check to see if haul form has been checked for codend partition
-        if self.activePartition=='Codend':
-            query=QtSql.QSqlQuery("SELECT parameter_value FROM event_data WHERE ship="+self.ship+
-                " AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                " AND partition='Codend' AND event_parameter='PartitionWeightType'")
-            if not query.first():# haul form has not been entered yet!!
-                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                        "You need to visit haul form before you can enter codend catch.",'info')
-                self.message.exec_()
-                self.close()
-                return
-
 
     def getSpecies(self):
+        '''getSpecies is called when the Add Species button is pressed and it pauses
+        device input and displays the add species dialog.
+        '''
+        #  set freeze to ignore sensor/device input while adding species
         self.freeze=True
-        self.spcDlg.exec_()
+
+        #  show the add species dialog
+        self.spcDlg.exec()
+
+        #  unset freeze to continue processing sensor/device input
         self.freeze=False
 
 
     def addSpecies(self):
+        '''addSpecies is called when a species is added using the add species dialog.
+
+        '''
         self.addspec_flag = False
-        code=str(self.spcDlg.activeSpcCode)
-        spcName=str(self.spcDlg.activeSpcName)
-        subCat=str(self.spcDlg.activeSpcSubcat)
+
+        code = self.spcDlg.activeSpcCode
+        spcName = self.spcDlg.activeSpcName
+        subCat = self.spcDlg.activeSpcSubcat
+
         # parent sample
         parentKey  = self.parentSamples[self.spcDlg.parentSample]
         self.createSample(code, spcName, subCat,  self.spcDlg.nameType,  parentKey)
+
         #
         self.updateParentKeys()
+
         # are we creating a mix sample? Need the parent key for species in mix...
 
         # make this new addition the active one...
         self.reloadSpeciesList()
-        #self.setActiveSpecies(spcName, subCat)
+
         self.addspec_flag = True
 
 
     def updateParentKeys(self):
-        for code in ['100002', '100003', '100004']:# these are the mix codes
-            query=QtSql.QSqlQuery("SELECT species.common_name, samples.sample_id  " +
-                "  FROM samples, species WHERE species.species_code=samples.species_code " +
-                " AND samples.species_code ="+code+" AND samples.ship=" + self.ship + " AND samples.survey=" + self.survey + " AND samples.event_id = " +
-                self.activeHaul + " AND samples.partition='" + self.activePartition + "'")
-            if query.first():# we have a mix
-                spcName=query.value(0).toString()
-                parentKey=query.value(1).toString()
+
+        #  check if we have a mix
+        for code in ['100002', '100003', '100004']:
+            sql = ("SELECT species.common_name, samples.sample_id  " +
+                    "FROM samples, species WHERE species.species_code=samples.species_code " +
+                    "AND samples.species_code =" + code + " AND samples.ship=" + self.ship +
+                    " AND samples.survey=" + self.survey + " AND samples.event_id=" +
+                    self.activeHaul + " AND samples.partition='" + self.activePartition + "'")
+            query = self.db.dbQuery(sql)
+            common_name, sample_id = query.first()
+
+            if common_name:
+                #  yes, we have a mix
+                spcName = common_name
+                parentKey = sample_id
                 if not parentKey in self.parentSamples:
                     self.parentSamples.update({spcName:parentKey})
+
         if not self.wholeHaulKey in self.parentSamples:
             self.parentSamples.update({QString('WholeHaul'):self.wholeHaulKey})
         if not self.sortingTableKey in self.parentSamples:
             self.parentSamples.update({QString('SortingTable'):self.sortingTableKey})
 
 
-    def createSample(self,  code, name, subCat,  nameType,   parentSample):
-        # check whether is already in list
-        if subCat<>'None':
-            if self.speciesList.findItems(name+"-"+subCat, Qt.MatchExactly):
+    def createSample(self, code, name, subCat, nameType, parentSample):
+
+        #  check if the species that we're being told to add is already in
+        #  out list of samples.
+        if subCat != 'None':
+            if self.speciesList.findItems(name+"-"+subCat, Qt.MatchFlag.MatchExactly):
+                #  species + subcat is already in the list - just return
                 return
         else:
-            if self.speciesList.findItems(name, Qt.MatchExactly):
+            if self.speciesList.findItems(name, Qt.MatchFlag.MatchExactly):
+                #  species is already in the list - just return
                 return
+
+        #  set the sample type - first, check if we're adding a mix
         if code in ('100002', '100003', '100004'):
-            sampleType=self.mixtureNames[code]
+            #  this is a mix type
+            sampleType = self.mixtureNames[code]
         else:
+            #  this is not a mix, so assume this is a Species sample type
             sampleType='Species'
-        query =QtSql.QSqlQuery("INSERT INTO samples (ship, survey, event_id, partition, sample_type, species_code, subcategory, parent_sample, scientist) VALUES("+self.ship+","+self.survey+","+
-                                    self.activeHaul+",'"+self.activePartition+"','"+sampleType+"',"+code+",'"+subCat+"',"+parentSample+",'"+self.scientist+"')")
-        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
-        query =QtSql.QSqlQuery("SELECT max(sample_id) FROM samples WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id="+
-                                              self.activeHaul+" AND partition ='"+self.activePartition+"'")
-        query.first()
-        query1 =QtSql.QSqlQuery("INSERT INTO sample_data (ship, survey, event_id, sample_id, sample_parameter, parameter_value) VALUES("+self.ship+","+self.survey+","+
-                                    self.activeHaul+","+query.value(0).toString()+",'sample_name','"+nameType+"')")
-        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query1.lastQuery())
+
+        #  insert this data into the samples table
+        sql = ("INSERT INTO samples (ship,survey,event_id,partition,sample_type," +
+                "species_code,subcategory,parent_sample,scientist) VALUES("+
+                self.ship+","+self.survey+","+ self.activeHaul+",'"+self.activePartition+
+                "','"+sampleType+"',"+code+",'"+subCat+"',"+parentSample+",'"+
+                self.scientist+"')")
+        self.db.dbExec(sql)
+
+        #  get the new sample ID for the just inserted sample
+        sql = ("SELECT max(sample_id) FROM samples WHERE ship="+self.ship+
+                " AND survey="+self.survey+" AND event_id="+ self.activeHaul+
+                " AND partition ='"+self.activePartition+"'")
+        query = self.db.dbQuery(sql)
+        sample_id, = query.first()
+
+
+        #  insert the sample_display_name param in the sample_data table. This
+        #  informs CLAMS as to which name (sci or common) to display in the UI
+        #  for this sample.
+        sql = ("INSERT INTO sample_data (ship,survey,event_id,sample_id,sample_parameter,"
+                "parameter_value) VALUES("+self.ship+","+self.survey+","+
+                self.activeHaul+","+sample_id+",'sample_display_name','"+nameType+"')")
+        self.db.dbExec(sql)
 
 
     def setActiveSpecies(self, spc_name, subcat):
+
         # this is for programattically setting active species
 
         if subcat=='None':
@@ -291,252 +450,377 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         else:
             spc_tag=spc_name+"_"+subcat
 
-        self.speciesList.setCurrentItem(spc_tag, Qt.MatchExactly)
-        self.activeSpcSubcat=subcat
-        self.activeSpcName=spc_name
-        self.activeSampleKey=self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
-        self.activeSpcCode=self.speciesDict[str(self.activeSpcName)]
+        self.speciesList.setCurrentItem(spc_tag, Qt.MatchFlag.MatchExactly)
+        self.activeSpcSubcat = subcat
+        self.activeSpcName = spc_name
+        self.activeSampleKey = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
+        self.activeSpcCode = self.speciesDict[self.activeSpcName]
+
         # look for previous data on species
         self.updateTables()
         self.focus='speciesList'
-        # set up picture
-        if self.activeSpcSubcat<>'None':
-            imgName=self.activeSpcCode+"_"+self.activeSpcSubcat
+
+        #  load the spp image
+        self.loadSppImage()
+
+        #  check if user has selected a mix
+        if self.speciesList.item(self.speciesList.currentRow(), 1).text() == 'mix1':
+            self.inMixFlag = True
         else:
-            imgName=self.activeSpcCode
-        pic=QImage()
-        if pic.load(self.settings[QString('ImageDir')]+'\\fishPics\\'+imgName+".jpg"):
-            pic=pic.scaled(self.picLabel.size(),Qt.KeepAspectRatio)#,  Qt.SmoothTransformation)
-            self.picLabel.setPixmap(QPixmap.fromImage(pic))
-            self.picLabel.setAlignment(Qt.AlignHCenter)
-            self.picLabel.setAlignment(Qt.AlignVCenter)
-        else:
-             self.picLabel.clear()
-        if self.speciesList.item(self.speciesList.currentRow(), 1).text()=='mix1':
-            self.inMixFlag=True
-        else:
-            self.inMixFlag=False
-        query=QtSql.QSqlQuery("SELECT comments FROM samples WHERE (ship = "+self.ship+" and survey = "+self.survey+" and event_id = "+self.activeHaul+" and sample_id = "+self.activeSampleKey+")")
-        if query.first():
-            self.comment=query.value(0).toString()
+            self.inMixFlag = False
+
+        #  load this sample's comments
+        sql = ("SELECT comments FROM samples WHERE (ship=" + self.ship +
+                " and survey=" + self.survey + " and event_id=" + self.activeHaul +
+                " and sample_id=" +self.activeSampleKey + ")")
+        query = self.db.dbQuery(sql)
+        sampleComments, = query.first()
+        if sampleComments:
+            self.comment = sampleComments
 
 
-    def checkSampleExists(self,  sampID):
+    def checkSampleExists(self, sampID):
         '''
         checkSampleExists checks if the sample ID is still present in the database. Returns
         True if so, and False if not.
         '''
-        query =QtSql.QSqlQuery("SELECT sample_id from samples WHERE ship = "+self.ship+
-                " AND survey = "+self.survey+" AND event_id = "+self.activeHaul+
-                " AND sample_id = "+sampID)
-        if query.first():
+        sql = ("SELECT sample_id from samples WHERE ship=" + self.ship +
+                " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
+                " AND sample_id=" + sampID)
+        query = self.db.dbQuery(sql)
+        sampleID, = query.first()
+        if sampleID:
             return True
         else:
             return False
 
 
+    def loadSppImage(self):
+        '''loadSppImage loads the active species image in GUI form and is called
+        when the species selection changes.
+        '''
+
+        # set up picture
+        if self.activeSpcSubcat.lower() != 'none':
+            imgName = self.activeSpcCode+"_"+self.activeSpcSubcat
+        else:
+            imgName = self.activeSpcCode
+
+        #  currently, all fish images must be .jpg.
+        imgName = imgName + ".jpg"
+
+        #  load the fish pic, if available
+        self.picLabel.clear()
+        pic = QImage()
+        if pic.load(self.settings['ImageDir'] + 'fishPics' + os.sep + imgName):
+            pic = pic.scaled(self.picLabel.size(),Qt.AspectRatioMode.KeepAspectRatio)
+            self.picLabel.setPixmap(QPixmap.fromImage(pic))
+            self.picLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            self.picLabel.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        else:
+            #  no pic available
+            self.picLabel.clear()
+            self.picLanel.setText("<Image Unavailable>")
+
+
     def getActiveSpc(self):
+        '''getActiveSpc is called when the user selects a species from the species list.
+
+        '''
         self.basketView.setEnabled(True)
         self.sumTable.setEnabled(True)
 
         # default setting for a species is no whole haul
-        if self.speciesList.currentRow()<0:# no species left, for deleting purposes
+
+        #  This method will also be triggered when a species is deleted so
+        #  we need check if there are any species left and if not, bail since
+        #  there are no spp to set active.
+        if self.speciesList.currentRow() < 0:
+            #  nothing in the list
             return
-        text=str(self.speciesList.item(self.speciesList.currentRow(), 0).text())
+
+        #  get the species text
+        text = self.speciesList.item(self.speciesList.currentRow(), 0).text()
 
         #  check to make sure this sample still exists - stations can get out of sync with the samples
         #  list if someone deletes a sample at a different station after someone opens this form.
         sampID = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
         ok = self.checkSampleExists(sampID)
-        if not ok:
+
+        #  check if the sample ID is still present in the database. It could have been
+        #  deleted by a different user
+        sql = ("SELECT sample_id from samples WHERE ship=" + self.ship +
+                " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
+                " AND sample_id=" + sampID)
+        query = self.db.dbQuery(sql)
+        sampleID, = query.first()
+        if not sampleID:
             #  this sample has been deleted - inform the user and remove from the list
             self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
                         "The sample you selected has been deleted by someone else. " +
-                        "You must re-add it using the Catch module if you need it.",'info')
-            self.message.exec_()
+                        "You must re-add it if you need it.",'info')
+            self.message.exec()
             #  refresh the species list
             self.reloadSpeciesList()
             return
 
-        # New dialog for confirming active species
+        #  display the dialog for confirming active species - this was introduced
+        #  after it was discovered that if you select one item, then roll your
+        #  finger to a different item, the first item appears visually to be
+        #  selected but the second item is the one that is identified by
+        #  self.speciesList.currentRow() resulting in confusion. This dialog
+        #  confirms the user's selection and brings to attention any discrepancy
+        #  if the select and roll happens.
         if self.addspec_flag == True:
-            self.freeze=True
+            self.freeze = True
             self.addspec.setMessage(self.errorIcons[1], self.errorSounds[2],
                     "Changing the Active Species to: \n \n"+ text ,'info')
-            self.addspec.exec_()
-            self.freeze=False
-        text1=text.split('-')
-        if len(text1)>1:# this species has subcategory
-            self.activeSpcSubcat=text1[-1]
+            self.addspec.exec()
+            self.freeze = False
+
+        #  check if this species has a subcategory and adjust the name
+        text1 = text.split('-')
+        if len(text1) > 1:
+            self.activeSpcSubcat = text1[-1]
             self.activeSpcName='-'.join(text1[0:-1])
         else:
-            self.activeSpcSubcat='None'
-            self.activeSpcName=text1[0]
+            self.activeSpcSubcat = 'None'
+            self.activeSpcName = text1[0]
+
         self.activeSampleKey=self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
         self.activeSpcCode=self.speciesDict[str(self.activeSpcName)]
 
         # look for previous data on species
         self.updateTables()
         self.focus='speciesList'
-        # set up picture
-        if self.activeSpcSubcat<>'None':
-            imgName=self.activeSpcCode+"_"+self.activeSpcSubcat
-        else:
-            imgName=self.activeSpcCode
-        pic=QImage()
-        if pic.load(self.settings[QString('ImageDir')]+'\\fishPics\\'+imgName+".jpg"):
-            pic=pic.scaled(self.picLabel.size(),Qt.KeepAspectRatio)#,  Qt.SmoothTransformation)
-            self.picLabel.setPixmap(QPixmap.fromImage(pic))
-            self.picLabel.setAlignment(Qt.AlignHCenter)
-            self.picLabel.setAlignment(Qt.AlignVCenter)
-        else:
-             self.picLabel.clear()
-        if self.speciesList.item(self.speciesList.currentRow(), 1).text()=='mix1':
+
+        #  load the spp image
+        self.loadSppImage()
+
+        if self.speciesList.item(self.speciesList.currentRow(), 1).text() == 'mix1':
             self.inMixFlag=True
         else:
             self.inMixFlag=False
-        query=QtSql.QSqlQuery("SELECT comments FROM samples WHERE (ship = "+self.ship+" and survey = "+self.survey+" and event_id = "+self.activeHaul+" and sample_id = "+self.activeSampleKey+")")
-        if query.first():
-            self.comment=query.value(0).toString()
+
+        sql = ("SELECT comments FROM samples WHERE (ship=" + self.ship +
+                " and survey=" + self.survey + " and event_id=" +self.activeHaul +
+                " and sample_id=" + self.activeSampleKey + ")")
+        query = self.db.dbQuery(sql)
+        sampleComments, = query.first()
+        if sampleComments:
+            self.comment = sampleComments
+
 
     def getManual(self):
-                # is a species selected
-        if self.activeSpcName==None:
+        '''getManual is called when the user clicks the manual weight button. It
+        makes sure a species sample is selected and presents a dialog to enter
+        the weight.
+        '''
+        # is a species selected
+        if self.activeSpcName is None:
             self.message.setMessage(self.errorIcons[2], self.errorSounds[2], self.firstName +
                     ", please select a species.",'info')
-            self.message.exec_()
+            self.message.exec()
             return
 
-        self.numpad.msgLabel.setText("Punch in the Weight")
-        if not self.numpad.exec_():
+        self.numpad.msgLabel.setText("Enter the Weight")
+        if not self.numpad.exec():
             return
 
         #  check that we didn't get a 0 weight
         if (self.numpad.value == 0):
-            self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
-                    "for the basket weight which is not allowed. If your sample is too small to register " +
+            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                    "You have entered 0 (zero) for the basket weight which is not " +
+                    "allowed. If your sample is too small to register " +
                     "on the scale, you should enter 0.001", 'info')
-            self.message.exec_()
+            self.message.exec()
             return
 
-        self.currentBasketWt=self.numpad.value
-        self.manualFlag=True
-        self.device=self.manualDevice # manual input key
+        #  get the manual weight using the numpad dialog
+        self.currentBasketWt = self.numpad.value
+
+        #  note that this is a manual entry
+        self.manualFlag = True
+        self.device = self.manualDevice
+
+        #  do some basic checks, get the basket type, then insert into the database
         self.updateBasket()
 
 
     def getAuto(self, device, val):
-        # check if we're working on a previous weight
+        '''getAuto is called when a device sends data
+
+        '''
+        #  check if we're "frozen" which means either adding spp or in the middle of
+        #  weighing another basket
         if self.freeze:
             return
+
+        #  check if this is a device we're interested in, if not, ignore this data. For
+        #  example, this station could have a lengtboard, but the catch module only cares
+        #  about scales so we ignore data from the lengthboard.
         if not device in self.devices:
             return
+
         # check if a species is selected
-        if self.activeSpcName==None:
-            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],self.firstName+", please select a species.",'info')
-            self.message.exec_()
+        if self.activeSpcName == None:
+            self.message.setMessage(self.errorIcons[2],self.errorSounds[2], self.firstName +
+                    ", please select a species.",'info')
+            self.message.exec()
+            return
+
+        #  ensure that the value is numeric - noise on the data lines, poor connections,
+        #  or bad power can result in garbled data.
+        try:
+            val = float(val)
+        except:
+            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                    "The scale sent a non-numeric value!?! Please try again.", 'info')
+            self.message.exec()
             return
 
         #  check that we didn't get a 0 weight
         if (val <= 0):
-            self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "The scale sent a weight of 0 (zero) "
-                    "which is not allowed. If your sample is too small to register " +
+            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                    "The scale sent a weight of 0 (zero) which is not allowed. " +
+                    "If your sample is too small to register " +
                     "on the scale, you should manually enter 0.001", 'info')
-            self.message.exec_()
+            self.message.exec()
             return
 
-        self.manualFlag = False
+        #  set the basket value
         self.currentBasketWt = val
+
+        #  note that this is an "auto" (non manual) entry
+        self.manualFlag = False
         self.device = device
+
+        #  play the scale sound
         self.sounds[self.devices.index(self.device)].play()
+
+        #  do some basic checks, get the basket type, then insert into the database
         self.updateBasket()
 
 
     def getWeightValidation(self):
-        self.valFlag=True
-        self.freeze=True
-        # CHECK BASKET WEIGHT AGAINST MAXIMUM
-        if float(self.currentBasketWt)>float(self.settings[QString('MaxBasketWt')]):
-            self.message.setMessage(self.errorIcons[1],self.errorSounds[1], self.firstName+", this Basket exceeds the maximum basket weight of "+self.settings[QString('MaxBasketWt')]+".  Does this bother you?", 'choice')
-            if self.message.exec_():
-                self.valFlag=False
-                return
+        '''getWeightValidation performs some basic validations on the
+        basket weight measurement.
 
+        '''
+        #  check basket weight against the max allowed basket weight
+        if float(self.currentBasketWt) > float(self.settings[QString('MaxBasketWt')]):
+            self.message.setMessage(self.errorIcons[1],self.errorSounds[1], self.firstName +
+                    ", this Basket exceeds the maximum basket weight of " +
+                    self.settings['MaxBasketWt']+".  Does this bother you?", 'choice')
+            if self.message.exec():
+                #  user has rejected the measurement
+                return False
 
-        #  check for mix subsample weight and stuff
-        if self.inMixFlag: #there's mix
-            (mixSubWeight, mixSpeciesWeight)=self.mixValidation()
+        #  if this is a mix, check for mix subsample weight and stuff
+        if self.inMixFlag:
+            #  yes, this is a mix
+            (mixSubWeight, mixSpeciesWeight) = self.mixValidation()
 
             # validation for mix sub weight - can't have more weight in sub part of mix than in mix subsample
-            if mixSubWeight*(1+float(self.settings[QString('MaxMixDev')])/100)<(mixSpeciesWeight+float(self.currentBasketWt)):
-                    self.message.setMessage(self.errorIcons[0],self.errorSounds[0],self.firstName+", it appears that the total weight of species in the mix exceeds the mix subsample by more than "+
-                    self.settings[QString('MaxMixDev')]+" % - i.e. not good.  Do you want to fix this now?",'info')
-                    if self.message.exec_():
-                        self.valFlag=False
-                        return
+            if (mixSubWeight * (1 + float(self.settings['MaxMixDev']) / 100) <
+                    (mixSpeciesWeight + float(self.currentBasketWt))):
+                self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
+                        self.firstName + ", it appears that the total weight of species" +
+                        " in the mix exceeds the mix subsample by more than " +
+                        self.settings['MaxMixDev']+" % - this is usually bad. " +
+                        "Do you want to fix this now?",'info')
+                if self.message.exec():
+                    #  user has rejected the measurement
+                    return False
+
+        #  weight passes basic validation
+        return True
+
 
 
     def getBasketType(self):
-        if self.activeSpcCode in ['100002', '100003', '100004']:# turn off count sample type for mixes
-            self.validList[self.basketTypes.index('Count')]=0
-        else:
-            self.validList[self.basketTypes.index('Count')]=1
+        '''getBasketType is called after a basket weight is collected and
+        presents the user with the basket type dialog where they choose if
+        the basket is a measure, count, or toss basket.
 
+        '''
+
+        #  first, if we're in a mix, disable the count button
+        if self.activeSpcCode in ['100002', '100003', '100004']:
+            self.validList[self.basketTypes.index('Count')] = 0
+        else:
+            self.validList[self.basketTypes.index('Count')] = 1
+
+        #  display the basket type dialog
         self.typeDlg.buttonSetup(self.validList)
-        if self.typeDlg.exec_():
-            self.basketType=self.typeDlg.basketType
+        if self.typeDlg.exec():
+            self.basketType = self.typeDlg.basketType
             self.count=self.typeDlg.count
         else:
-            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],"You didn't choose a Basket type, you bugger",'info')
-            self.message.exec_()
-            self.basketType=None
+            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                    "You didn't choose a Basket type, you bugger",'info')
+            self.message.exec()
+            self.basketType = None
+
 
     def updateBasket(self):
+        '''updateBasket is called after the user sends a weight with the scale
+        or enters the weight manually. It performs basic validation, gets the basket
+        type, and then inserts the data into the database.
+
+        '''
 
         #  set the "freeze" flag so we ignore input from the scale while we're finishing this basket
         self.freeze = True
-        #  ensure that we have a connection to the db
-        #  THIS CHECK SHOULDN'T BE HERE -
-        if not self.db.isOpen():
-            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],"Database is not connected - restart clams",'info')
-            self.message.exec_()
-            self.freeze = False
-            return
+
         #  run the weight validation
-        self.getWeightValidation()
-        if not self.valFlag:
+        ok = self.getWeightValidation()
+        if not ok:
             #  this weight is not valid
             self.freeze = False
             return
+
         #  get the sample type
         self.getBasketType()
-        if (self.basketType == None):
+        if self.basketType == None:
             #  user cancelled sample type selection
             self.freeze = False
             return
-        #  insert data into db
-        if self.count==None:
-            query =QtSql.QSqlQuery("INSERT INTO baskets (ship, survey, event_id, sample_id, basket_type,  weight, device_id) VALUES ("+
-                        self.ship+", "+self.survey+","+self.activeHaul+","+self.activeSampleKey+",'"+self.basketType+"',"+self.currentBasketWt+","+self.device+")")
-        else:# write basket record
-            query =QtSql.QSqlQuery("INSERT INTO baskets (ship, survey, event_id, sample_id, basket_type, count, weight, device_id) VALUES ("+
-                        self.ship+", "+self.survey+","+self.activeHaul+","+self.activeSampleKey+",'"+self.basketType+"',"+self.count+","+self.currentBasketWt+","+self.device+")")
 
-        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
+        #  write basket record for this basket
+        if self.count == None:
+            sql = ("INSERT INTO baskets (ship,survey,event_id,sample_id,basket_type," +
+                    "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+
+                    self.activeHaul+","+self.activeSampleKey+",'"+self.basketType+"',"
+                    +self.currentBasketWt+","+self.device+")")
+        else:
+            sql = ("INSERT INTO baskets (ship,survey,event_id,sample_id,basket_type,count," +
+                    "weight,device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul +
+                    ","+self.activeSampleKey+",'"+self.basketType+"',"+self.count+"," +
+                    self.currentBasketWt+","+self.device+")")
+        self.db.dbExec(sql)
+
         # update the GUI
         self.updateTables()
+
         #  we're done with this basket - unfreeze
         self.freeze = False
 
+
     def updateTables(self):
-        self.basketModel.setQuery("SELECT basket_id, weight, count, basket_type FROM baskets WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND sample_id ="+
-                                  self.activeSampleKey+" ORDER BY basket_id", self.db)
+
+
+        #  update the basket
+        self.basketModel.setQuery("SELECT basket_id, weight, count,basket_type " +
+                "FROM baskets WHERE ship="+self.ship+" AND survey="+self.survey+
+                " AND event_id="+self.activeHaul+" AND sample_id ="+
+                self.activeSampleKey+" ORDER BY basket_id", self.db)
         self.basketModel.reset()
         self.basketView.scrollToBottom()
         self.basketView.resizeColumnsToContents()
         self.updateSumTable()
 
-    def updateSumTable(self):
+
         self.sumTable.clearContents()
         self.sumTable.setRowCount(0)
         for i in range(3):
@@ -994,18 +1278,32 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.connect(self.speciesList, SIGNAL("itemSelectionChanged()"), self.getActiveSpc)
         self.speciesList.scrollToBottom()
 
-    def openSerial(self):
-        query = QtSql.QSqlQuery("SELECT measurement_setup.device_id, device_configuration.parameter_value FROM " +
-                                "device_configuration INNER JOIN measurement_setup ON device_configuration.device_id " +
-                                "= measurement_setup.device_id WHERE measurement_setup.workstation_id=" +
-                                self.workStation+" AND measurement_setup.gui_module='Catch' AND " +
-                                "device_configuration.device_parameter = 'SoundFile'")
+
+    def loadDeviceSounds(self):
+        '''loadDeviceSounds queries the db for the device sound files used for
+        this module. It also populates a list of devices configured for this station.
+        '''
+
         self.devices = []
-        self.sounds = []
-        while query.next():
-            self.devices.append(query.value(0).toString())
-            self.sounds.append(QSound(self.settings[QString('SoundsDir')] +
-                    '\\'+ query.value(1).toString() + '.wav'))
+        self.sounds = {}
+
+        #  query the device ID and sound file for each device
+        sql = ("SELECT measurement_setup.device_id, device_configuration.parameter_value FROM " +
+                "device_configuration INNER JOIN measurement_setup ON device_configuration.device_id " +
+                "= measurement_setup.device_id WHERE measurement_setup.workstation_id=" +
+                self.workStation+" AND measurement_setup.gui_module='Catch' AND " +
+                "device_configuration.device_parameter = 'SoundFile'")
+        query = self.db.dbQuery(sql)
+        for device_id, parameter_value in query.next():
+            self.devices.append(device_id)
+            hasExt = parameter_value.split('.')
+            if len(hasExt) > 1:
+                soundFile = self.settings['SoundsDir'] + parameter_value
+            else:
+                soundFile = self.settings['SoundsDir'] + parameter_value + '.wav'
+            soundEffect = QSoundEffect()
+            soundEffect.setSource(QUrl.fromLocalFile(soundFile))
+            self.sounds[device_id] = soundEffect
 
 
     def printLabel(self):
@@ -1091,4 +1389,75 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             event.ignore()
         else:
             event.accept()
+
+
+    def checkWindowLocation(self, position, size, padding=[5, 25]):
+        '''
+        checkWindowLocation accepts a window position (QPoint) and size (QSize)
+        and returns a potentially new position and size if the window is currently
+        positioned off the screen.
+
+        This function uses QScreen.availableVirtualGeometry() which returns the full
+        available desktop space *not* including taskbar. For all single and "typical"
+        multi-monitor setups this should work reasonably well. But for multi-monitor
+        setups where the monitors may be different resolutions, have different
+        orientations or different scaling factors, the app may still fall partially
+        or totally offscreen. A more thorough check gets complicated, so hopefully
+        those cases are very rare.
+
+        If the user is holding the <shift> key while this method is run, the
+        application will be forced to the primary monitor.
+        '''
+
+        #  create a QRect that represents the app window
+        appRect = QRect(position, size)
+
+        #  check for the shift key which we use to force a move to the primary screem
+        resetPosition = QGuiApplication.queryKeyboardModifiers() == Qt.KeyboardModifier.ShiftModifier
+        if resetPosition:
+            position = QPoint(padding[0], padding[0])
+
+        #  get a reference to the primary system screen - If the app is off the screen, we
+        #  will restore it to the primary screen
+        primaryScreen = QGuiApplication.primaryScreen()
+
+        #  assume the new and old positions are the same
+        newPosition = position
+        newSize = size
+
+        #  Get the desktop geometry. We'll use availableVirtualGeometry to get the full
+        #  desktop rect but note that if the monitors are different resolutions or have
+        #  different scaling, some parts of this rect can still be offscreen.
+        screenGeometry = primaryScreen.availableVirtualGeometry()
+
+        #  if the app is partially or totally off screen or we're force resetting
+        if resetPosition or not screenGeometry.contains(appRect):
+
+            #  check if the upper left corner of the window is off the left side of the screen
+            if position.x() < screenGeometry.x():
+                newPosition.setX(screenGeometry.x() + padding[0])
+            #  check if the upper right is off the right side of the screen
+            if position.x() + size.width() >= screenGeometry.width():
+                p = screenGeometry.width() - size.width() - padding[0]
+                if p < padding[0]:
+                    p = padding[0]
+                newPosition.setX(p)
+            #  check if the top of the window is off the top/bottom of the screen
+            if position.y() < screenGeometry.y():
+                newPosition.setY(screenGeometry.y() + padding[0])
+            if position.y() + size.height() >= screenGeometry.height():
+                p = screenGeometry.height() - size.height() - padding[1]
+                if p < padding[0]:
+                    p = padding[0]
+                newPosition.setY(p)
+
+            #  now make sure the lower right (resize handle) is on the screen
+            if (newPosition.x() + newSize.width()) > screenGeometry.width():
+                newSize.setWidth(screenGeometry.width() - newPosition.x() - padding[0])
+            if (newPosition.y() + newSize.height()) > screenGeometry.height():
+                newSize.setHeight(screenGeometry.height() - newPosition.y() - padding[1])
+
+        return [newPosition, newSize]
+
+
 

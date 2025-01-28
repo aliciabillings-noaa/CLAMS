@@ -1,0 +1,7 @@
+"sample_type","description"
+"WholeHaul","Whole catch sample."
+"SortingTable","Unsorted catch that comes into the lab."
+"Species","Sorted Basket weight sample."
+"Mix1","Unsorted basket weight sample. Child of the sorting table"
+"Mix2","Unsorted basket weight sample. Child of the sorting table"
+"SubMix1","Unsorted basket weight sample. Child of mix1"

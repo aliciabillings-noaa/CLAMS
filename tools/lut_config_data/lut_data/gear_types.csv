@@ -1,0 +1,8 @@
+"gear_type","description","retains_catch"
+"MultiCodendTrawl","Trawl with multiple codends, e.g. MOCC","1"
+"PlanktonNet","Towed gear for catching zooplankton, such as a Methot or Tucker","1"
+"SingleCodendTrawl","Standard survey trawl with a single codend","1"
+"Camera","Optical sampling device","0"
+"OceanographySample","Some sort of oceanography sample like a CTD or sediment grab","0"
+"DropTS","MACE Drop TS","0"
+"Stub","Entry used for Stub surveys","0"

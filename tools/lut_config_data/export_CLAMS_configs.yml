@@ -1,0 +1,44 @@
+
+mode: export
+
+odbc_data_source: AFSCD1-64
+username: clamsbase2
+password: 27@MonkeyButler
+schema: clamsbase2
+
+query_interval: 2
+n_threads: 2
+where_clause:
+
+data_path: C:/Users/rick.towler/Work/noaa-afsc-mace/CLAMS/tools/lut_config_data/config_data
+
+tables:
+  - application_configuration
+  - application_events
+  - conditional_definitions
+  - conditionals
+  - device_configuration
+  - devices
+  - extended_sample_collections
+  - gear
+  - gear_accessory_options
+  - gear_options
+  - gear_partitions
+  - maturity_description
+  - measurement_setup
+  - personnel
+  - protected_spp_species
+  - protocol_definitions
+  - protocol_map
+  - ships
+  - species
+  - species_associations
+  - specimen_protocol
+  - survey_ports
+  - survey_regions
+  - survey_sea_areas
+  - validation_configuration
+  - validation_definitions
+  - validations
+  - workstation_configuration
+  - workstations

@@ -1,0 +1,6 @@
+"event_name","event_package","event_module","event_class","description","active"
+"Trawl Event","MACE_Events","startMACETrawlEvent","startMACETrawlEvent","","1"
+"Camera Drop","MACE_Events","startMACETrawlEvent","startMACETrawlEvent","","0"
+"CTD","MACE_Events","startMACETrawlEvent","startMACETrawlEvent","","0"
+"XBT","MACE_Events","xbtEvent","xbtEvent","","0"
+"DropTS ","MACE_Events","startMACETrawlEvent","startMACETrawlEvent","","0"

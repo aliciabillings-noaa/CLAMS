@@ -1,0 +1,5 @@
+"weight_type","weight_code","description"
+"bin_volumetric","3","Bin estimate using volume and density calculation"
+"load_cell","2","Weight measured by load cell or similar device"
+"not_subsampled","1","Catch is not subsampled - The entire catch is processed"
+"visual_estimate","4","Estimate by guess"

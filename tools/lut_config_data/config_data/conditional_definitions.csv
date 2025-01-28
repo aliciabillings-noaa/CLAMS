@@ -1,0 +1,8 @@
+"conditional","module","description"
+"LengthSexMaturity","Specimen","Limit sex and maturity requirements on age 1 pollock"
+"GonadWeightLimit","Specimen","Only take GSI on females of certain maturity states"
+"GonadWeightLimitCollection","Specimen","Same as GonadWeightLimit but with additional liver field"
+"TakingOvaryPollock","Specimen","Takes away liver weight field if ovary is not being kept"
+"TakingOvaryRockfish","Specimen","Takes away barcode field if ovary is not being kept"
+"NoOvaryWhenMale","Specimen","No Ovary data on male fish"
+"TakingOvaryFemaleRockfish","Specimen","Takes away ovary taken field if sex is male"
