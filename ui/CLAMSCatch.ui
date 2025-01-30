@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>740</height>
+    <width>1020</width>
+    <height>750</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -24,7 +24,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="30,30,40">
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
@@ -43,10 +43,16 @@
        </item>
        <item>
         <widget class="QTableWidget" name="speciesList">
+         <property name="minimumSize">
+          <size>
+           <width>300</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="font">
           <font>
            <family>Arial Black</family>
-           <pointsize>14</pointsize>
+           <pointsize>12</pointsize>
            <bold>true</bold>
           </font>
          </property>
@@ -91,7 +97,7 @@
         <widget class="QLabel" name="picLabel">
          <property name="minimumSize">
           <size>
-           <width>0</width>
+           <width>200</width>
            <height>200</height>
           </size>
          </property>
@@ -111,7 +117,7 @@
         <widget class="QPushButton" name="addspcBtn">
          <property name="minimumSize">
           <size>
-           <width>165</width>
+           <width>200</width>
            <height>75</height>
           </size>
          </property>
@@ -145,6 +151,12 @@
         <widget class="QTableWidget" name="sumTable">
          <property name="enabled">
           <bool>false</bool>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>200</width>
+           <height>0</height>
+          </size>
          </property>
          <property name="font">
           <font>
@@ -181,7 +193,7 @@
         <widget class="QPushButton" name="manualBtn">
          <property name="minimumSize">
           <size>
-           <width>165</width>
+           <width>200</width>
            <height>55</height>
           </size>
          </property>
@@ -267,20 +279,55 @@
         </widget>
        </item>
        <item>
-        <widget class="QTableView" name="basketView">
+        <widget class="QTableWidget" name="basketTable">
+         <property name="minimumSize">
+          <size>
+           <width>300</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="font">
           <font>
            <family>Arial Black</family>
-           <pointsize>14</pointsize>
+           <pointsize>12</pointsize>
            <bold>true</bold>
           </font>
          </property>
-         <attribute name="horizontalHeaderStretchLastSection">
+         <property name="selectionMode">
+          <enum>QAbstractItemView::NoSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectItems</enum>
+         </property>
+         <property name="showGrid">
           <bool>true</bool>
+         </property>
+         <attribute name="horizontalHeaderMinimumSectionSize">
+          <number>1</number>
          </attribute>
-         <attribute name="verticalHeaderVisible">
+         <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
           <bool>false</bool>
          </attribute>
+         <column>
+          <property name="text">
+           <string>ID</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Weight</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Count</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Type</string>
+          </property>
+         </column>
         </widget>
        </item>
       </layout>
@@ -293,8 +340,8 @@
       <widget class="QPushButton" name="transBtn">
        <property name="minimumSize">
         <size>
-         <width>165</width>
-         <height>35</height>
+         <width>200</width>
+         <height>55</height>
         </size>
        </property>
        <property name="font">
@@ -313,8 +360,8 @@
       <widget class="QPushButton" name="editBtn">
        <property name="minimumSize">
         <size>
-         <width>165</width>
-         <height>35</height>
+         <width>200</width>
+         <height>55</height>
         </size>
        </property>
        <property name="font">
@@ -333,8 +380,8 @@
       <widget class="QPushButton" name="delBtn">
        <property name="minimumSize">
         <size>
-         <width>165</width>
-         <height>35</height>
+         <width>200</width>
+         <height>55</height>
         </size>
        </property>
        <property name="font">

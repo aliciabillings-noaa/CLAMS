@@ -158,7 +158,7 @@
               </font>
              </property>
              <property name="text">
-              <string/>
+              <string> &lt;SPECIES LABEL&gt;</string>
              </property>
             </widget>
            </item>
@@ -183,7 +183,7 @@
               <enum>QFrame::Plain</enum>
              </property>
              <property name="text">
-              <string/>
+              <string>&lt;SPECIES IMAGE&gt;</string>
              </property>
             </widget>
            </item>

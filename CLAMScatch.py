@@ -98,21 +98,13 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.sciLabel.setText(self.scientist)
         self.firstName = self.scientist.split(' ')[0]
 
-        #  set up tables for data display
-        font = QFont("Arial Black", 14, -1, False)
-        self.basketView.setFont(font)
-        self.basketModel = QtSql.QSqlQueryModel()
-        self.basketView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.basketView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.basketView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.basketView.setModel(self.basketModel)
-        self.selModel = QItemSelectionModel(self.basketModel, self.basketView)
-        self.basketView.setSelectionModel(self.selModel)
-        self.basketView.horizontalHeader().setResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        self.basketView.show()
-
-        self.sumTable.setColumnWidth(0, 100)
-        self.sumTable.setColumnWidth(1, 100)
+        #  set up tables for data display - most of this is done in QDesigner
+        #  but some properties don't seem to "stick" (maybe QDesigner is buggy?)
+        self.basketTable.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.basketTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.basketTable.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+        #self.sumTable.setColumnWidth(0, 125)
+        #self.sumTable.setColumnWidth(1, 125)
 
         # set up recurring dialogs
         self.message = messagedlg.MessageDlg(self)
@@ -183,8 +175,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 self.message.exec()
                 self.close()
                 return
-
-
 
         # get sample types
         sql = ("SELECT gear_options.basket_type FROM gear_options INNER JOIN " +
@@ -445,15 +435,27 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         # this is for programattically setting active species
 
-        if subcat=='None':
-            spc_tag=spc_name
+        if subcat.lower() == 'none':
+            spc_tag = spc_name
         else:
-            spc_tag=spc_name+"_"+subcat
+            spc_tag = spc_name + "_" + subcat
 
+        #  set the current list item
         self.speciesList.setCurrentItem(spc_tag, Qt.MatchFlag.MatchExactly)
+
+        #  get the sample type for this sample
+        sampleId = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
+        sql = ("SELECT sample_type from samples WHERE ship=" + self.ship +
+                " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
+                " AND sample_id=" + sampleId)
+        query = self.db.dbQuery(sql)
+        sampleType, = query.first()
+
+        #  set the active sample attributes
         self.activeSpcSubcat = subcat
         self.activeSpcName = spc_name
-        self.activeSampleKey = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
+        self.activeSampleKey = sampleId
+        self.activeSampleType = sampleType
         self.activeSpcCode = self.speciesDict[self.activeSpcName]
 
         # look for previous data on species
@@ -464,7 +466,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.loadSppImage()
 
         #  check if user has selected a mix
-        if self.speciesList.item(self.speciesList.currentRow(), 1).text() == 'mix1':
+        if 'mix' in self.activeSampleType.lower():
             self.inMixFlag = True
         else:
             self.inMixFlag = False
@@ -539,22 +541,15 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             #  nothing in the list
             return
 
-        #  get the species text
-        text = self.speciesList.item(self.speciesList.currentRow(), 0).text()
-
-        #  check to make sure this sample still exists - stations can get out of sync with the samples
-        #  list if someone deletes a sample at a different station after someone opens this form.
-        sampID = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
-        ok = self.checkSampleExists(sampID)
-
         #  check if the sample ID is still present in the database. It could have been
-        #  deleted by a different user
-        sql = ("SELECT sample_id from samples WHERE ship=" + self.ship +
+        #  deleted by a different user after it was added here.
+        sampleId = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
+        sql = ("SELECT sample_id, sample_type from samples WHERE ship=" + self.ship +
                 " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
-                " AND sample_id=" + sampID)
+                " AND sample_id=" + sampleId)
         query = self.db.dbQuery(sql)
-        sampleID, = query.first()
-        if not sampleID:
+        sampleId, sampleType = query.first()
+        if not sampleId:
             #  this sample has been deleted - inform the user and remove from the list
             self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
                         "The sample you selected has been deleted by someone else. " +
@@ -563,6 +558,9 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             #  refresh the species list
             self.reloadSpeciesList()
             return
+
+        #  get the species name
+        speciesName = self.speciesList.item(self.speciesList.currentRow(), 0).text()
 
         #  display the dialog for confirming active species - this was introduced
         #  after it was discovered that if you select one item, then roll your
@@ -574,20 +572,21 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         if self.addspec_flag == True:
             self.freeze = True
             self.addspec.setMessage(self.errorIcons[1], self.errorSounds[2],
-                    "Changing the Active Species to: \n \n"+ text ,'info')
+                    "Changing the Active Species to: \n \n"+ speciesName ,'info')
             self.addspec.exec()
             self.freeze = False
 
         #  check if this species has a subcategory and adjust the name
-        text1 = text.split('-')
-        if len(text1) > 1:
-            self.activeSpcSubcat = text1[-1]
-            self.activeSpcName='-'.join(text1[0:-1])
+        nameSplit = speciesName.split('-')
+        if len(nameSplit) > 1:
+            self.activeSpcSubcat = nameSplit[-1]
+            self.activeSpcName='-'.join(nameSplit[0:-1])
         else:
             self.activeSpcSubcat = 'None'
-            self.activeSpcName = text1[0]
+            self.activeSpcName = nameSplit[0]
 
-        self.activeSampleKey=self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
+        self.activeSampleKey = sampleId
+        self.activeSampleType = sampleType
         self.activeSpcCode=self.speciesDict[str(self.activeSpcName)]
 
         # look for previous data on species
@@ -597,10 +596,11 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  load the spp image
         self.loadSppImage()
 
-        if self.speciesList.item(self.speciesList.currentRow(), 1).text() == 'mix1':
-            self.inMixFlag=True
+        #  check if we're working with a Mix
+        if 'mix' in self.activeSampleType.lower():
+            self.inMixFlag = True
         else:
-            self.inMixFlag=False
+            self.inMixFlag = False
 
         sql = ("SELECT comments FROM samples WHERE (ship=" + self.ship +
                 " and survey=" + self.survey + " and event_id=" +self.activeHaul +
@@ -758,7 +758,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.count=self.typeDlg.count
         else:
             self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
-                    "You didn't choose a Basket type, you bugger",'info')
+                    "You didn't choose a Basket type. This basket weight will be ignored.",'info')
             self.message.exec()
             self.basketType = None
 
@@ -808,90 +808,134 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
 
     def updateTables(self):
+        '''updateTables updates the basket weights and summary tables. It is called
+        during initial form setup and also when a basket is added, modified, or deleted.
+        '''
 
+        #  update the basket table - first, clear the contents
+        self.basketTable.clearContents()
+        self.basketTable.setRowCount(0)
+        basketCount = 0
 
-        #  update the basket
-        self.basketModel.setQuery("SELECT basket_id, weight, count,basket_type " +
+        #  query the baskets for this sample ID and populate the baskets table
+        sql = ("SELECT basket_id, weight, count, basket_type " +
                 "FROM baskets WHERE ship="+self.ship+" AND survey="+self.survey+
                 " AND event_id="+self.activeHaul+" AND sample_id ="+
-                self.activeSampleKey+" ORDER BY basket_id", self.db)
-        self.basketModel.reset()
-        self.basketView.scrollToBottom()
-        self.basketView.resizeColumnsToContents()
-        self.updateSumTable()
+                self.activeSampleKey+" ORDER BY basket_id")
+        query = self.db.dbQuery(sql)
+        for basketId, basketWeight, count, basketType in query:
+            #  add this basket to the table
+            self.basketTable.insertRow(basketCount)
+            self.basketTable.setItem(basketCount, 0, QTableWidgetItem(basketId))
+            self.basketTable.setItem(basketCount, 1, QTableWidgetItem(basketWeight))
+            self.basketTable.setItem(basketCount, 2, QTableWidgetItem(count))
+            self.basketTable.setItem(basketCount, 3, QTableWidgetItem(basketType))
+            basketCount += 1
 
+        #  resize columns and scroll to bottom
+        self.basketTable.resizeColumnsToContents()
+        self.basketTable.scrollToBottom()
 
+        #  now update the basket summary table
         self.sumTable.clearContents()
         self.sumTable.setRowCount(0)
-        for i in range(3):
-            self.sumTable.setVerticalHeaderItem(i, QTableWidgetItem(""))
-        # get counts per basket type
-        query=QtSql.QSqlQuery("SELECT sum(WEIGHT), count(weight), basket_type FROM BASKETS "+
-        " WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND sample_id="+self.activeSampleKey+" GROUP BY basket_type")
-        cnt=0
-        totWt=0
-        totCnt=0
-        while query.next():
-            self.sumTable.insertRow(cnt)
-            self.sumTable.setVerticalHeaderItem(cnt,QTableWidgetItem(query.value(2).toString()))
-            self.sumTable.setItem(cnt, 0, QTableWidgetItem(query.value(0).toString()))
-            self.sumTable.setItem(cnt, 1, QTableWidgetItem(query.value(1).toString()))
-            cnt+=1
-            totWt=totWt+float(query.value(0).toString())
-            totCnt=totCnt+float(query.value(1).toString())
-        # get total
-        self.sumTable.insertRow(cnt)
-        self.sumTable.setVerticalHeaderItem(cnt,QTableWidgetItem('Total'))
-        self.sumTable.setItem(cnt, 0, QTableWidgetItem(str(totWt)))
-        self.sumTable.setItem(cnt, 1, QTableWidgetItem(str(totCnt)))
+        typeCount = 0
+        totalWeight = 0
+        totalBasketCount = 0
+
+#  I don't think this needs to be done since we'll explicitly set the
+#  vertical header items below.
+#        for i in range(3):
+#            self.sumTable.setVerticalHeaderItem(i, QTableWidgetItem(""))
+
+        # get total weights and counts per basket type and update the table
+        sql = ("SELECT sum(WEIGHT), count(weight), basket_type FROM BASKETS " +
+                "WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id="+
+                self.activeHaul+" AND sample_id="+self.activeSampleKey+" GROUP BY basket_type")
+        query = self.db.dbQuery(sql)
+        for sumWeight, basketCount, basketType in query:
+            self.sumTable.insertRow(typeCount)
+            self.sumTable.setVerticalHeaderItem(typeCount, QTableWidgetItem(basketType))
+            self.sumTable.setItem(typeCount, 0, QTableWidgetItem(sumWeight))
+            self.sumTable.setItem(typeCount, 1, QTableWidgetItem(basketCount))
+            typeCount += 1
+
+            #  total up the weights and basket counts for each type - these should
+            #  always be numeric but if for some reason they aren't we just ignore
+            #  the returned value.
+            try:
+                totalWeight += float(sumWeight)
+            except:
+                pass
+            try:
+                totalBasketCount += int(basketCount)
+            except:
+                pass
+
+        #  set the total values in the table
+        self.sumTable.insertRow(typeCount)
+        self.sumTable.setVerticalHeaderItem(typeCount, QTableWidgetItem('Total'))
+        self.sumTable.setItem(typeCount, 0, QTableWidgetItem(str(totalWeight)))
+        self.sumTable.setItem(typeCount, 1, QTableWidgetItem(str(totalBasketCount)))
+
+        #  resize columns and scroll to bottom
         self.sumTable.resizeColumnsToContents()
+        self.sumTable.scrollToBottom()
 
 
     def getSpeciesFocus(self):
-        self.focus='speciesList'
+
+        self.focus = 'speciesList'
 
 
     def getBasketRow(self):
-        self.focus='basketList'
+        '''getBasketRow returns a list of the basket "measurements"
+        [id, weight, count, type] for the currently selected row.
+        I (believe) it returns an empty list if nothing is selected.
+        '''
+        self.focus = 'basketList'
+
         self.selRecord=[]
-        selObj=self.basketView.currentIndex()
-        for i in range(4):
-            index= self.basketModel.index(selObj.row(), i, QModelIndex())
-            self.selRecord.append(self.basketModel.data(index, Qt.DisplayRole).toString())
+        for item in self.basketTable.selectedItems():
+            self.selRecord.append(item.text())
 
 
     def deleteSpecimen(self):
         """
         deleteSpecimen is called when the user wants to delete a basket or sample and
-        specimen exist in the database.
+        specimen exist in the database. It asks them if they are sure, and then if so,
+        it will delete all measurements related to the specimen and the related
+        entries in the specimen table. It also deletes any associated data in the
+        length_histogram and catch_summary tables.
         """
 
         #  double check that they want to delete the specimen
         self.message.setMessage(self.errorIcons[3],self.errorSounds[1],
                 "Are you REALLY sure you want to delete these specimen?", 'choice')
-        if self.message.exec_():
+        if self.message.exec():
             #  they want to do it - delete the measurements
-            query=QtSql.QSqlQuery("DELETE FROM measurements WHERE ship=" + self.ship +
+            sql = ("DELETE FROM measurements WHERE ship=" + self.ship +
                     " AND survey = " + self.survey + " AND event_id=" + self.activeHaul +
                     " AND sample_id ="+ self.activeSampleKey)
-            self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
+            self.db.dbExec(sql)
 
             #  delete the specimen records
-            query=QtSql.QSqlQuery("DELETE FROM specimen WHERE ship=" + self.ship +
+            sql = ("DELETE FROM specimen WHERE ship=" + self.ship +
                     " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                     " AND sample_id ="+self.activeSampleKey)
-            self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
+            self.db.dbExec(sql)
 
             #  try to delete from the catch summary and length histogram tables - these will be
             #  populated at this point if a user has come back into CLAMS to edit a past haul
-            query=QtSql.QSqlQuery("DELETE FROM catch_summary WHERE ship=" + self.ship +
+            sql = ("DELETE FROM catch_summary WHERE ship=" + self.ship +
                     " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                     " AND sample_id ="+self.activeSampleKey)
-            self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
-            query=QtSql.QSqlQuery("DELETE FROM length_histogram WHERE ship=" + self.ship +
+            self.db.dbExec(sql)
+            sql = ("DELETE FROM length_histogram WHERE ship=" + self.ship +
                     " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                     " AND sample_id ="+self.activeSampleKey)
-            self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
+            self.db.dbExec(sql)
+
 
             #  set the return value to true since we deleted the specimen
             deleted = True
@@ -905,32 +949,38 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
     def goDelete(self):
         """
-        goDelete  deletes either baskets or a sample depending on what widget has focus
-        (basket list or sample list)
+        goDelete is called when a user clicks the delete button and it deletes either baskets or
+        a sample depending on what widget has focus (basket list or sample list. This method
+        will also delete all specimen and measurements that are associated with a sample or basket.
         """
 
-        if self.activeSampleKey==None:
+        #  just return if nothing is selected
+        if self.activeSampleKey == None:
             return
 
-        hasSpecimen=False
+        #  initialize some variables
+        hasSpecimen = False
         nOther = 0
         nMeasure = 0
 
         #  first check if we have specimen - this process a bit more complicated with specimen
-        query=QtSql.QSqlQuery("SELECT specimen_id FROM specimen WHERE ship="+self.ship+" AND survey="+
+        sql = ("SELECT specimen_id FROM specimen WHERE ship="+self.ship+" AND survey="+
                 self.survey+" AND event_id="+self.activeHaul+" AND sample_id ="+self.activeSampleKey)
-        if query.first():
+        query = self.db.dbQuery(sql)
+        specimenID, query.first()
+        if specimenID:
             # the active species has specimen data
-            hasSpecimen=True
+            hasSpecimen = True
 
         #  determine type and count of baskets for this sample. We need to know this because if
         #  the user is trying to delete the last "measure" basket and there are samples, the
         #  samples have to be deleted too.
-        query=QtSql.QSqlQuery("SELECT basket_type FROM baskets WHERE ship="+self.ship+
+        sql = ("SELECT basket_type FROM baskets WHERE ship="+self.ship+
                 " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "
                 +self.activeSampleKey)
-        while query.next():
-            if query.value(0).toString() == 'Measure':
+        query = self.db.dbQuery(sql)
+        for basketType, in query:
+            if basketType.lower() == 'measure':
                 #  this is a measure basket
                 nMeasure = nMeasure + 1
             else:
@@ -942,15 +992,17 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  whole sample.
 
         #  if the focus is on the basket list, delete the selected basket
-        if self.focus=='basketList':
+        if self.focus == 'basketList':
 
             #  if there is only 1 measure basket left and there are specimen, check if the selected
             #  basket is that lone measure basket
             if nMeasure == 1 and hasSpecimen:
-                query=QtSql.QSqlQuery("SELECT basket_type FROM baskets WHERE ship="+self.ship+
+                sql = ("SELECT basket_type FROM baskets WHERE ship="+self.ship+
                         " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND basket_id="+
                         self.selRecord[0])
-                if query.value(0).toString() == 'Measure':
+                query = self.db.dbQuery(sql)
+                basketType, = query.first()
+                if basketType.lower() == 'measure':
                     #  this is the last measure basket and specimen exist
                     self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
                             "This is the last basket of type 'Measure' for this species and specimen " +
@@ -958,7 +1010,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                             "deleted as well. Are you SURE you want to permanently delete this basket " +
                             "AND all of the specimen collected for this species, "+
                             self.firstName+"?", 'choice')
-                    if self.message.exec_():
+                    if self.message.exec():
                         #  user chose to delete the specimen (we'll ask one more time)
                         ok = self.deleteSpecimen()
 
@@ -971,11 +1023,10 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
                 #  Either this basket wasn't a measure type or it was and we deleted all of the
                 #  associated specimen. Now we delete the basket
-                query =QtSql.QSqlQuery("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
-                            self.survey+" AND event_id="+self.activeHaul+" AND basket_id="+
-                            self.selRecord[0], self.db)
-                self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+
-                        query.lastQuery())
+                sql = ("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
+                        self.survey+" AND event_id="+self.activeHaul+" AND basket_id="+
+                        self.selRecord[0])
+                self.db.dbExec(sql)
 
             else:
                 #  this is not the last measure basket so we just delete the basket regardless of
@@ -983,16 +1034,15 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
                 self.message.setMessage(self.errorIcons[3],self.errorSounds[1], "Are you sure you want " +
                         "to permanently delete this basket, "+self.firstName+"?", 'choice')
-                if self.message.exec_():
+                if self.message.exec():
                     #  user chose to delete
-                    query =QtSql.QSqlQuery("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
+                    sql = ("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
                             self.survey+" AND event_id="+self.activeHaul+" AND basket_id="+
-                            self.selRecord[0], self.db)
-                    self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+
-                            query.lastQuery())
+                            self.selRecord[0])
+                    self.db.dbExec(sql)
 
         #  if the focus is on the sample list so we're going to delete the entire sample
-        elif self.focus=='speciesList':
+        elif self.focus == 'speciesList':
 
             #  make sure the user really wants to do the
             if hasSpecimen:
@@ -1002,7 +1052,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                         str(nMeasure+nOther)+" basket weights for this species AND you have " +
                         "collected specimen data too. Are SURE you want permanatly delete this "
                         "species and ALL of these baskets and ALL of your specimen data?",'choice')
-                if self.message.exec_():
+                if self.message.exec():
                     #  user chose to delete the everything from this sample so first delete the specimen
                     ok = self.deleteSpecimen()
 
@@ -1016,43 +1066,40 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "There are "+
                             str(nMeasure+nOther)+" basket weights for this species. " +
                             "Are sure you want to permanantly delete ALL of them?", 'choice')
-                    if not self.message.exec_():
+                    if not self.message.exec():
                         #  user changed their mind
                         return
 
                     # kill the baskets
-                    query =QtSql.QSqlQuery("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
+                    sql = ("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
                             self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
-                            self.activeSampleKey, self.db)
-                    self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+
-                            query.lastQuery())
+                            self.activeSampleKey)
+                    self.db.dbExec(sql)
 
                 #  try to delete from the catch summary and length histogram tables - these will be
                 #  populated at this point if a user has come back into CLAMS to edit a past haul
                 #  (depending on the execution path this might have already been done but it doesn't
                 #  hurt to try again here.)
-                query=QtSql.QSqlQuery("DELETE FROM catch_summary WHERE ship=" + self.ship +
+                sql = ("DELETE FROM catch_summary WHERE ship=" + self.ship +
                         " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                         " AND sample_id ="+self.activeSampleKey)
-                self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
-                query=QtSql.QSqlQuery("DELETE FROM length_histogram WHERE ship=" + self.ship +
+                self.db.dbExec(sql)
+                sql = ("DELETE FROM length_histogram WHERE ship=" + self.ship +
                         " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                         " AND sample_id ="+self.activeSampleKey)
-                self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
+                self.db.dbExec(sql)
 
                 # delete the sample_data
-                query =QtSql.QSqlQuery("DELETE FROM sample_data WHERE ship="+self.ship+" AND survey="+
+                sql = ("DELETE FROM sample_data WHERE ship="+self.ship+" AND survey="+
                         self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
-                        self.activeSampleKey, self.db)
-                self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+
-                        query.lastQuery())
+                        self.activeSampleKey)
+                self.db.dbExec(sql)
 
                 #  and then delete the sample
-                query =QtSql.QSqlQuery("DELETE FROM samples WHERE ship="+self.ship+" AND survey="+
+                sql = ("DELETE FROM samples WHERE ship="+self.ship+" AND survey="+
                         self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
-                        self.activeSampleKey, self.db)
-                self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+
-                        ","+query.lastQuery())
+                        self.activeSampleKey)
+                self.db.dbExec(sql)
 
             #  refresh the species list
             self.reloadSpeciesList()
@@ -1062,89 +1109,134 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
 
     def transferSample(self):
-        self.freeze=True
+        '''transferSample is called when the "Transfer Weights" button is pressed. It
+        presents the transfer dialog which allows the user to transfer weight from one
+        sample to another. An example of use would be when a basket is weighed, then
+        a different species is found in the basket, the weight of that other species
+        would be transferred to the correct sample.
+
+        The "transfer" is accomplished by creating two new basket records. The first
+        removes the weight (and count, if applicable) from the source sample by creating
+        a record with negative weights (and counts, if applicable) and then it creates
+        a basket record in the destination sample with positive weights and counts.
+        '''
+
+        #  pause all processing while the transfer dialog is displayed.
+        self.freeze = True
+
+        #  display the transfer dialog
         transDlg = transferdlg.TransferDlg(self)
-        if not transDlg.exec_():# user cancelled action
-            self.freeze=False
+        if not transDlg.exec():
+            #  user cancelled action
+            self.freeze = False
             return
-        # write basket record
+
+        # write basket records - first write the "from" record
         if transDlg.fromType=='Count':
             count=str(-transDlg.transCount)
         else:
             count='NULL'
-        query =QtSql.QSqlQuery("INSERT INTO baskets (ship, survey, event_id, sample_id, basket_type, count, weight, device_id) VALUES ("+
-                    self.ship+", "+self.survey+","+self.activeHaul+","+transDlg.fromSampleKey+",'"+transDlg.fromType+"',"+count+","+str(-transDlg.transWeight)+","+
-                    transDlg.transDevice+")",  self.db)
+        sql = ("INSERT INTO baskets (ship, survey, event_id, sample_id, basket_type, count," +
+                "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul+
+                ","+transDlg.fromSampleKey+",'"+transDlg.fromType+"',"+count+","+
+                str(-transDlg.transWeight)+"," + transDlg.transDevice+")")
+        self.db.dbExec(sql)
 
-        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
-        if transDlg.toType=='Count':
-            count=str(transDlg.transCount)
+        #  then write the "to" record
+        if transDlg.toType == 'Count':
+            count = str(transDlg.transCount)
         else:
             count='NULL'
 
-        query =QtSql.QSqlQuery("INSERT INTO baskets (ship, survey, event_id, sample_id, basket_type, count, weight, device_id) VALUES ("+
-                self.ship+", "+self.survey+","+self.activeHaul+","+transDlg.toSampleKey+",'"+transDlg.toType+"',"+count+","+str(transDlg.transWeight)+","+
-                transDlg.transDevice+")",  self.db)
-        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
-        self.activeSampleKey=transDlg.toSampleKey
-        # update basket table
+        sql = ("INSERT INTO baskets (ship, survey, event_id, sample_id, basket_type, count," +
+                "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul+
+                ","+transDlg.toSampleKey+",'"+transDlg.toType+"',"+count+","+
+                str(transDlg.transWeight)+","+ transDlg.transDevice+")")
+        self.db.dbExec(sql)
+
+        # update basket tables
+        self.activeSampleKey = transDlg.toSampleKey
         self.updateTables()
+
         self.freeze=False
+
 
     def editTable(self):
-        pass
-        self.freeze=True
-        if self.activeSpcName=='mix1':# turn off count sample type for mixes
-            self.validList[self.basketTypes.index('Count')]=0
-        else:
-            self.validList[self.basketTypes.index('Count')]=1
+        '''editTable is called when the "Edit" button is pressed. This will present
+        the Edit Basket dialog which allows the user to edit a specific basket.
+        '''
 
+        self.freeze=True
+
+        # turn off count sample type for mixes
+        if 'mix' in self.activeSampleType.lower():
+            self.validList[self.basketTypes.index('Count')] = 0
+        else:
+            self.validList[self.basketTypes.index('Count')] = 1
+
+        #  set up the basket type dialog button states
         self.typeDlg.buttonSetup(self.validList)
 
-        columns=self.basketModel.columnCount(QModelIndex())
-        row=self.basketView.currentIndex().row()
-        if (row == -1):
-            self.message.setMessage(self.errorIcons[2], self.errorSounds[1], "Please select a basket to edit " + self.firstName,'info')
-            self.message.exec_()
+        #  get the current basket selection
+        selRecord = []
+        for item in self.basketTable.selectedItems():
+            selRecord.append(item.text())
+
+        #  check if something is selected
+        if not selRecord:
+            self.message.setMessage(self.errorIcons[2], self.errorSounds[1],
+                    "Please select a basket to edit " + self.firstName,'info')
+            self.message.exec()
             self.freeze = False
             return
-        self.getBasketRow()
-        header=['BASKET_ID','WEIGHT', 'COUNT', 'SAMPLE_TYPE' ]
-        items=self.selRecord
 
-        editDlg = basketeditdlg.BasketEditDlg(header,  items,  self)
-        editDlg.exec_()
-        if not editDlg.okFlag:# user cancelled action
+        #  present the edit dialog
+        header = ['Basket ID','Weight', 'Count', 'Sample Type' ]
+        editDlg = basketeditdlg.BasketEditDlg(header, selRecord, self)
+        editDlg.exec()
+        if not editDlg.okFlag:
+            #  user cancelled action
             return
-        # update database
-        if editDlg.count=='-':
-            editDlg.count='NULL'
+
+        # update database - first check if this is a non-count basket type
+        if editDlg.count == '-':
+            #  this is not a count basket - set count to NULL
+            editDlg.count = 'NULL'
+
         # update basket table
-        query =QtSql.QSqlQuery("UPDATE baskets SET basket_type='"+editDlg.basketType+"', count = "+
-                editDlg.count+", weight = "+editDlg.weight+"  WHERE ship="+self.ship+" AND survey="+self.survey+
-                " AND event_id="+self.activeHaul+" AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
-                self.selRecord[0], self.db)
-        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
+        sql = ("UPDATE baskets SET basket_type='"+editDlg.basketType+"', count = "+
+                editDlg.count+", weight = "+editDlg.weight+"  WHERE ship="+self.ship+
+                " AND survey="+self.survey+" AND event_id="+self.activeHaul+
+                " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
+                self.selRecord[0])
+        self.db.dbExec(sql)
 
         self.freeze=False
+
         self.updateTables()
 
 
     def exitValidation(self):
+
         self.returnFlag=False
-        for mixcode in ['100002', '100003', '100004']:
-            query=QtSql.QSqlQuery("SELECT * FROM samples WHERE ship="+self.ship+" AND survey="+
-                    self.survey+" AND event_id = "+self.activeHaul+" AND partition='"+
-                    self.activePartition+"' AND species_code="+mixcode)
-            if query.first():# there been a mix collected
-                # mix validation
-                (mixSubWeight, mixSpeciesWeight)=self.mixValidation(mixcode)
-                if mixSubWeight==0:
-                    self.message.setMessage(self.errorIcons[1],self.errorSounds[1], self.firstName+
-                            ", there's no mix basket subsample weight for "+self.mixtureNames[mixcode]+" in the system.  Go do it now.", 'info')
-                    self.message.exec_()
-                    self.returnFlag=True
-                    return
+
+        #  check for any mixes in this partition
+        sql = ("SELECT sample_id, sample_type, species_code from samples WHERE ship=" +
+                self.ship + " AND survey=" + self.survey+" AND event_id = " +
+                self.activeHaul+" AND partition='" + self.activePartition +
+                "' AND LOWER(sample_type) LIKE LOWER('%mix%')")
+        query = self.db.dbQuery(sql)
+        for sampleId, sampleType, speciesCode in query:
+
+            #  mix validation
+            (mixSubWeight, mixSpeciesWeight) = self.mixValidation(mixcode)
+            if mixSubWeight == 0:
+                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
+                        self.firstName+ ", there's no mix basket subsample weight for "+
+                        sampleType + " in the system.  Go do it now.", 'info')
+                self.message.exec_()
+                self.returnFlag=True
+                return
 
                 #  check the mix parts more or less make up the weight of the total
                 dev = (mixSubWeight - mixSpeciesWeight) / mixSubWeight * 100.
