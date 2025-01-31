@@ -33,11 +33,15 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
          <property name="text">
           <string>Samples</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
@@ -53,6 +57,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>12</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -110,11 +115,15 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
          <property name="text">
           <string>&lt;Image Here&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
@@ -130,6 +139,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -144,11 +154,15 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
          <property name="text">
           <string>Summary Table</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
@@ -167,6 +181,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -206,6 +221,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -224,11 +240,15 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
          <property name="text">
           <string>Today's Scientist</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
@@ -244,6 +264,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -275,11 +296,15 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
          <property name="text">
           <string>Baskets</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
@@ -295,6 +320,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>12</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -354,6 +380,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -374,6 +401,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -394,6 +422,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -418,6 +447,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -438,6 +468,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -471,6 +502,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
