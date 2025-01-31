@@ -14,16 +14,10 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-.. module:: CLAMShaul
+.. module:: ZebraLabelPrinter
 
-    :synopsis: CLAMShaul presents the CLAMS haul form. The haul form
-               is used to specify how the main partition weight(s) will
-               be determined. The "main" partition(s) are partitions that
-               have sizeable catch. Think codend. Pocketnets are not
-               considered main partitions. If the partition(s) will be
-               subsampled, this form allows the user to enter the partition
-               total weight. The haul form is the first form that is completed
-               when processing the catch.
+    :synopsis: ZebraLabelPrinter provides an interface for printing
+               simple labels on a Zebra brand label printer.
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
@@ -34,7 +28,6 @@
 |
 | Author:
 |       Rick Towler   <rick.towler@noaa.gov>
-|       Kresimir Williams   <kresimir.williams@noaa.gov>
 | Maintained by:
 |       Rick Towler   <rick.towler@noaa.gov>
 |       Kresimir Williams   <kresimir.williams@noaa.gov>

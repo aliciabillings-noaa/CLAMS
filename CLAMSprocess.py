@@ -43,7 +43,7 @@ from PyQt6.QtWidgets import *
 import Clamsbase2Functions
 from ui import ui_CLAMSProcess
 import CLAMShaul
-#import CLAMScatch
+import CLAMScatch
 #import CLAMSspecimen
 #import CLAMSlength
 import CLAMSSpeciesFix
@@ -451,8 +451,8 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.catchBtn.setPalette(self.blue)
 
         #  show the catch form
-        #catchWindow = CLAMScatch.CLAMSCatch(self)
-        #catchWindow.exec()
+        catchWindow = CLAMScatch.CLAMSCatch(self)
+        catchWindow.exec()
 
         #  set the button color back now that the form is closed
         self.catchBtn.setPalette(self.black)

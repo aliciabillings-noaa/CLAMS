@@ -133,7 +133,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  restore the application state
         self.appSettings = QSettings('CLAMS', 'CatchForm')
-        size = self.appSettings.value('winsize', QSize(950,665))
+        size = self.appSettings.value('winsize', QSize(1000,725))
         position = self.appSettings.value('winposition', QPoint(10,10))
 
         #  check the current position and size to make sure the app is on the screen
@@ -708,7 +708,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         '''
         #  check basket weight against the max allowed basket weight
-        if float(self.currentBasketWt) > float(self.settings[QString('MaxBasketWt')]):
+        if float(self.currentBasketWt) > float(self.settings['MaxBasketWt']):
             self.message.setMessage(self.errorIcons[1],self.errorSounds[1], self.firstName +
                     ", this Basket exceeds the maximum basket weight of " +
                     self.settings['MaxBasketWt']+".  Does this bother you?", 'choice')
@@ -1217,6 +1217,11 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
 
     def exitValidation(self):
+        '''exitValidation checks for mixes and if found will check if the
+        sum of the mix baskets is close enough to the mix subsample weight and
+        alert the user if not. It also checks to make sure each sample has
+        at least one basket and if not, informs the user.
+        '''
 
         self.returnFlag=False
 
@@ -1229,55 +1234,71 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         for sampleId, sampleType, speciesCode in query:
 
             #  mix validation
-            (mixSubWeight, mixSpeciesWeight) = self.mixValidation(mixcode)
+            (mixSubWeight, mixSpeciesWeight) = self.mixValidation(sampleId, speciesCode)
             if mixSubWeight == 0:
                 self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
                         self.firstName+ ", there's no mix basket subsample weight for "+
-                        sampleType + " in the system.  Go do it now.", 'info')
-                self.message.exec_()
-                self.returnFlag=True
+                        sampleType + " in the system. This must be corrected.", 'info')
+                self.message.exec()
+                self.returnFlag = True
                 return
 
-                #  check the mix parts more or less make up the weight of the total
-                dev = (mixSubWeight - mixSpeciesWeight) / mixSubWeight * 100.
-                #  check that the deviation is below the allowed value
-                if (abs(dev) > float(self.settings[QString('MaxMixDev')])):
-                    #  it is not, issue a warning and ask user what they want to do
-                    self.message.setMessage(self.errorIcons[2], self.errorSounds[1], self.firstName+
-                            ", the weight of the mix components is more or less than "+ str(dev) +
-                            " % of the mix subsample weight for  "+self.mixtureNames[mixcode]+". Does this bother you? ", 'choice')
-                    if self.message.exec_():
-                        #  user is bothered by this - set the failed validation flag
-                        self.returnFlag=True
-                    else:
-                        if mixcode in self.parentSamples:
-                            #  user doesn't care, make note of this and move on
-                            QtSql.QSqlQuery("INSERT INTO override (scientist, record_id, " +
-                                    "table_name,description) VALUES ('" + self.scientist + "'," +
-                                    self.parentSamples[mixcode] + ",'sample', 'mix components are "+str(dev)+
-                                    " % less than the mix subsample weight')")
+            #  check the mix parts more or less make up the weight of the total
+            dev = (mixSubWeight - mixSpeciesWeight) / mixSubWeight * 100.
 
-        # closing  validation - get species in list
-
-        query=QtSql.QSqlQuery("SELECT species.common_name, samples.sample_id, samples.species_code, " +
-                "samples.subcategory  FROM samples, species WHERE species.species_code=samples.species_code " +
-                " AND samples.sample_type in ('Mix1','SubMix1','Mix2','Species') AND samples.ship=" + self.ship + " AND samples.survey=" + self.survey + " AND samples.event_id = " +
-                self.activeHaul + " AND samples.partition='" + self.activePartition + "'")
-        while query.next():
-            query1 = QtSql.QSqlQuery("SELECT * FROM baskets WHERE ship="+self.ship+" AND survey="+
-                    self.survey+" AND event_id = "+self.activeHaul+" AND sample_id = "+
-                    query.value(1).toString())
-
-            if not query1.next(): # no baskets for this species
-                if query.value(3).toString()<>'None':
-                    spcName=query.value(0).toString()+" "+query.value(3).toString()
+            #  check that the deviation is below the allowed value
+            if (abs(dev) > float(self.settings['MaxMixDev'])):
+                #  it is not, issue a warning and ask user what they want to do
+                self.message.setMessage(self.errorIcons[2], self.errorSounds[1], self.firstName+
+                        ", the weight of the mix components is more or less than "+ str(dev) +
+                        " % of the mix subsample weight for  "+self.mixtureNames[speciesCode]+
+                        ". Does this bother you? ", 'choice')
+                if self.message.exec():
+                    #  user is bothered by this - set the failed validation flag
+                    self.returnFlag = True
                 else:
-                    spcName=query.value(0).toString()
-                self.message.setMessage(self.errorIcons[1],self.errorSounds[1], "My dear "+self.firstName+
-                        ", There are are no basket weights for "+spcName+". Does this bother you?", 'choice')
-                if self.message.exec_():
-                        self.returnFlag=True
-                        return
+                    if speciesCode in self.parentSamples:
+                        #  user doesn't care, make note of this and move on
+                        sql = ("INSERT INTO overrides (scientist, record_id, " +
+                                "table_name,description) VALUES ('" + self.scientist + "'," +
+                                self.parentSamples[speciesCode] + ",'sample', 'mix components are "+str(dev)+
+                                " % less than the mix subsample weight')")
+                        self.db.dbExec(sql)
+
+        #  check if all of the samples have at least one basket. First get the samples
+        sql = ("SELECT species.common_name, samples.sample_id, samples.species_code, " +
+                "samples.subcategory  FROM samples, species WHERE " +
+                "species.species_code=samples.species_code AND (LOWER(samples.sample_type)" +
+                "='species') OR LOWER(samples.sample_type) LIKE LOWER('%mix%')) " +
+                "AND samples.ship=" + self.ship + " AND samples.survey=" +
+                self.survey + " AND samples.event_id=" + self.activeHaul +
+                " AND samples.partition='" + self.activePartition + "'")
+        sampleQuery = self.db.dbQuery(sql)
+
+        #  loop thru each sample and check if it has at least one basket
+        for commonName, sampleId, spCode, subcat in sampleQuery:
+            sql = ("SELECT COUNT(basket_id) FROM baskets WHERE ship="+self.ship+" AND survey="+
+                    self.survey+" AND event_id = "+self.activeHaul+" AND sample_id = "+
+                    sampleId)
+            basketQuery = self.db.dbQuery(sql)
+            numBaskets, = basketQuery.first()
+
+            if numBaskets == 0:
+                # no baskets for this species
+                if subcat.lower() != 'none':
+                    spcName = commonName + " " + subcat
+                else:
+                    spcName = commonName
+                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
+                        self.firstName + ", There are are no basket weights for " +
+                        spcName + ". Does this bother you?", 'choice')
+                if self.message.exec():
+                    self.returnFlag = True
+                    return
+
+            # As part of the last open station check, process should
+            # check for empty baskets and allow for deletion.
+
                 # we're commenting this out because its caousing problems with multi catch input
 #                    else:
 #                        # remove stray sample record
@@ -1286,88 +1307,120 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 #                        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
 
 
-    def mixValidation(self,  mixcode):
-        # validation #2 mix sub weight vs species in it
-        mixSubWeight=0
-        #get mix sample key
-        query = QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE samples.species_code="+mixcode+" AND ship="+self.ship+" AND survey="+
-                                        self.survey+" AND event_id = "+self.activeHaul+" AND partition='"+self.activePartition+"'")
-        if query.first():# there is a mix on this tow
-            mixKey=query.value(0).toString()
-            query1 = QtSql.QSqlQuery("SELECT Sum(weight) FROM baskets WHERE ship="+self.ship+" AND survey="+
-                                        self.survey+" AND event_id = "+self.activeHaul+" AND sample_id="+mixKey+
-            " AND basket_type = 'Measure'")
-            # check for a mix subsample weight
-            query1.first()
-            mixSubWeight=(float(query1.value(0).toString()))
-        else: #there's no mix
-            return
+    def mixValidation(self, sampleId, speciesCode):
+        '''mixValidation queries out the mix subsample weight and the
+        species weight for the specified mix sample ID and species.
 
-        mixSpeciesWeight=0
-        query = QtSql.QSqlQuery("SELECT Sum(baskets.weight) FROM samples, baskets WHERE samples.sample_id = "+
-        "baskets.sample_id AND samples.ship=baskets.ship AND samples.survey=baskets.survey AND samples.event_id=baskets.event_id AND samples.ship="+self.ship+" AND samples.survey="+
-        self.survey+" AND samples.event_id="+self.activeHaul+" AND samples.partition='"+self.activePartition+"' AND samples.parent_sample="+mixKey)# check for a mix subsample weight
-        if query.first():
-            mixSpeciesWeight=(float(query.value(0).toString()))
+        '''
+        #  get the mix subsample weight
+        mixSubWeight = 0
+        sql = ("SELECT SUM(weight) FROM baskets WHERE ship="+self.ship+" AND survey="+
+                self.survey+" AND event_id = "+self.activeHaul+" AND sample_id="+sampleId+
+                " AND basket_type = 'Measure'")
+        query = self.db.dbQuery(sql)
+        subWeight, = query.first()
+        if subWeight:
+            try:
+                mixSubWeight = (float(subWeight))
+            except:
+                pass
+
+        #  get the mix species weight
+        mixSpeciesWeight = 0
+        sql = ("SELECT SUM(baskets.weight) FROM samples, baskets WHERE samples.sample_id = "+
+                "baskets.sample_id AND samples.ship=baskets.ship AND " +
+                "samples.survey=baskets.survey AND samples.event_id=baskets.event_id " +
+                "AND samples.ship="+self.ship+" AND samples.survey="+
+                self.survey+" AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
+                self.activePartition+"' AND samples.parent_sample="+sampleId)
+        query = self.db.dbQuery(sql)
+        mixWeight, = query.first()
+        if mixWeight:
+            try:
+                mixSpeciesWeight = (float(mixWeight))
+            except:
+                pass
 
         return mixSubWeight, mixSpeciesWeight
 
 
-
     def reloadSpeciesList(self):
 
-        #  disconnect the selection changed signal so we don't trigger it when the list is
-        #  cleared.
-        self.disconnect(self.speciesList, SIGNAL("itemSelectionChanged()"), self.getActiveSpc)
+        #  disconnect the selection changed signal so we don't
+        #  trigger it when the list is cleared.
+        self.speciesList.itemSelectionChanged.disconnect()
 
-        # add just species
+        # clear out the existing entries
         self.speciesList.clearContents()
         self.speciesList.setRowCount(0)
-        self.speciesDict={}
+        self.speciesDict = {}
+        nSamples = 0
 
-        # get species involved
-        query=QtSql.QSqlQuery("SELECT samples.sample_id, species.common_name, species.scientific_name," +
+        #  loop thru the samples and add them to the species list table
+        sql = ("SELECT samples.sample_id, species.common_name, species.scientific_name," +
                 "species.species_code, samples.parent_sample, samples.subcategory"+
                 " FROM samples, species WHERE samples.species_code=species.species_code AND " +
-                "samples.ship="+self.ship+" AND samples.survey="+
-        self.survey+" AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
-                self.activePartition+"' AND samples.species_code not in (100000,100001) ORDER BY samples.sample_id ASC")
-        cnt=0
-        while query.next():
-            #get the namespace
-            query0=QtSql.QSqlQuery("SELECT PARAMETER_VALUE FROM sample_data WHERE sample_parameter=" +
-                    "'sample_name' AND  sample_id="+ query.value(0).toString())
-            if query0.first():
-                if query0.value(0).toString()=='scientific':
-                    species=query.value(2).toString()
-                else:
-                    species=query.value(1).toString()
-            else:
-                species=query.value(1).toString()
-            subcat=query.value(5).toString()
-            if subcat<>'None':
-                name=species+'-'+subcat
-            else:
-                name=species
-            # what's the parent sample Name
+                "samples.ship="+self.ship+" AND samples.survey=" + self.survey +
+                " AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
+                self.activePartition+"' AND samples.species_code NOT IN " +
+                "(100000,100001) ORDER BY samples.sample_id ASC")
+        sampleQuery = self.db.dbQuery(sql)
+        for sampleId, commonName, sciName, spCode, parentId, subcat in sampleQuery:
+            #  get the namespace - if the species is added using common name,
+            #  then we display the common name. If added with the sci name,
+            #  we display the sci name.
+            sql = ("SELECT PARAMETER_VALUE FROM sample_data WHERE sample_parameter=" +
+                    "'sample_display_name' AND ship=" + self.ship + " AND survey=" +
+                    self.survey + " AND event_id=" + self.activeHaul +
+                    "AND sample_id="+ sampleId)
+            namespaceQuery = self.db.dbQuery(sql)
+            namespace, = namespaceQuery.first()
 
-            query1=QtSql.QSqlQuery("SELECT b.common_name FROM samples a JOIN species b ON a.species_code=b.species_code WHERE a.ship="+self.ship+" AND a.survey="+
-                    self.survey+" AND a.event_id = "+self.activeHaul+" AND a.sample_id="+query.value(4).toString() + "")
-            if query1.first():
-                myParent=query1.value(0).toString()
+            #  if there is a sample_display_name set, use it to
+            #  set the species name
+            if namespace():
+                #  there is a sample_display_name entry
+                if namespace.lower() == 'scientific':
+                    #  display the scientific name
+                    species = sciName
+                else:
+                    #  display the common name
+                    species = commonName
             else:
-                myParent=''
-            self.speciesList.insertRow(cnt)
-            self.speciesList.setVerticalHeaderItem(cnt,QTableWidgetItem(query.value(0).toString()))
-            self.speciesList.setItem(cnt, 0, QTableWidgetItem(name))
-            self.speciesList.setItem(cnt, 1, QTableWidgetItem(myParent))
-            cnt=cnt+1
-            self.speciesDict.update({str(species):str(query.value(3).toString())})
+                #  by default we display the common name
+                species = commonName
+
+            #  if applicable, add the subcategory to the name
+            if subcat.lower() != 'none':
+                name = species+'-'+subcat
+            else:
+                name = species
+
+            #  get the parent sample name
+            sql = ("SELECT b.common_name FROM samples a JOIN species b ON " +
+                    "a.species_code=b.species_code WHERE a.ship=" + self.ship +
+                    " AND a.survey=" + self.survey+" AND a.event_id=" +
+                    self.activeHaul + " AND a.sample_id=" + parentId)
+            parentQuery = self.db.dbQuery(sql)
+            parentName, = parentQuery.first()
+
+            if parentName:
+                myParent = parentName
+            else:
+                myParent = ''
+
+            #  add this sample to the table
+            self.speciesList.insertRow(nSamples)
+            self.speciesList.setVerticalHeaderItem(cnt,QTableWidgetItem(sampleId))
+            self.speciesList.setItem(nSamples, 0, QTableWidgetItem(name))
+            self.speciesList.setItem(nSamples, 1, QTableWidgetItem(myParent))
+            nSamples += 1
+            self.speciesDict.update({species:spCode})
         self.speciesList.resizeColumnsToContents()
         self.picLabel.clear()
 
         #  reconnect the selection changed signal now that we're done changing the list
-        self.connect(self.speciesList, SIGNAL("itemSelectionChanged()"), self.getActiveSpc)
+        self.speciesList.itemSelectionChanged.connect(self.getActiveSpc)
         self.speciesList.scrollToBottom()
 
 
@@ -1384,7 +1437,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 "device_configuration INNER JOIN measurement_setup ON device_configuration.device_id " +
                 "= measurement_setup.device_id WHERE measurement_setup.workstation_id=" +
                 self.workStation+" AND measurement_setup.gui_module='Catch' AND " +
-                "device_configuration.device_parameter = 'SoundFile'")
+                "device_configuration.device_parameter='SoundFile'")
         query = self.db.dbQuery(sql)
         for device_id, parameter_value in query.next():
             self.devices.append(device_id)
@@ -1406,35 +1459,36 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  ensure that a species is selcted
         if (self.activeSpcName == None):
             #  no species selected - show error dialog
-            self.message.setMessage(self.errorIcons[2], self.errorSounds[2], "Hey " + self.firstName +
-                                    " pick a species. Duh, even I know that.", 'info')
-            self.message.exec_()
+            self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                    "Please pick a sample to print a label for, " +
+                    self.firstName + ".", 'info')
+            self.message.exec()
             return
         else:
 
-            # get species code from db
-            speciesCode = self.activeSpcCode=self.speciesDict[str(self.activeSpcName)]
+            #  get species code
+            speciesCode = self.activeSpcCode=self.speciesDict[self.activeSpcName]
 
-            #get eq_time
-            query=QtSql.QSqlQuery("SELECT event_data.PARAMETER_VALUE FROM event_data  WHERE " +
+            #  get the EQ time
+            sql = ("SELECT event_data.PARAMETER_VALUE FROM event_data  WHERE " +
                 "(event_data.SHIP="+self.ship+") AND (event_data.SURVEY="+self.survey+
                 ") AND (event_data.event_id="+self.activeHaul+") AND "+
                 "(event_data.PARTITION='"+self.activePartition+"') AND "+
                 "(event_data.event_parameter='EQ')")
-            if query.first():
-                EQDateTime = query.value(0).toString()
-                EQDate = EQDateTime.split(' ')[0]
+            query = self.db.dbQuery(sql)
+            eqTime, = query.first()
+            if eqTime:
+                EQDate = eqTime.split(' ')[0]
             else:
                 EQDate = ''
 
-
             #  ask how many fish are being frozen
             self.numpad.msgLabel.setText("How many " + self.activeSpcName + " are you freezing?")
-            if not self.numpad.exec_():
+            if not self.numpad.exec():
                 return
             number = self.numpad.value
 
-            data={'title':'NOAA/AFSC/RACE/MACE',
+            data={'title':self.settings['OrganizationName'],
                   'ship':self.ship,
                   'survey':self.survey,
                   'haul':self.activeHaul,
@@ -1455,32 +1509,56 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
 
     def getComment(self):
-        keyDialog = keypad.KeyPad(self.comment,  self)
-        keyDialog.exec_()
-        if keyDialog.okFlag:
-            string=keyDialog.dispEdit.toPlainText()
-            self.comment=keyDialog.dispEdit.toPlainText()
-            string=string.split('\n')
-            p=''
-            for s in string:
-                p=p+s+' '
+        '''getComment is called when the user clicks the "Comment"
+        button and displays the keybaord dialog with the existing comment
+        (if any) alowing the user to add to or edit the selected sample's
+        comment.
+        '''
 
-            # insert comment into sample
-            QtSql.QSqlQuery("UPDATE samples SET comments='" + p + "' WHERE ship="+self.ship +
+        #  display the keyboard dialog with the comment text
+        keyDialog = keypad.KeyPad(self.comment, self)
+        keyDialog.exec()
+
+        #  if the user clicked ok, get the new comment and update the db
+        if keyDialog.okFlag:
+            self.comment = keyDialog.dispEdit.toPlainText()
+
+            #  strip newlines from the comment before updating database
+            newComment = self.comment.split('\n')
+            commentText = ''
+            for line in newComment:
+                commentText = commentText + ' ' + line
+
+            #  update the comment in samples
+            sql = ("UPDATE samples SET comments='" + p + "' WHERE ship="+self.ship +
                     " AND survey=" + self.survey + " AND event_id = " + self.activeHaul +
                     " AND sample_id = "+self.activeSampleKey)
+            self.db.dbExec(sql)
 
 
-    def goExit(self):
-        self.close()
 
     def closeEvent(self, event):
+        '''closeEvent is called when the form is closed. It performs some
+        validations then exits.
+        '''
+
+        #  run our catch validations
         self.exitValidation()
+
         #self.refreshTimer.stop()
+
         if self.returnFlag:
+            #  There was a validation error the user chose to address.
+            #  ignore this close event.
             event.ignore()
         else:
+            #  No validation issues or the user doesn't care - accept
+            #  the event to close the dialog.
             event.accept()
+
+            #  store the window size and position
+            self.appSettings.setValue('winposition', self.pos())
+            self.appSettings.setValue('winsize', self.size())
 
 
     def checkWindowLocation(self, position, size, padding=[5, 25]):

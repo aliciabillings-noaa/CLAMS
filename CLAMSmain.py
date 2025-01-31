@@ -427,7 +427,7 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         #  build a list of the CLAMS modules allowed to run on this workstation
         module_string = self.settings['Modules'].lower()
         module_bits = module_string.split(',')
-        self.modules=[]
+        self.modules = []
         for module in module_bits:
             self.modules.append(module.strip())
 
@@ -449,12 +449,7 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         else:
             # This is a event processing station - first check if we allow the event to
             # be changed when any other stations are open.
-
-            sql = ("SELECT parameter_value FROM " + self.schema + ".application_configuration " +
-                    "WHERE parameter='allowEventChangeWhileProcessing'")
-            query = self.db.dbQuery(sql)
-            allowChange, = query.first()
-            if allowChange is None or allowChange.lower() == 'false':
+            if self.settings['AllowEventChangeWhileProcessing'].lower() == 'false':
                 #  we do not allow a change when other stations are open so check if any are
                 stationOpen = False
                 sql = "SELECT status FROM " + self.schema + ".workstations"

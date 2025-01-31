@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1020</width>
-    <height>750</height>
+    <width>1000</width>
+    <height>725</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -24,7 +24,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="30,30,40">
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="35,30,35">
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
@@ -37,7 +37,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Species List</string>
+          <string>Samples</string>
          </property>
         </widget>
        </item>
@@ -63,13 +63,13 @@
           <enum>QAbstractItemView::SelectRows</enum>
          </property>
          <attribute name="horizontalHeaderMinimumSectionSize">
-          <number>100</number>
+          <number>75</number>
          </attribute>
          <attribute name="horizontalHeaderDefaultSectionSize">
-          <number>150</number>
+          <number>100</number>
          </attribute>
          <attribute name="horizontalHeaderStretchLastSection">
-          <bool>true</bool>
+          <bool>false</bool>
          </attribute>
          <attribute name="verticalHeaderMinimumSectionSize">
           <number>50</number>
@@ -85,6 +85,11 @@
          <column>
           <property name="text">
            <string>Parent</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Type</string>
           </property>
          </column>
         </widget>
@@ -274,7 +279,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Basket Weights</string>
+          <string>Baskets</string>
          </property>
         </widget>
        </item>
@@ -303,16 +308,17 @@
           <bool>true</bool>
          </property>
          <attribute name="horizontalHeaderMinimumSectionSize">
-          <number>1</number>
+          <number>100</number>
+         </attribute>
+         <attribute name="horizontalHeaderDefaultSectionSize">
+          <number>115</number>
          </attribute>
          <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
           <bool>false</bool>
          </attribute>
-         <column>
-          <property name="text">
-           <string>ID</string>
-          </property>
-         </column>
+         <attribute name="horizontalHeaderStretchLastSection">
+          <bool>false</bool>
+         </attribute>
          <column>
           <property name="text">
            <string>Weight</string>

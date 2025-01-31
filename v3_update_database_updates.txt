@@ -13,3 +13,5 @@ INSERT INTO "CLAMSBASE2"."SAMPLE_PARAMETERS" (SAMPLE_PARAMETER, PARAMETER_TYPE, 
 
 
 INSERT INTO "CLAMSBASE2"."SAMPLE_TYPES" (SAMPLE_TYPE, DESCRIPTION) VALUES ('Present', 'Sample identified as present in the catch but not processed in any way. This type will never have baskets or specimen associated with it.')
+
+INSERT INTO "CLAMSBASE2"."APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('OrganizationName', 'NOAA/AFSC/RACE/MACE', 'Set this to your organizations name or other string that will be used as a title on all labels')
