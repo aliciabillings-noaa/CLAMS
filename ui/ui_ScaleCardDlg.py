@@ -63,8 +63,6 @@ class Ui_scalecardDlg(object):
         self.doneBtn.setObjectName("doneBtn")
         self.verticalLayout.addWidget(self.doneBtn)
         self.verticalLayout_2.addLayout(self.verticalLayout)
-        self.cardBtn.raise_()
-        self.label.raise_()
 
         self.retranslateUi(scalecardDlg)
         QtCore.QMetaObject.connectSlotsByName(scalecardDlg)

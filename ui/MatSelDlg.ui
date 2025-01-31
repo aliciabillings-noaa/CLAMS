@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>354</width>
+    <width>356</width>
     <height>418</height>
    </rect>
   </property>
@@ -15,43 +15,8 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>Select Maturity...</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QGridLayout" name="gridLayout_3">
-     <item row="1" column="0">
-      <widget class="QPushButton" name="mat2Btn">
-       <property name="minimumSize">
-        <size>
-         <width>165</width>
-         <height>35</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>14</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>PushButton</string>
-       </property>
-       <property name="checkable">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="1" column="1">
       <widget class="QPushButton" name="mat5Btn">
        <property name="minimumSize">
         <size>
@@ -72,7 +37,27 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
+     <item row="0" column="0" colspan="2">
+      <widget class="QLabel" name="label">
+       <property name="maximumSize">
+        <size>
+         <width>10000</width>
+         <height>100</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Select Maturity...</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
       <widget class="QPushButton" name="mat3Btn">
        <property name="minimumSize">
         <size>
@@ -93,7 +78,7 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
+     <item row="4" column="0">
       <widget class="QPushButton" name="mat4Btn">
        <property name="minimumSize">
         <size>
@@ -114,70 +99,7 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
-      <widget class="QPushButton" name="mat6Btn">
-       <property name="minimumSize">
-        <size>
-         <width>165</width>
-         <height>35</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>14</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>PushButton</string>
-       </property>
-       <property name="checkable">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QPushButton" name="mat7Btn">
-       <property name="minimumSize">
-        <size>
-         <width>165</width>
-         <height>35</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>14</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>PushButton</string>
-       </property>
-       <property name="checkable">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QPushButton" name="mat8Btn">
-       <property name="minimumSize">
-        <size>
-         <width>165</width>
-         <height>35</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>14</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>PushButton</string>
-       </property>
-       <property name="checkable">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
+     <item row="1" column="0">
       <widget class="QPushButton" name="mat1Btn">
        <property name="minimumSize">
         <size>
@@ -198,11 +120,70 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_3">
-     <item>
+     <item row="2" column="1">
+      <widget class="QPushButton" name="mat6Btn">
+       <property name="minimumSize">
+        <size>
+         <width>165</width>
+         <height>35</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>PushButton</string>
+       </property>
+       <property name="checkable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QPushButton" name="mat8Btn">
+       <property name="minimumSize">
+        <size>
+         <width>165</width>
+         <height>35</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>PushButton</string>
+       </property>
+       <property name="checkable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QPushButton" name="mat7Btn">
+       <property name="minimumSize">
+        <size>
+         <width>165</width>
+         <height>35</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>PushButton</string>
+       </property>
+       <property name="checkable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="2">
       <widget class="QPushButton" name="guideBtn">
        <property name="minimumSize">
         <size>
@@ -220,13 +201,30 @@
        </property>
       </widget>
      </item>
+     <item row="2" column="0">
+      <widget class="QPushButton" name="mat2Btn">
+       <property name="minimumSize">
+        <size>
+         <width>165</width>
+         <height>35</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>PushButton</string>
+       </property>
+       <property name="checkable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
   </layout>
-  <zorder>label</zorder>
-  <zorder>guideBtn</zorder>
-  <zorder>gridLayoutWidget</zorder>
-  <zorder>horizontalLayoutWidget</zorder>
  </widget>
  <resources/>
  <connections/>

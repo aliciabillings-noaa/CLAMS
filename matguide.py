@@ -1,9 +1,9 @@
 import os
 
 from PyQt6 import QtSql
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer, QObject, QUrl
 from PyQt6.QtGui import QColor, QImage, QPixmap
-from PyQt6.QtWidgets import QDialog
+from PyQt6.QtWidgets import QDialog, QApplication
 
 from ui import ui_MatGuide
 
@@ -137,3 +137,59 @@ class MatGuide(QDialog, ui_MatGuide.Ui_matGuide):
     def goExit(self):
         self.accept()
 
+'''
+Simple dialogs can be tested by executing directly in main, but dialogs that
+require additional setup and/or the full application event loop running must
+be executed by a testing class that executes the dialog within the event loop.
+'''
+class dialogTest(QObject):
+        def __init__(self):
+            super(dialogTest, self).__init__(None)
+
+            #  we use a timer here to add runTest to the event processing queue and
+            #  then exit the init. Execution will return to main, where the
+            #  application event loop will be started by the call to app.exec() which
+            #  will then start processing events on the queue which will then execute
+            #  runTest with the event loop running.
+            startTimer = QTimer(self)
+            startTimer.timeout.connect(self.runTest)
+            startTimer.setSingleShot(True)
+            startTimer.start(0)
+
+
+        def runTest(self):
+
+            #  set up the error sound and icon for the test
+            errorSoundFile = 'sounds/Blaster.wav'
+            errorSound = QSoundEffect()
+            errorSound.setSource(QUrl.fromLocalFile(errorSoundFile))
+
+            errorIconFile = 'icons/plankton.jpg'
+            errorIcon = QPixmap.fromImage(QImage(errorIconFile))
+
+            #  create an instance of the dialog and show
+            testDialog = MatGuide()
+            testDialog.setMessage(errorIcon, errorSound, "Do you want to do this?",
+                    'choice')
+            result = testDialog.exec()
+
+            #  print the output to the console
+            print(result)
+
+            #  exit the application
+            QApplication.instance().quit()
+
+
+if __name__ == "__main__":
+    #  import test specific libraries
+    import sys
+    from PyQt6.QtMultimedia import QSoundEffect
+
+    #  create an instance of QApplication
+    app = QApplication(sys.argv)
+
+    #  instantiate the test
+    form = dialogTest()
+
+    #  and start the application event loop
+    app.exec()

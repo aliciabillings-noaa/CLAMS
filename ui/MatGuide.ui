@@ -25,6 +25,27 @@
      <property name="sizeConstraint">
       <enum>QLayout::SetDefaultConstraint</enum>
      </property>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>1</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Fish Sex</string>
+       </property>
+      </widget>
+     </item>
      <item row="1" column="1">
       <widget class="QGroupBox" name="groupBox_2">
        <property name="sizePolicy">
@@ -47,7 +68,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>165</width>
             <height>45</height>
            </size>
           </property>
@@ -55,6 +76,7 @@
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -82,7 +104,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>165</width>
             <height>45</height>
            </size>
           </property>
@@ -90,6 +112,7 @@
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -107,26 +130,6 @@
        </layout>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>1</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="font">
-        <font>
-         <family>Arial Black</family>
-         <pointsize>14</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Fish Sex</string>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="1">
       <widget class="QLabel" name="matTabLabel">
        <property name="sizePolicy">
@@ -135,10 +138,17 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>165</width>
+         <height>35</height>
+        </size>
+       </property>
        <property name="font">
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -155,6 +165,27 @@
        </property>
        <property name="text">
         <string>&lt;Mat Tbl Num&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>4</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Maturity Stage</string>
        </property>
       </widget>
      </item>
@@ -176,26 +207,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Maturity Table </string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_6">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>4</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="font">
-        <font>
-         <family>Arial Black</family>
-         <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -226,7 +238,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>165</width>
             <height>45</height>
            </size>
           </property>
@@ -234,6 +246,7 @@
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -258,7 +271,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>165</width>
             <height>45</height>
            </size>
           </property>
@@ -266,6 +279,7 @@
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -290,7 +304,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>165</width>
             <height>45</height>
            </size>
           </property>
@@ -298,6 +312,7 @@
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -322,7 +337,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>165</width>
             <height>45</height>
            </size>
           </property>
@@ -330,6 +345,7 @@
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -354,14 +370,15 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>45</height>
+            <width>165</width>
+            <height>35</height>
            </size>
           </property>
           <property name="font">
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -386,14 +403,15 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>45</height>
+            <width>165</width>
+            <height>35</height>
            </size>
           </property>
           <property name="font">
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -418,14 +436,15 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>45</height>
+            <width>165</width>
+            <height>35</height>
            </size>
           </property>
           <property name="font">
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -450,14 +469,15 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>45</height>
+            <width>165</width>
+            <height>35</height>
            </size>
           </property>
           <property name="font">
            <font>
             <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
             <bold>true</bold>
            </font>
           </property>
@@ -494,6 +514,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -520,6 +541,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -562,6 +584,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -588,6 +611,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -614,6 +638,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
