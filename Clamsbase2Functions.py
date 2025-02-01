@@ -217,7 +217,10 @@ class Clamsbase2Functions(object):
                     query5 = self.db.dbQuery("SELECT sum(weight) FROM "+self.db.bioSchema+".baskets WHERE  ship="+self.ship+" AND survey="+self.survey+
                     " AND event_id="+haul+" AND sample_id="+sample_id)
                     totwt, =query5.first()
-                    totwt =float(totwt)
+                    if totwt:
+                        totwt =float(totwt)
+                    else:
+                        totwt = 0
                     if count_subwt in [None, '', 0]:# no count basket
                         if measure_subwt in [None, '', 0]:# no measure bakset
                             # no count or measure baskets

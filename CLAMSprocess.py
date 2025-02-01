@@ -539,14 +539,6 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         spcFixWindow.exec()
 
 
-    def goExit(self):
-        '''goExit is called when the "Finshed" button is pressed
-
-        '''
-        #  close the form
-        self.close()
-
-
     def closeEvent(self, event=None):
         '''closeEvent is called when the form is closed.
 

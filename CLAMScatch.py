@@ -39,9 +39,11 @@
 """
 
 #  imports
+import os
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
+from PyQt6.QtMultimedia import QSoundEffect
 from ui import ui_CLAMSCatch
 import addcatchspcdlg
 import numpad
@@ -102,7 +104,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  but some properties don't seem to "stick" (maybe QDesigner is buggy?)
         self.basketTable.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.basketTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.basketTable.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+        self.basketTable.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         #self.sumTable.setColumnWidth(0, 125)
         #self.sumTable.setColumnWidth(1, 125)
 
@@ -122,7 +124,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.editBtn.clicked.connect(self.editTable)
         self.speciesList.itemSelectionChanged.connect(self.getActiveSpc)
         self.speciesList.itemActivated.connect(self.getSpeciesFocus)
-        self.selModel.selectionChanged[QItemSelection,QItemSelection].connect(self.getBasketRow)
+        self.basketTable.itemSelectionChanged.connect(self.getBasketRow)
         self.transBtn.clicked.connect(self.transferSample)
         self.commentBtn.clicked.connect(self.getComment)
         self.spcDlg.changed.connect(self.addSpecies)
@@ -182,7 +184,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 " AND events.survey=" + self.survey + " AND events.event_id=" + self.activeHaul+
                 " AND gear_options.basket_type is not NULL ORDER BY gear_options.basket_type")
         query = self.db.dbQuery(sql)
-        for basketType, in query.next():
+        for basketType, in query:
             self.basketTypes.append(basketType)
 
         #  check if this is a plankton trawl  - they're handled a bit differently
@@ -380,9 +382,9 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     self.parentSamples.update({spcName:parentKey})
 
         if not self.wholeHaulKey in self.parentSamples:
-            self.parentSamples.update({QString('WholeHaul'):self.wholeHaulKey})
+            self.parentSamples.update({'WholeHaul':self.wholeHaulKey})
         if not self.sortingTableKey in self.parentSamples:
-            self.parentSamples.update({QString('SortingTable'):self.sortingTableKey})
+            self.parentSamples.update({'SortingTable':self.sortingTableKey})
 
 
     def createSample(self, code, name, subCat, nameType, parentSample):
@@ -522,14 +524,14 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         else:
             #  no pic available
             self.picLabel.clear()
-            self.picLanel.setText("<Image Unavailable>")
+            self.picLabel.setText("<Image Unavailable>")
 
 
     def getActiveSpc(self):
         '''getActiveSpc is called when the user selects a species from the species list.
 
         '''
-        self.basketView.setEnabled(True)
+        self.basketTable.setEnabled(True)
         self.sumTable.setEnabled(True)
 
         # default setting for a species is no whole haul
@@ -587,7 +589,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         self.activeSampleKey = sampleId
         self.activeSampleType = sampleType
-        self.activeSpcCode=self.speciesDict[str(self.activeSpcName)]
+        self.activeSpcCode = self.speciesDict[str(self.activeSpcName)]
 
         # look for previous data on species
         self.updateTables()
@@ -1267,9 +1269,9 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  check if all of the samples have at least one basket. First get the samples
         sql = ("SELECT species.common_name, samples.sample_id, samples.species_code, " +
-                "samples.subcategory  FROM samples, species WHERE " +
+                "samples.subcategory FROM samples, species WHERE " +
                 "species.species_code=samples.species_code AND (LOWER(samples.sample_type)" +
-                "='species') OR LOWER(samples.sample_type) LIKE LOWER('%mix%')) " +
+                "='species' OR LOWER(samples.sample_type) LIKE LOWER('%mix%')) " +
                 "AND samples.ship=" + self.ship + " AND samples.survey=" +
                 self.survey + " AND samples.event_id=" + self.activeHaul +
                 " AND samples.partition='" + self.activePartition + "'")
@@ -1378,7 +1380,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
             #  if there is a sample_display_name set, use it to
             #  set the species name
-            if namespace():
+            if namespace:
                 #  there is a sample_display_name entry
                 if namespace.lower() == 'scientific':
                     #  display the scientific name
@@ -1411,7 +1413,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
             #  add this sample to the table
             self.speciesList.insertRow(nSamples)
-            self.speciesList.setVerticalHeaderItem(cnt,QTableWidgetItem(sampleId))
+            self.speciesList.setVerticalHeaderItem(nSamples,QTableWidgetItem(sampleId))
             self.speciesList.setItem(nSamples, 0, QTableWidgetItem(name))
             self.speciesList.setItem(nSamples, 1, QTableWidgetItem(myParent))
             nSamples += 1
@@ -1439,7 +1441,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 self.workStation+" AND measurement_setup.gui_module='Catch' AND " +
                 "device_configuration.device_parameter='SoundFile'")
         query = self.db.dbQuery(sql)
-        for device_id, parameter_value in query.next():
+        for device_id, parameter_value in query:
             self.devices.append(device_id)
             hasExt = parameter_value.split('.')
             if len(hasExt) > 1:

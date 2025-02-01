@@ -37,6 +37,7 @@
 
 #  imports
 from PyQt6.QtCore import *
+from PyQt6.QtWidgets import *
 from acquisition.SensorMonitor import SensorMonitor
 from ui import ui_PrinterAdminDlg
 
@@ -62,7 +63,7 @@ class ZebraLabelPrinter(QObject):
         #  I believe these are fairly constant so we'll not expose them now...
         self.margin = 24
         self.mmToDots = 8
-        self.SenMonObj = QSerMonObj
+        self.SenMonObj = sensorMonitorObj
         self.name = deviceName
         self.dpi = dpi
 

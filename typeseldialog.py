@@ -48,26 +48,29 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
         super(TypeSelDialog, self).__init__(parent)
         self.setupUi(self)
         self.basketType = None
-        
-        #hide buttons and hook up slots
-        for i in range(4):
-            exec(str("self.btn_"+str(i)+".hide()"))
-            exec(str('self.connect(self.btn_'+str(i)+', SIGNAL("clicked()"), self.selType)'))
-        # set it up
+
+        self.buttons = [self.btn_0, self.btn_1, self.btn_2, self.btn_3]
+
+        #  first hide buttons
+        for button in self.buttons:
+            button.hide()
+
+        # then set them up for the basket types
         for i in range(len(parent.basketTypes)):
-            exec(str("self.btn_"+str(i)+".show()"))
-            exec(str("self.btn_"+str(i)+".setText(parent.basketTypes[i])"))
-        
+            self.buttons[i].show()
+            self.buttons[i].setText(parent.basketTypes[i])
+            button.clicked.connect(self.selType)
+
         self.numDlg = parent.numpad
-        
+
     def buttonSetup(self, validList):
-        self.Type=None
+        self.Type = None
         for i in range(len(validList)):
             if not validList[i]:
-                exec(str("self.btn_"+str(i)+".setEnabled(False)"))
+                self.buttons[i].setEnabled(False)
             else:
-                exec(str("self.btn_"+str(i)+".setEnabled(True)"))
-        
+                self.buttons[i].setEnabled(True)
+
 
     def selType(self):
             self.count=None
@@ -81,10 +84,10 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
                 else:
                     # the user cancelled the numpad selection
                     return
-            
-                       
+
+
             self.accept()
-            
+
     def closeEvent(self, event=None):
         if self.basketType==None:
             self.reject()

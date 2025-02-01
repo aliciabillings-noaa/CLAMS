@@ -2,20 +2,48 @@
 addspecedlg is a modified version of messagedlg used for confirming the active
 species for the CLAMS catch dlg.
 
-messagedlg is a generic message dialog that presents an icon, text, and
-a set of buttons. The buttons presented depend on the 'mode' that is
-passed when setMessage is called. The dialog returns the text of the button
-that was selected by the user.
-
-For example, the choice dialog presents "yes" and "no" buttons. In the example
-below, the variable yesNo will contain either the string "Yes" or "No" depending
-on what the user selects:
-
-mDialog.setMessage(errorIcon, errorSounds, "Do you want to do this?", 'choice')
-yesNo = self.message.exec_()
 
 """
 
+
+# coding=utf-8
+
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
+
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
+"""
+.. module:: addspecedlg
+
+    :synopsis: addspecedlg is a modified version of messagedlg used for
+               confirming the active species for the CLAMS catch dlg.
+
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assesment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Mike Levine   <mike.levine@noaa.gov>
+|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+"""
+
+#  imports
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import QDialog
 from ui import ui_MessageDlg
@@ -25,10 +53,9 @@ class addspecedlg(QDialog, ui_MessageDlg.Ui_messageDlg):
     def __init__(self,  parent=None):
         super(addspecedlg, self).__init__(parent)
         self.setupUi(self)
-        self.msgLabel.palette().setColor(self.msgLabel.backgroundRole(), QColor(255, 255, 255))
-        self.btn_1.clicked.connect(self.goNo())
-        self.btn_2.clicked.connect(self.goYes())
-        self.btn_3.clicked.connect(self.goYes())
+        self.btn_1.clicked.connect(self.goNo)
+        self.btn_2.clicked.connect(self.goYes)
+        self.btn_3.clicked.connect(self.goYes)
 
     def setMessage(self, icon, sound, string, mode=''):
         sound.play()
@@ -39,10 +66,10 @@ class addspecedlg(QDialog, ui_MessageDlg.Ui_messageDlg):
         self.btn_3.hide()
 
         self.msgLabel.setText(string)
-        font = QFont()
-        font.setBold(True)
-        font.setPointSize(25)
-        self.msgLabel.setFont(font)
+#        font = QFont()
+#        font.setBold(True)
+#        font.setPointSize(25)
+#        self.msgLabel.setFont(font)
         try:
             self.iconLabel.setMovie(icon)
             icon.start()

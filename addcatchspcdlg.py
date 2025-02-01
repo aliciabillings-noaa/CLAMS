@@ -1,31 +1,88 @@
+# coding=utf-8
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4 import QtSql
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
+
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
+"""
+.. module:: AddCatchSpcDlg
+
+    :synopsis: AddCatchSpcDlg presents the dialog used to add samples
+               to the Catch module. It allows the user to search for
+               the species they want to add, then add it to the
+               specified parent sample.
+
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assesment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Mike Levine   <mike.levine@noaa.gov>
+|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+"""
+
+#  imports
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
 from ui import  ui_AddCatchSpcDlg
 import listseldialog
 
 
 class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
+
+    changed = pyqtSignal()
+
     def __init__(self, parent=None):
         super(AddCatchSpcDlg, self).__init__(parent)
 
         self.setupUi(self)
-        self.mixCreateFlag=False
-        self.mixAddFlag=False
+
+        self.mixCreateFlag = False
+        self.mixAddFlag = False
+        self.db = parent.db
         self.ship = parent.ship
         self.survey = parent.survey
-        self.activeHaul=parent.activeHaul
-        self.activePartition=parent.activePartition
-        self.message=parent.message
-        self.errorSounds=parent.errorSounds
-        self.errorIcons=parent.errorIcons
-        self.whHaulFlag=parent.whHaulFlag
+        self.activeHaul = parent.activeHaul
+        self.activePartition = parent.activePartition
+        self.message = parent.message
+        self.errorSounds = parent.errorSounds
+        self.errorIcons = parent.errorIcons
+        self.whHaulFlag = parent.whHaulFlag
         self.previous = None
         self.listOrigin = None
-        self.chars=''
+        self.chars = ''
         self.updatingDigit = False
-        self.settings=parent.settings
+        self.settings = parent.settings
+
+        #  restore the application state
+        self.appSettings = QSettings('CLAMS', 'AddCatchSppDialog')
+        size = self.appSettings.value('winsize', QSize(946,690))
+        position = self.appSettings.value('winposition', QPoint(10,10))
+
+        #  check the current position and size to make sure the app is on the screen
+        position, size = self.checkWindowLocation(position, size)
+
+        #  now move and resize the window
+        self.move(position)
+        self.resize(size)
 
         #  put the keyboard buttons into a list to easily reference them
         self.digitBtns=[self.A_Btn,self.B_Btn,self.C_Btn,self.D_Btn,self.E_Btn,self.F_Btn,
@@ -33,19 +90,22 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
                         self.M_Btn,self.N_Btn,self.O_Btn,self.P_Btn,self.Q_Btn,self.R_Btn,
                         self.S_Btn,self.T_Btn,self.U_Btn,self.V_Btn,self.W_Btn,self.X_Btn,
                         self.Y_Btn,self.Z_Btn]
-
-        #  connect signals
+        #  connect the keyboard key signals
         for btn in self.digitBtns:
-            self.connect(btn, SIGNAL("clicked()"),self.getDigit)
+            btn.clicked.connect(self.getDigit)
 
-        self.connect(self.fullspcCList, SIGNAL("itemClicked (QListWidgetItem *)"), self.getSpcSel)
-        self.connect(self.fullspcSList, SIGNAL("itemClicked (QListWidgetItem *)"), self.getSpcSel)
-        self.connect(self.backBtn, SIGNAL("clicked()"), self.clearOneChar)
-        self.connect(self.clearBtn, SIGNAL("clicked()"), self.clearAllChar)
-        self.connect(self.doneBtn, SIGNAL("clicked()"), self.goExit)
-        self.connect(self.addBtn, SIGNAL("clicked()"), self.sendSel)
-        self.connect(self.radio10, SIGNAL("toggled(bool)"), self.getSpcHistory)
-        self.connect(self.radioFull, SIGNAL("toggled(bool)"), self.clearAllChar)
+        #  connect the other signals
+        self.fullspcCList.itemClicked[QListWidgetItem].connect(self.getSpcSel)
+        self.fullspcSList.itemClicked[QListWidgetItem].connect(self.getSpcSel)
+
+        self.lineEdit.textEdited.connect(self.searchEdited)
+
+        self.backBtn.clicked.connect(self.clearOneChar)
+        self.clearBtn.clicked.connect(self.clearAllChar)
+        self.doneBtn.clicked.connect(self.close)
+        self.addBtn.clicked.connect(self.sendSel)
+        self.radio10.toggled[bool].connect(self.getSpcHistory)
+        self.radioFull.toggled[bool].connect(self.clearAllChar)
 
         # parent sample buttons
         self.buttons=[self.wholeHaulBtn, self.sortTableBtn, self.mix1Btn,
@@ -55,22 +115,26 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         #  it seems autoexclusive buttons in a container cannot all be unchecked. Once one is
         #  checked, you can't uncheck it (at least by calling setChecked()
         for btn in self.buttons:
-            self.connect(btn, SIGNAL("clicked()"), self.handleSampleBtnEx)
+            btn.clicked.connect(self.handleSampleBtnEx)
 
-        # position the window
-        screen=QDesktopWidget().screenGeometry()
-        window=self.geometry()
-        self.setGeometry(round(screen.width()*.28, 0), round(screen.height()*.05, 0),
-                window.width(), window.height())
 
         # set default tab, get past haul species
-        query=QtSql.QSqlQuery("SELECT event_id FROM events WHERE survey = "+self.survey+
-                " AND event_id <= "+self.activeHaul+"")
-        self.hauls=[]
-        while query.next():
-            self.hauls.append(int(query.value(0).toString()))
-        self.hauls.reverse()
-        self.history=10
+        self.historyHauls = []
+
+        sql = ("SELECT a.event_id, a.gear FROM (SELECT event_id, gear, " +
+                "ship, survey FROM events) a JOIN (SELECT gear, gear_type " +
+                "FROM gear) b ON a.gear = b.gear JOIN (SELECT gear_type, " +
+                "retains_catch from gear_types) c ON b.gear_type = c.gear_type " +
+                "WHERE a.ship = " + self.ship + " AND a.survey= " + self.survey +
+                " AND c.retains_catch > 0  ORDER BY event_id ASC")
+        eventQuery = self.db.dbQuery(sql)
+        for event_id, gear in eventQuery:
+            self.historyHauls.append(event_id)
+
+        #  reverse the list and keep up to 10
+        self.historyHauls.reverse()
+        self.historyHauls[:10]
+
         self.getSpcHistory()
         self.radio10.setChecked(True)
 
@@ -109,43 +173,45 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
             self.wholeHaulBtn.setEnabled(False)
 
         # find out if we have a mix1
-        query=QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE ship = "+self.ship+" AND survey = "+
-                self.survey+ " AND event_id = "+self.activeHaul+" AND partition ='"+self.activePartition+
-                "' AND species_code=100002")
-        if not query.first():
+        sql = ("SELECT sample_id FROM samples WHERE ship=" + self.ship +
+                " AND survey=" + self.survey+ " AND event_id=" + self.activeHaul +
+                " AND partition='" + self.activePartition + "' AND species_code=100002")
+        query = self.db.dbQuery(sql)
+        sampleId, = query.first()
+
+        if not sampleId:
             # no mix 1 in the system
             self.mix1Btn.setEnabled(False)
             self.subMix1Btn.setEnabled(False)
         else:
             # we have a mix 1 - check if we have a submix for mix 1
-            query=QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE ship = "+self.ship+" AND survey = "+
-                    self.survey+ " AND event_id = "+self.activeHaul+" AND partition ='"+self.activePartition+
-                    "' AND species_code=100003")
-            if not query.first():
+            sql = ("SELECT sample_id FROM samples WHERE ship=" + self.ship +
+                    " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
+                    " AND partition='" + self.activePartition + "' AND species_code=100003")
+            query = self.db.dbQuery(sql)
+            mixId, = query.first()
+            if not mixId:
                 # no submix1
                 self.subMix1Btn.setEnabled(False)
 
         #  check if there is a mix2
-        query=QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE ship = "+self.ship+" AND survey = "+
-                self.survey+ " AND event_id = "+self.activeHaul+" AND partition ='"+self.activePartition+
-                "' AND species_code=100004")
-        if not query.first():
+        sql = ("SELECT sample_id FROM samples WHERE ship=" + self.ship +
+                " AND survey = " + self.survey+ " AND event_id=" + self.activeHaul +
+                " AND partition ='" + self.activePartition + "' AND species_code=100004")
+        query = self.db.dbQuery(sql)
+        mixId, = query.first()
+        if not mixId:
             #  there is no mix2
             self.mix2Btn.setEnabled(False)
 
 
     def getDigit(self):
 
-        self.updatingDigit=True
-        self.chars=self.chars+self.sender().text()
+        self.chars = self.chars + self.sender().text()
         self.lineEdit.setText(self.chars)
-
         self.radioFull.setChecked(True)
-        self.fullspcCList.clear()
-        self.fullspcSList.clear()
 
         self.getList()
-        self.updatingDigit=False
 
 
     def clearOneChar(self):
@@ -153,22 +219,29 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         self.lineEdit.setText(self.chars)
         self.getList()
 
-
+    @pyqtSlot()
     def clearAllChar(self):
-        if not self.updatingDigit:
-            self.chars=''
-            self.spcLabel.setText('')
-            self.picLabel.clear()
-            self.lineEdit.setText(self.chars)
-            self.fullspcCList.clear()
-            self.fullspcSList.clear()
-            self.getList()
 
+        self.chars = ''
+        self.spcLabel.setText('')
+        self.picLabel.clear()
+        self.lineEdit.setText(self.chars)
+        self.getList()
+
+
+    @pyqtSlot(str)
+    def searchEdited(self, newChars):
+        print(newChars)
+        self.chars = newChars
+        self.getList()
 
 
     def getList(self):
 
-        if self.chars=='':
+        self.fullspcCList.clear()
+        self.fullspcSList.clear()
+
+        if self.chars == '':
             commonQuery = "SELECT species.common_name FROM species ORDER BY species.common_name"
             sciQuery = "SELECT species.scientific_name FROM species WHERE species_code<999900 ORDER BY species.scientific_name"
         else:
@@ -178,21 +251,17 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
             sciQuery = ("SELECT species.scientific_name FROM species WHERE upper(species.scientific_name) "+
                 " LIKE upper(" + like_exp + ") AND species_code<999900 ORDER BY species.scientific_name")
 
-        query=QtSql.QSqlQuery(commonQuery)
-        trunc=[]
-        while query.next():
-            trunc.append(query.value(0).toString())
-        self.fullspcCList.addItems(QStringList(trunc))
+        query = self.db.dbQuery(commonQuery)
+        for commonName, in query:
+            self.fullspcCList.addItem(commonName)
 
-        query=QtSql.QSqlQuery(sciQuery)
-        trunc1=[]
-        while query.next():
-            trunc1.append(query.value(0).toString())
-        self.fullspcSList.addItems(QStringList(trunc1))
+        query = self.db.dbQuery(sciQuery)
+        for sciName, in query:
+            self.fullspcSList.addItem(sciName)
 
-        if len(trunc)<2 and self.nameTab.currentIndex==0:
+        if self.fullspcCList.count() < 2 and self.nameTab.currentIndex==0:
             self.fullspcCList.setCurrentRow(1)
-        elif len(trunc1)<2 and self.nameTab.currentIndex==1:
+        elif self.fullspcSList.count() < 2 and self.nameTab.currentIndex==1:
             self.fullspcSList.setCurrentRow(1)
 
         self.picLabel.clear()
@@ -201,84 +270,113 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
     def getSpcSel(self):
 
         # image code
-        self.listOrigin=self.sender()
-        self.activeSpcName=self.listOrigin.currentItem().text()
-        if self.nameTab.currentIndex()==0:
+        self.listOrigin = self.sender()
+        self.activeSpcName = self.listOrigin.currentItem().text()
+        if self.nameTab.currentIndex() == 0:
             self.nameType='common'
-            query=QtSql.QSqlQuery("SELECT species.species_code  "+
+            sql = ("SELECT species.species_code  "+
                     "FROM species WHERE species.common_name='"+
                     self.listOrigin.currentItem().text()+"'")
         else:
             self.nameType='scientific'
-            query=QtSql.QSqlQuery("SELECT species.species_code  "+
+            sql = ("SELECT species.species_code  "+
                     "FROM species WHERE species.scientific_name='"+
                     self.listOrigin.currentItem().text()+"'")
-        query.first()
-        self.activeSpcCode=query.value(0).toString()
+
+        query = self.db.dbQuery(sql)
+        spCode, = query.first()
+        self.activeSpcCode = spCode
         imgName=None
 
-        # check for multiple subcategories
-        query=QtSql.QSqlQuery("SELECT subcategory FROM species_associations WHERE species_code="+
+        # check for species subcategories
+        subcats = []
+        sql = ("SELECT subcategory FROM species_associations WHERE species_code="+
                 self.activeSpcCode)
-        subcats=[]
-        while query.next():
-            subcats.append(query.value(0).toString())
-        if len(subcats)>1:
+        query = self.db.dbQuery(sql)
+        for subcat, in query:
+            subcats.append(subcat)
+        if len(subcats) > 1:
             # species has multiple subclasses in species associations
             #  display the subcat selection dialog
             self.listDialog = listseldialog.ListSelDialog(subcats, 'Short',  self)
             self.listDialog.label.setText('Choose Size Class')
-            if self.listDialog.exec_():
+            if self.listDialog.exec():
                 if (self.listDialog.itemList.currentRow() < 0):
                     #  no name selected
                     self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
-                                            'Please select a Size Class or "All Sizes".', 'info')
-                    self.message.exec_()
+                            'Please select a Size Class or "All Sizes".', 'info')
+                    self.message.exec()
                 else:
                     self.activeSpcSubcat = self.listDialog.itemList.currentItem().text()
-                    imgName=self.activeSpcCode #+"_"+self.activeSpcSubcat
-                    labelText=self.activeSpcName+"-"+self.activeSpcSubcat
+                    imgName = self.activeSpcCode #+"_"+self.activeSpcSubcat
+                    labelText=self.activeSpcName + "-" + self.activeSpcSubcat
             else:
                 return
 
-        elif len(subcats)>1:
-            self.activeSpcSubcat=subcats[0]# species has one listing in species associations
-            imgName=self.activeSpcCode
-            labelText=self.activeSpcName
+        elif len(subcats) == 1:
+            # species has one listing in species associations
+            self.activeSpcSubcat = subcats[0]
+            imgName = self.activeSpcCode
+            labelText = self.activeSpcName
         else:
-            self.activeSpcSubcat='None' # species not listed in species associations
-            imgName=self.activeSpcCode
-            labelText=self.activeSpcName
-        # find out previous occurence
-        self.previous=1
-        if int(self.activeSpcCode)<99999:# not a mix
-            query=QtSql.QSqlQuery("SELECT parameter_value  "+ "FROM species_data WHERE species_code="+
-                    self.activeSpcCode+" AND subcategory='"+self.activeSpcSubcat+
-                    "' AND lower(species_parameter)='previous_occurrence'")
-            if query.first():
-                self.previous=int(query.value(0).toString())
+            # species not listed in species associations
+            self.activeSpcSubcat = 'None'
+            imgName = self.activeSpcCode
+            labelText = self.activeSpcName
+
+        #  Check for previous occurence if we're configured to. This is a simple check
+        #  which can catch some sp identification errors.
+        if self.settings['CheckForPreviousOccurrence'].lower() == 'true':
+            #  yes, check if we have seen this species before
+            self.previous = 0
+            if int(self.activeSpcCode) < 99999:# not a mix
+                sql = ("SELECT parameter_value FROM species_data WHERE species_code="+
+                        self.activeSpcCode+" AND subcategory='"+self.activeSpcSubcat+
+                        "' AND LOWER(species_parameter)='previous_occurrence'")
+                query = self.db.dbQuery(sql)
+                prevOcc, = query.first()
+                if prevOcc is None:
+                    self.previous = -1
+                else:
+                    try:
+                        self.previous = int(prevOcc)
+                    except:
+                        self.previous = 1
+        else:
+            #  we're not checking for previous occurence so set it to 1
+            #  to skip user interaction
+            self.previous = 1
 
         # load label
         self.spcLabel.setText(labelText)
+
+        #TODO: get image name from image_file attribute of species_data
         # set image
-        pic=QImage()
+        pic = QImage()
         if imgName:
-            if pic.load(self.settings[QString('ImageDir')]+'\\fishPics\\'+imgName+".jpg"):
-               pic=pic.scaled(self.picLabel.size(),Qt.KeepAspectRatio,  Qt.SmoothTransformation)
+            if pic.load(self.settings['ImageDir']+'\\fishPics\\'+imgName+".jpg"):
+               pic = pic.scaled(self.picLabel.size(),Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation)
                self.picLabel.setPixmap(QPixmap.fromImage(pic))
             else:
                 self.picLabel.clear()
         # submix check
-        if self.activeSpcCode=='100003':
+        if self.activeSpcCode == '100003':
             # find out if we have some mixes
-            query=QtSql.QSqlQuery("SELECT sample_id FROM samples WHERE ship = "+self.ship+" AND survey = "+self.survey+
-                    " AND event_id = "+self.activeHaul+" AND partition ='"+self.activePartition+"' AND species_code=100002")
-            if not query.first():  # no mix 1 in the system
+            sql = ("SELECT sample_id FROM samples WHERE ship=" + self.ship +
+                    " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
+                    " AND partition='" + self.activePartition + "' AND species_code=100002")
+            query = self.db.dbQuery(sql)
+            mix, = query.first()
 
+            if not mix:
+                # no mix 1 in the system
                 self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
-                                            "There's no Mix1 sample for this partition.  you need to create it before using the SubMix1", 'info')
-                self.message.exec_()
-            else:# you can only choose Mix1!!
+                        "There's no Mix1 sample for this partition. " +
+                        "You need to create it before using the SubMix1", 'info')
+                self.message.exec()
+            else:
+                # you can only choose Mix1!!
                 for btn in self.buttons:
                     btn.setEnabled(False)
                 self.mix1Btn.setEnabled(True)
@@ -288,29 +386,42 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
     def sendSel(self):
 
         #  get the selected parent sample
-        self.parentSample=None
+        self.parentSample = None
         for btn in self.buttons:
             if btn.isChecked():
                 self.parentSample = btn.text()
                 break
-        if self.parentSample==None:
+        if self.parentSample == None:
             self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
                     "You need to select a parent sample! ", 'info')
-            self.message.exec_()
+            self.message.exec()
             return
 
         if self.listOrigin == None:
             return
 
-        if self.previous==0:
+        if self.previous <= 0:
             #  ask if we want to add this exotic species we've never encountered
             self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "We've never seen a "+
-                    self.listOrigin.currentItem().text()+". Are you sure that's right? ", 'choice')
-            if not self.message.exec_():
+                    self.listOrigin.currentItem().text() + ". Are you sure that's right? ", 'choice')
+            if not self.message.exec():
                 return
 
+            #  we do, update the Previous_Occurrence parameter in the species_data table for this species
+            if self.previous < 0:
+                #  no Previous_Occurrence parameter in the database for this species, add it
+                sql = ("INSERT INTO species_data (species_code,subcategory,species_parameter," +
+                        "parameter_value) VALUES (" + self.activeSpcCode + "," + self.activeSpcSubcat +
+                        ",'Previous_Occurrence','1')")
+            else:
+                #  Previous_Occurrence parameter is in the database. Update it.
+                sql = ("UPDATE species_data SET parameter_value='1' WHERE " +
+                        "species_code=" + self.activeSpcCode + " AND subcategory=" +
+                        self.activeSpcSubcat+" AND species_parameter='Previous_Occurrence'")
+            self.db.dbExec(sql)
+
         #  emit the changed signal to update parent
-        self.emit(SIGNAL("changed"))
+        self.changed.emit()
 
         self.setSampleBtnEnable()
 
@@ -329,45 +440,47 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         self.fullspcCList.clear()
         self.fullspcSList.clear()
 
+        wghtList=[]
         spcList=[]
 
-        if (len(self.hauls) < 2):
+        if (len(self.historyHauls) < 2):
             return
 
-        hauls = str(self.hauls[0])
-        if len(self.hauls)<self.history:
-            count=len(self.hauls)
-        else:
-            count=self.history
-        for i in range(count-1):
-            hauls=(hauls+","+str(self.hauls[i+1]))
-        query=QtSql.QSqlQuery("SELECT species.common_name, species.species_code FROM species INNER " +
-                "JOIN samples ON species.species_code=samples.species_code WHERE (samples.event_id in("+
-                hauls+") AND (samples.survey = "+self.survey+") AND species.species_code not in (100000, 100001) AND species.species_code<900000) " +
-                "GROUP BY species.common_name, species.species_code")
-        wghtList=[]
-        while query.next():
-            spcList.append(query.value(0).toString())
-            query1=QtSql.QSqlQuery("SELECT sum(BASKETS.WEIGHT ) FROM BASKETS, SAMPLES  WHERE " +
-                    "(( SAMPLES.SAMPLE_ID = BASKETS.SAMPLE_ID ) and (SAMPLES.SPECIES_CODE = "+
-                    query.value(1).toString()+") AND  (SAMPLES.SURVEY = "+self.survey+
-                    ") AND  (SAMPLES.event_id in("+hauls+")))" )
-            query1.first()
-            wghtList.append(query1.value(0).toFloat()[0])
+        hauls = ','.join(self.historyHauls)
+
+
+        sql = ("SELECT species.common_name, species.species_code FROM species INNER " +
+                "JOIN samples ON species.species_code=samples.species_code WHERE " +
+                "(samples.event_id IN (" + hauls + ") AND (samples.survey = " +
+                self.survey+") AND species.species_code not in (100000, 100001) " +
+                "AND species.species_code<900000) GROUP BY species.common_name," +
+                "species.species_code")
+        spQuery = self.db.dbQuery(sql)
+
+        #  loop through the events
+
+        for commonName, spCode in spQuery:
+            spcList.append(commonName)
+            sql = ("SELECT SUM(BASKETS.WEIGHT) FROM BASKETS,SAMPLES WHERE " +
+                    "((SAMPLES.SAMPLE_ID=BASKETS.SAMPLE_ID) AND (SAMPLES.SPECIES_CODE="+
+                    spCode + ") AND (SAMPLES.SURVEY="+self.survey+ ") AND " +
+                    "(SAMPLES.event_id IN(" + hauls + ")))" )
+
+            weightQuery = self.db.dbQuery(sql)
+            sampleWeight, = weightQuery.first()
+            if sampleWeight:
+                try:
+                    wghtList.append(float(sampleWeight))
+                except:
+                    pass
 
         #  if we have a history - create the "short list"
         if wghtList:
             wghtList, spcList = (list(x) for x in zip(*sorted(zip(wghtList, spcList))))
             spcList.reverse()
-            self.fullspcCList.addItems(QStringList(spcList))
+            self.fullspcCList.addItems(spcList)
 
 
-    def getMethotSpecies(self):
-        spcList=[]
-        query=QtSql.QSqlQuery("SELECT species.common_name FROM species WHERE plankton_species=1 ORDER BY species.common_name");
-        while query.next():
-            spcList.append(query.value(0).toString())
-        self.planktonList.addItems(QStringList(spcList))
 
 
     def getRadioSel(self):
@@ -376,8 +489,71 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         self.getSpcHistory()
 
 
-    def goExit(self):
-        self.accept()
 
+    def checkWindowLocation(self, position, size, padding=[5, 25]):
+        '''
+        checkWindowLocation accepts a window position (QPoint) and size (QSize)
+        and returns a potentially new position and size if the window is currently
+        positioned off the screen.
 
+        This function uses QScreen.availableVirtualGeometry() which returns the full
+        available desktop space *not* including taskbar. For all single and "typical"
+        multi-monitor setups this should work reasonably well. But for multi-monitor
+        setups where the monitors may be different resolutions, have different
+        orientations or different scaling factors, the app may still fall partially
+        or totally offscreen. A more thorough check gets complicated, so hopefully
+        those cases are very rare.
 
+        If the user is holding the <shift> key while this method is run, the
+        application will be forced to the primary monitor.
+        '''
+
+        #  create a QRect that represents the app window
+        appRect = QRect(position, size)
+
+        #  check for the shift key which we use to force a move to the primary screem
+        resetPosition = QGuiApplication.queryKeyboardModifiers() == Qt.KeyboardModifier.ShiftModifier
+        if resetPosition:
+            position = QPoint(padding[0], padding[0])
+
+        #  get a reference to the primary system screen - If the app is off the screen, we
+        #  will restore it to the primary screen
+        primaryScreen = QGuiApplication.primaryScreen()
+
+        #  assume the new and old positions are the same
+        newPosition = position
+        newSize = size
+
+        #  Get the desktop geometry. We'll use availableVirtualGeometry to get the full
+        #  desktop rect but note that if the monitors are different resolutions or have
+        #  different scaling, some parts of this rect can still be offscreen.
+        screenGeometry = primaryScreen.availableVirtualGeometry()
+
+        #  if the app is partially or totally off screen or we're force resetting
+        if resetPosition or not screenGeometry.contains(appRect):
+
+            #  check if the upper left corner of the window is off the left side of the screen
+            if position.x() < screenGeometry.x():
+                newPosition.setX(screenGeometry.x() + padding[0])
+            #  check if the upper right is off the right side of the screen
+            if position.x() + size.width() >= screenGeometry.width():
+                p = screenGeometry.width() - size.width() - padding[0]
+                if p < padding[0]:
+                    p = padding[0]
+                newPosition.setX(p)
+            #  check if the top of the window is off the top/bottom of the screen
+            if position.y() < screenGeometry.y():
+                newPosition.setY(screenGeometry.y() + padding[0])
+            if position.y() + size.height() >= screenGeometry.height():
+                p = screenGeometry.height() - size.height() - padding[1]
+                if p < padding[0]:
+                    p = padding[0]
+                newPosition.setY(p)
+
+            #  now make sure the lower right (resize handle) is on the screen
+            if (newPosition.x() + newSize.width()) > screenGeometry.width():
+                newSize.setWidth(screenGeometry.width() - newPosition.x() - padding[0])
+            if (newPosition.y() + newSize.height()) > screenGeometry.height():
+                newSize.setHeight(screenGeometry.height() - newPosition.y() - padding[1])
+
+        return [newPosition, newSize]
