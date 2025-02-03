@@ -135,7 +135,8 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         #  sets the width of the scroll bar about double the standard width. This can be
         #  altered by setting GUI-ScrollBar-Width in the .ini file
         width = str(self.settings['GUI-ScrollBar-Width'])
-        appStyleSheet = 'QScrollBar::vertical{width: ' + width + 'px;}\n'
+        appStyleSheet = 'QScrollBar:vertical{width: ' + width + 'px;}\n'
+        print(appStyleSheet)
         self.setStyleSheet(appStyleSheet)
 
         #  try to load the background image.
@@ -684,7 +685,7 @@ if __name__ == "__main__":
     settings['SoundsDir'] = initSettings.value('SoundsDir', './sounds')
     settings['IconDir'] = initSettings.value('IconDir', './icons')
     settings['Database'] = initSettings.value('Database', 'Oracle')
-    settings['GUI-ScrollBar-Width'] = initSettings.value('Database', 40)
+    settings['GUI-ScrollBar-Width'] = initSettings.value('GUI-ScrollBar-Width', 40)
 
     #  create an instance of QApplication
     app = QApplication(sys.argv)

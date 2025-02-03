@@ -15,8 +15,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>165</width>
-    <height>0</height>
+    <width>750</width>
+    <height>600</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="35,30,35">
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="40,25,35">
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
@@ -56,7 +56,7 @@
          <property name="font">
           <font>
            <family>Arial Black</family>
-           <pointsize>12</pointsize>
+           <pointsize>11</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -74,13 +74,13 @@
           <number>100</number>
          </attribute>
          <attribute name="horizontalHeaderStretchLastSection">
-          <bool>false</bool>
+          <bool>true</bool>
          </attribute>
          <attribute name="verticalHeaderMinimumSectionSize">
           <number>50</number>
          </attribute>
          <attribute name="verticalHeaderDefaultSectionSize">
-          <number>60</number>
+          <number>50</number>
          </attribute>
          <column>
           <property name="text">
@@ -180,7 +180,7 @@
          <property name="font">
           <font>
            <family>Arial Black</family>
-           <pointsize>14</pointsize>
+           <pointsize>11</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -192,7 +192,7 @@
           <number>2</number>
          </property>
          <attribute name="horizontalHeaderDefaultSectionSize">
-          <number>100</number>
+          <number>80</number>
          </attribute>
          <attribute name="horizontalHeaderStretchLastSection">
           <bool>true</bool>
@@ -214,7 +214,7 @@
          <property name="minimumSize">
           <size>
            <width>200</width>
-           <height>55</height>
+           <height>75</height>
           </size>
          </property>
          <property name="font">
@@ -319,7 +319,7 @@
          <property name="font">
           <font>
            <family>Arial Black</family>
-           <pointsize>12</pointsize>
+           <pointsize>11</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -343,7 +343,10 @@
           <bool>false</bool>
          </attribute>
          <attribute name="horizontalHeaderStretchLastSection">
-          <bool>false</bool>
+          <bool>true</bool>
+         </attribute>
+         <attribute name="verticalHeaderDefaultSectionSize">
+          <number>50</number>
          </attribute>
          <column>
           <property name="text">

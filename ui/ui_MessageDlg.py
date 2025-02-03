@@ -44,9 +44,7 @@ class Ui_messageDlg(object):
         font.setBold(True)
         font.setWeight(75)
         self.msgLabel.setFont(font)
-        self.msgLabel.setStyleSheet("QWidget {\n"
-"    background-color: white;\n"
-"}")
+        self.msgLabel.setStyleSheet("")
         self.msgLabel.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.msgLabel.setText("")
         self.msgLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)

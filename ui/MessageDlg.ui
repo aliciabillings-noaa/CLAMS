@@ -56,9 +56,7 @@
         </font>
        </property>
        <property name="styleSheet">
-        <string notr="true">QWidget {
-    background-color: white;
-}</string>
+        <string notr="true"/>
        </property>
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>

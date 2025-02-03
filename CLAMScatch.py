@@ -94,7 +94,9 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.parentSamples = {}
         self.mixtureNames = {'100000':'WholeHaul', '100001':'SortingTable',
                 '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2'}
-        self.wholeHaulKey=None
+        self.wholeHaulKey = None
+        self.headerFont = QFont("Arial Black", 11, -1, False)
+
 
         #  do some UI setup
         self.sciLabel.setText(self.scientist)
@@ -105,8 +107,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.basketTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.basketTable.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
-        #self.sumTable.setColumnWidth(0, 125)
-        #self.sumTable.setColumnWidth(1, 125)
+
 
         # set up recurring dialogs
         self.message = messagedlg.MessageDlg(self)
@@ -116,6 +117,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.spcDlg = addcatchspcdlg.AddCatchSpcDlg(self)
 
         #  connect signals and slots
+        #self.resizeEvent.connect(self.resizeWindow)
         self.addspcBtn.clicked.connect(self.getSpecies)
         self.manualBtn.clicked.connect(self.getManual)
         self.doneBtn.clicked.connect(self.close)
@@ -819,6 +821,16 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.setRowCount(0)
         basketCount = 0
 
+        headerItem = QTableWidgetItem("Weight")
+        headerItem.setFont(self.headerFont)
+        self.basketTable.setHorizontalHeaderItem(0, headerItem)
+        headerItem = QTableWidgetItem("Count")
+        headerItem.setFont(self.headerFont)
+        self.basketTable.setHorizontalHeaderItem(1, headerItem)
+        headerItem = QTableWidgetItem("Type")
+        headerItem.setFont(self.headerFont)
+        self.basketTable.setHorizontalHeaderItem(2, headerItem)
+
         #  query the baskets for this sample ID and populate the baskets table
         sql = ("SELECT basket_id, weight, count, basket_type " +
                 "FROM baskets WHERE ship="+self.ship+" AND survey="+self.survey+
@@ -826,12 +838,21 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 self.activeSampleKey+" ORDER BY basket_id")
         query = self.db.dbQuery(sql)
         for basketId, basketWeight, count, basketType in query:
+            #  round the basket weight for display
+            try:
+                basketWeight = float(basketWeight)
+                basketWeight = str(round(basketWeight,2))
+            except:
+                basketWeight = '0.00'
+
             #  add this basket to the table
             self.basketTable.insertRow(basketCount)
-            self.basketTable.setItem(basketCount, 0, QTableWidgetItem(basketId))
-            self.basketTable.setItem(basketCount, 1, QTableWidgetItem(basketWeight))
-            self.basketTable.setItem(basketCount, 2, QTableWidgetItem(count))
-            self.basketTable.setItem(basketCount, 3, QTableWidgetItem(basketType))
+            headerItem = QTableWidgetItem(basketId)
+            headerItem.setFont(self.headerFont)
+            self.sumTable.setVerticalHeaderItem(basketCount, headerItem)
+            self.basketTable.setItem(basketCount, 0, QTableWidgetItem(basketWeight))
+            self.basketTable.setItem(basketCount, 1, QTableWidgetItem(count))
+            self.basketTable.setItem(basketCount, 2, QTableWidgetItem(basketType))
             basketCount += 1
 
         #  resize columns and scroll to bottom
@@ -845,10 +866,12 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         totalWeight = 0
         totalBasketCount = 0
 
-#  I don't think this needs to be done since we'll explicitly set the
-#  vertical header items below.
-#        for i in range(3):
-#            self.sumTable.setVerticalHeaderItem(i, QTableWidgetItem(""))
+        headerItem = QTableWidgetItem("Weight")
+        headerItem.setFont(self.headerFont)
+        self.sumTable.setHorizontalHeaderItem(0, headerItem)
+        headerItem = QTableWidgetItem("Basket Count")
+        headerItem.setFont(self.headerFont)
+        self.sumTable.setHorizontalHeaderItem(1, headerItem)
 
         # get total weights and counts per basket type and update the table
         sql = ("SELECT sum(WEIGHT), count(weight), basket_type FROM BASKETS " +
@@ -856,9 +879,19 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 self.activeHaul+" AND sample_id="+self.activeSampleKey+" GROUP BY basket_type")
         query = self.db.dbQuery(sql)
         for sumWeight, basketCount, basketType in query:
+            #  round the basket weight totals for display
+            try:
+                sumWeight = float(sumWeight)
+                dispWeight = str(round(sumWeight,2))
+            except:
+                dispWeight = '0.00'
+
+            #  insert row in sum table
             self.sumTable.insertRow(typeCount)
-            self.sumTable.setVerticalHeaderItem(typeCount, QTableWidgetItem(basketType))
-            self.sumTable.setItem(typeCount, 0, QTableWidgetItem(sumWeight))
+            headerItem = QTableWidgetItem(basketType)
+            headerItem.setFont(self.headerFont)
+            self.sumTable.setVerticalHeaderItem(typeCount, headerItem)
+            self.sumTable.setItem(typeCount, 0, QTableWidgetItem(dispWeight))
             self.sumTable.setItem(typeCount, 1, QTableWidgetItem(basketCount))
             typeCount += 1
 
@@ -875,8 +908,11 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 pass
 
         #  set the total values in the table
+        totalWeight = str(round(totalWeight,2))
         self.sumTable.insertRow(typeCount)
-        self.sumTable.setVerticalHeaderItem(typeCount, QTableWidgetItem('Total'))
+        headerItem = QTableWidgetItem('Total')
+        headerItem.setFont(self.headerFont)
+        self.sumTable.setVerticalHeaderItem(typeCount, headerItem)
         self.sumTable.setItem(typeCount, 0, QTableWidgetItem(str(totalWeight)))
         self.sumTable.setItem(typeCount, 1, QTableWidgetItem(str(totalBasketCount)))
 
@@ -1358,6 +1394,17 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.speciesDict = {}
         nSamples = 0
 
+        #  set the column headers
+        headerItem = QTableWidgetItem("Species")
+        headerItem.setFont(self.headerFont)
+        self.speciesList.setHorizontalHeaderItem(0, headerItem)
+        headerItem = QTableWidgetItem("Parent")
+        headerItem.setFont(self.headerFont)
+        self.speciesList.setHorizontalHeaderItem(1, headerItem)
+        headerItem = QTableWidgetItem("Type")
+        headerItem.setFont(self.headerFont)
+        self.speciesList.setHorizontalHeaderItem(2, headerItem)
+
         #  loop thru the samples and add them to the species list table
         sql = ("SELECT samples.sample_id, species.common_name, species.scientific_name," +
                 "species.species_code, samples.parent_sample, samples.subcategory"+
@@ -1413,7 +1460,9 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
             #  add this sample to the table
             self.speciesList.insertRow(nSamples)
-            self.speciesList.setVerticalHeaderItem(nSamples,QTableWidgetItem(sampleId))
+            headerItem = QTableWidgetItem(sampleId)
+            headerItem.setFont(self.headerFont)
+            self.speciesList.setVerticalHeaderItem(nSamples,headerItem)
             self.speciesList.setItem(nSamples, 0, QTableWidgetItem(name))
             self.speciesList.setItem(nSamples, 1, QTableWidgetItem(myParent))
             nSamples += 1
@@ -1438,7 +1487,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         sql = ("SELECT measurement_setup.device_id, device_configuration.parameter_value FROM " +
                 "device_configuration INNER JOIN measurement_setup ON device_configuration.device_id " +
                 "= measurement_setup.device_id WHERE measurement_setup.workstation_id=" +
-                self.workStation+" AND measurement_setup.gui_module='Catch' AND " +
+                self.workStation + " AND measurement_setup.gui_module='Catch' AND " +
                 "device_configuration.device_parameter='SoundFile'")
         query = self.db.dbQuery(sql)
         for device_id, parameter_value in query:
@@ -1561,6 +1610,12 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             #  store the window size and position
             self.appSettings.setValue('winposition', self.pos())
             self.appSettings.setValue('winsize', self.size())
+
+    def resizeEvent(self, rsEvent):
+        self.speciesList.resizeColumnsToContents()
+        self.basketTable.resizeColumnsToContents()
+        self.sumTable.resizeColumnsToContents()
+
 
 
     def checkWindowLocation(self, position, size, padding=[5, 25]):
