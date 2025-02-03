@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>303</width>
-    <height>251</height>
+    <height>392</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,7 @@
        <property name="minimumSize">
         <size>
          <width>165</width>
-         <height>35</height>
+         <height>75</height>
         </size>
        </property>
        <property name="font">
@@ -60,7 +60,7 @@
        <property name="minimumSize">
         <size>
          <width>165</width>
-         <height>35</height>
+         <height>75</height>
         </size>
        </property>
        <property name="font">
@@ -81,7 +81,7 @@
        <property name="minimumSize">
         <size>
          <width>165</width>
-         <height>35</height>
+         <height>75</height>
         </size>
        </property>
        <property name="font">
@@ -102,7 +102,7 @@
        <property name="minimumSize">
         <size>
          <width>165</width>
-         <height>35</height>
+         <height>75</height>
         </size>
        </property>
        <property name="font">

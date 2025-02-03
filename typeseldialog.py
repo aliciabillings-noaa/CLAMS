@@ -55,17 +55,25 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
         for button in self.buttons:
             button.hide()
 
-        # then set them up for the basket types
-        for i in range(len(parent.basketTypes)):
-            self.buttons[i].show()
-            self.buttons[i].setText(parent.basketTypes[i])
-            button.clicked.connect(self.selType)
-
         self.numDlg = parent.numpad
 
-    def buttonSetup(self, validList):
-        self.Type = None
+
+    def buttonSetup(self, validList, basketTypes):
+
+
+        #  first hide buttons
+        for button in self.buttons:
+            button.hide()
+
+        # then set them up for the basket types
+        for i in range(len(basketTypes)):
+            self.buttons[i].show()
+            self.buttons[i].setText(basketTypes[i])
+            self.buttons[i].clicked.connect(self.selType)
+
+
         for i in range(len(validList)):
+            print(validList[i])
             if not validList[i]:
                 self.buttons[i].setEnabled(False)
             else:

@@ -231,7 +231,6 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
 
     @pyqtSlot(str)
     def searchEdited(self, newChars):
-        print(newChars)
         self.chars = newChars
         self.getList()
 

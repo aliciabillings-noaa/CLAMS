@@ -756,7 +756,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.validList[self.basketTypes.index('Count')] = 1
 
         #  display the basket type dialog
-        self.typeDlg.buttonSetup(self.validList)
+        self.typeDlg.buttonSetup(self.validList, self.basketTypes)
         if self.typeDlg.exec():
             self.basketType = self.typeDlg.basketType
             self.count=self.typeDlg.count
@@ -849,7 +849,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.basketTable.insertRow(basketCount)
             headerItem = QTableWidgetItem(basketId)
             headerItem.setFont(self.headerFont)
-            self.sumTable.setVerticalHeaderItem(basketCount, headerItem)
+            self.basketTable.setVerticalHeaderItem(basketCount, headerItem)
             self.basketTable.setItem(basketCount, 0, QTableWidgetItem(basketWeight))
             self.basketTable.setItem(basketCount, 1, QTableWidgetItem(count))
             self.basketTable.setItem(basketCount, 2, QTableWidgetItem(basketType))
@@ -933,9 +933,14 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         '''
         self.focus = 'basketList'
 
-        self.selRecord=[]
-        for item in self.basketTable.selectedItems():
-            self.selRecord.append(item.text())
+        self.selRecord = []
+
+        selectedRow = self.basketTable.currentRow()
+        if selectedRow >= 0:
+            self.selRecord.append(self.basketTable.verticalHeaderItem(selectedRow).text())
+            self.selRecord.append(self.basketTable.item(selectedRow,0).text())
+            self.selRecord.append(self.basketTable.item(selectedRow,1).text())
+            self.selRecord.append(self.basketTable.item(selectedRow,2).text())
 
 
     def deleteSpecimen(self):
@@ -1005,7 +1010,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         sql = ("SELECT specimen_id FROM specimen WHERE ship="+self.ship+" AND survey="+
                 self.survey+" AND event_id="+self.activeHaul+" AND sample_id ="+self.activeSampleKey)
         query = self.db.dbQuery(sql)
-        specimenID, query.first()
+        specimenID, = query.first()
         if specimenID:
             # the active species has specimen data
             hasSpecimen = True

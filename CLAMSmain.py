@@ -136,7 +136,6 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         #  altered by setting GUI-ScrollBar-Width in the .ini file
         width = str(self.settings['GUI-ScrollBar-Width'])
         appStyleSheet = 'QScrollBar:vertical{width: ' + width + 'px;}\n'
-        print(appStyleSheet)
         self.setStyleSheet(appStyleSheet)
 
         #  try to load the background image.
