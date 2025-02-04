@@ -38,7 +38,7 @@
         Melina Shak <melina.shak@noaa.gov>
 """
 
-from PyQt6.QtCore import QLineF, QPointF, Qt, QRectF
+from PyQt6.QtCore import QLineF, QPointF, QRectF, Qt
 from PyQt6.QtGui import QFont, QPen, QBrush
 from PyQt6.QtWidgets import QGraphicsScene
 
@@ -91,10 +91,10 @@ class HistogramPlot(QGraphicsScene):
         self.mLengthBars=[]
         self.fLengthBars=[]
         self.uLengthBars=[]
-        linePen=QPen(Qt.black, 0)
-        ubrush=QBrush(Qt.gray, Qt.SolidPattern)
-        mbrush=QBrush(Qt.white, Qt.SolidPattern)
-        fbrush=QBrush(Qt.black, Qt.SolidPattern)
+        linePen=QPen(Qt.GlobalColor.black, 0)
+        ubrush=QBrush(Qt.GlobalColor.gray, Qt.BrushStyle.SolidPattern)
+        mbrush=QBrush(Qt.GlobalColor.white, Qt.BrushStyle.SolidPattern)
+        fbrush=QBrush(Qt.GlobalColor.black, Qt.BrushStyle.SolidPattern)
         barsize=1
         for i in range(80):
             self.uLengthBars.append(self.addRect(QRectF(i, 0, barsize, 0), linePen, ubrush))

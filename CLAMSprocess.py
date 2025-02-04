@@ -45,7 +45,7 @@ from ui import ui_CLAMSProcess
 import CLAMShaul
 import CLAMScatch
 #import CLAMSspecimen
-#import CLAMSlength
+import CLAMSlength
 import CLAMSSpeciesFix
 from acquisition.SensorMonitor import SensorMonitor
 import messagedlg
@@ -485,8 +485,8 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.lengthBtn.setPalette(self.blue)
 
         #  show the length form
-        #lengthWindow = CLAMSlength.CLAMSLength(self)
-        #lengthWindow.exec()
+        lengthWindow = CLAMSlength.CLAMSLength(self)
+        lengthWindow.exec()
 
         #  set the button color back now that the form is closed
         self.lengthBtn.setPalette(self.black)
