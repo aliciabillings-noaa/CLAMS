@@ -32,6 +32,7 @@ tables:
   - protocol_map
   - ships
   - species
+  - species_data
   - species_associations
   - specimen_protocol
   - survey_ports

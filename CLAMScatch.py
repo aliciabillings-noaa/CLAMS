@@ -1218,7 +1218,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.validList[self.basketTypes.index('Count')] = 1
 
         #  set up the basket type dialog button states
-        self.typeDlg.buttonSetup(self.validList)
+        self.typeDlg.buttonSetup(self.validList, self.basketTypes)
 
         #  get the current basket selection
         selRecord = []
@@ -1234,7 +1234,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             return
 
         #  present the edit dialog
-        header = ['Basket ID','Weight', 'Count', 'Sample Type' ]
+        header = ['Weight', 'Count', 'Sample Type' ]
         editDlg = basketeditdlg.BasketEditDlg(header, selRecord, self)
         editDlg.exec()
         if not editDlg.okFlag:

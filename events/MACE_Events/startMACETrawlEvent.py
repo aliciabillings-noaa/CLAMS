@@ -37,7 +37,7 @@
 |       Rick Towler   <rick.towler@noaa.gov>
 """
 
-#import MACETrawlEvent
+import MACETrawlEvent
 import eventseldlg
 #import interactioncheckdlg
 
@@ -92,5 +92,5 @@ class startMACETrawlEvent():
 #                        return
 
             # create an instance of the trawl event dialog and display
-            #trawlEvent = MACETrawlEvent.MACETrawlEvent(parent)
-            #trawlEvent.exec()
+            trawlEvent = MACETrawlEvent.MACETrawlEvent(parent)
+            trawlEvent.exec()

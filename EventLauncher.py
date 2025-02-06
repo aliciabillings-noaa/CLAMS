@@ -41,6 +41,7 @@
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
+import importlib
 from events import *
 from ui import ui_EventLauncher
 
@@ -92,13 +93,16 @@ class EventLauncher(QDialog, ui_EventLauncher.Ui_EventLauncher):
         eventDetails = self.eventInfo[QObject.sender(self).text()]
 
         #  create a handle to its init function
-        exec('eventFuncHandle=' + eventDetails[1] + '.' + eventDetails[2])
+        #exec('eventFuncHandle=' + eventDetails[1] + '.' + eventDetails[2])
+
+        moduleName = 'events.' + eventDetails[0] + '.' + eventDetails[1] + '.' + eventDetails[2]
+        module = importlib.import_module(moduleName)
 
         #  hid the dialog
         self.hide()
 
         #  and use the handle to call the function
-        eventFuncHandle(self.parent)
+        module(self.parent)
 
         #  close the dialog
         self.accept()

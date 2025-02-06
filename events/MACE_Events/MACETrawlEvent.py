@@ -70,7 +70,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.setAttribute(Qt.WA_DeleteOnClose)
+
 
         #  copy some properties from our parent
         self.db = parent.db

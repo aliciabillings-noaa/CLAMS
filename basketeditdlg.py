@@ -81,16 +81,16 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
             self.editBasket.setHorizontalHeaderItem(i, QTableWidgetItem(header[i]))
             self.editBasket.setItem(0, i, QTableWidgetItem(items[i]))
 
-        self.weight = items[1]
-        self.count = items[2]
-        self.basketType = items[3]
+        self.weight = items[0]
+        self.count = items[1]
+        self.basketType = items[2]
         self.numpad = numpad.NumPad(self)
 
         # signal/slot connections
         self.editBasket.itemSelectionChanged.connect(self.getEdit)
         self.okBtn.clicked.connect(self.getOK)
         self.cancelBtn.clicked.connect(self.getCancel)
-        self.serMonitor.serialDataReceived.connect(self.getAuto)
+        self.serMonitor.SerialDataReceived.connect(self.getAuto)
 
     def getEdit(self):
         """
