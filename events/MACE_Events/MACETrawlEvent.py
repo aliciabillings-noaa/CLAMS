@@ -45,15 +45,14 @@
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
-from ui.xga import ui_MACETrawlEvent
+from ui import ui_MACETrawlEvent
 import numpad
 import keypad
 import messagedlg
 import listseldialog
 import netdlg
 import timedlg
-from acquisition.scs import QSCSClient
-from acquisition.network import NetworkSensors
+from acquisition.SensorMonitor import SensorMonitor
 
 class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
@@ -229,42 +228,120 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 self.abort = True
                 self.close()
 
-        # Set up SCS or network objects
-        sql = ("SELECT parameter_value FROM " + self.schema + ".application_configuration " +
-                "WHERE parameter='SCSVersion'")
+        # Set up sensors
 
-        scs_version, = query.first()
-        if scs_version:
-            try:
-                self.scsVersion = int(scs_version)
-            except:
-                QMessageBox.warning(self, 'Achtung!',"<font size = 14>'SCSVersion' parameter not in " +
-                        "the application_configuration table. Defaulting to SCS 5. This may or may not work!</font>")
 
-        if self.scsVersion == 4:
-            #  create an instance of the SCS client
-            self.scsClient = QSCSClient.QSCSClient(str(self.settings[QString('SCSHost')]),
-                    str(self.settings[QString('SCSPort')]))
 
-            #  attempt to connect to the SCS server
-            if not self.testing:
-                #  set the SCS "last write" time used to track SCS logging interval
-                self.lastSCSWriteTime = QDateTime.currentDateTime()
-                self.setupSCS()
+        #  create an instance of the sensor monitor
+        self.sensorMonitor = SensorMonitor.SensorMonitor()
 
-            self.connect(self.scsClient, SIGNAL("SCSGetReceived"), self.writeStream)
-            self.connect(self.scsClient, SIGNAL("SCSError"), self.errorSCS)
-            self.connect(self.scsClient, SIGNAL("SCSSensorDescription"), self.receiveSCSDescriptions)
-        else:
-            self.scsClient = NetworkSensors.NetworkSensors()
-            if not self.testing:
-                #  set the SCS "last write" time used to track SCS logging interval
-                self.lastSCSWriteTime = {}
-                self.setupSCSSensors()
+        #  connect the SerialDevicesStopped signal which tells us
+        #  when all acquisition threads have stopped. We make sure
+        #  we don't exit before all threads have stopped.
+        self.serMonitor.SerialDevicesStopped.connect(self.devicesClosed)
 
-            self.scsClient.datagramReceived.connect(self.writeStream)
-            self.scsClient.dataTimeout.connect(self.scsTimeout)
-            self.SCSisActive = True
+        #  connect the SerialError signal to inform the user of any
+        #  sensor errors.
+        self.serMonitor.SerialError.connect(self.deviceError)
+
+
+
+        #  set the SCS "last write" time used to track SCS logging interval
+        self.lastSCSWriteTime = {}
+        self.setupSCSSensors()
+
+#        self.scsClient.datagramReceived.connect(self.writeStream)
+#        self.scsClient.dataTimeout.connect(self.scsTimeout)
+        self.SCSisActive = True
+
+    def addSensors(db, sensorMonitor):
+
+        #  query the devices attached to this station
+        sql = ("SELECT measurement_setup.device_id,devices.device_name," +
+                "measurement_setup.device_interface " +
+                "FROM measurement_setup INNER JOIN DEVICES ON " +
+                "measurement_setup.device_id = DEVICES.device_id WHERE " +
+                "measurement_setup.workstation_id = " +  self.workStation +
+                " GROUP BY measurement_setup.DEVICE_ID, DEVICES.DEVICE_NAME")
+        devQuery = db.dbQuery(sql)
+
+        #  loop thru the devices querying their parameters and adding them to serial monitor
+        for deviceID, deviceName, deviceInterface in devQuery:
+
+            #  query the connection parameters for this device
+            sql = ("SELECT device_parameter,parameter_value FROM device_configuration" +
+                    " WHERE device_id=" + deviceID)
+            paramQuery = db.dbQuery(sql)
+
+            #  loop thru the parameters and stick in a dictionary
+            connectionParams = {}
+            for devParam, paramVal in paramQuery:
+                connectionParams.update({devParam.lower():paramVal})
+
+            #  extract the required parameters based on the device interface
+            deviceInterface = deviceInterface.lower()
+            if deviceInterface in ['network','scs']:
+                #  This is a network based device
+                if 'networkport' not in connectionParams:
+                    raise ValueError("The required 'NetworkPort' device_configuration " +
+                            "parameter is missing for the network based device '" + deviceName + "'")
+                port = connectionParams['networkport']
+                baud = None
+
+            elif deviceInterface == 'serial':
+                #  this is a serial based - serialport and baudrate params are required
+                if 'serialport' not in connectionParams:
+                    raise ValueError("The required 'SerialPort' device_configuration " +
+                            "parameter is missing for serial device '" + deviceName + "'")
+                port = connectionParams['serialport']
+
+                if 'baudrate' not in connectionParams:
+                    raise ValueError("The required 'BaudRate' device_configuration " +
+                            "parameter is missing for serial device '" + deviceName + "'")
+                try:
+                    baud = int(connectionParams['baudrate'])
+                except:
+                    raise ValueError("Unable to convert 'BaudRate' parameter " +
+                            connectionParams['baudrate'] + "to an integer for " +
+                            "serial device '" + deviceName + "'")
+            else:
+                raise ValueError("Unknown device_interface '" + deviceInterface +
+                        "' for device '" + deviceName + "'")
+
+            #  extract the optional parameters and if missing provide sane defaults
+            parseType = str(connectionParams.get('parsetype', 'None'))
+            parseExp = str(connectionParams.get('parseexpression', ''))
+            parseIndex = int(connectionParams.get('parseindex', 0))
+            cmdPrompt = str(connectionParams.get('commandprompt', ''))
+
+            #  if this device is configured for regex parsing, get the parse expression
+            if (parseType.lower() == 'regex'):
+                if 'parseexpression' not in connectionParams:
+                    raise ValueError("The required 'ParseExpression' parameter required for " +
+                            "Regex parsing is missing for the device '" + deviceName +
+                            "' in the device_configuration table")
+                parseExp = connectionParams['parseexpression']
+
+
+
+
+            #  add the device to the serial monitor
+            sensorMonitor.addDevice(deviceID, port, baud, parseType, parseExp,
+                    parseIndex, cmdPrompt)
+
+
+        #  now that all devices are added - start monitoring them. This will cause
+        #  SensorMonitor to open serial or network ports and in the case of serial
+        #  ports start polling. SensorMonitor will buffer data until full messages
+        #  are received. Those messages are optionally parsed and then SensorMonitor
+        #  emits a signal with the parsed data.
+        self.serMonitor.startMonitoring()
+
+        #  If there are any errors opening ports, SensorMonitor will emit the
+        #  serialError signal for each device with an issue
+
+
+
 
 
     def getScientistName(self, dialogMessage):
@@ -1744,3 +1821,33 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
         event.accept()
 
+    @pyqtSlot(str, object)
+    def deviceError(self, deviceID, obj):
+
+        #  There was an issue with a device
+
+        #  first get the human readable device name
+        sql = ("SELECT device_name FROM devices" +
+                " WHERE device_id=" + deviceID)
+        query = self.db.dbQuery(sql)
+        deviceName, = query.first()
+
+        #  construct the error text
+        errText = 'Error opening device ' + deviceName
+
+        #  display a warning dialog
+        QMessageBox.warning(self, "Serial Port Error", "<font size = 14>" +
+                errText + ". This device will be not be enabled.")
+
+
+    def devicesClosed(self):
+        '''devicesClosed is called when the SensorMonitor emits the
+        SerialDevicesStopped signal which lets us know all acquisition
+        threads have stopped.
+
+        Since we have done all of the other shutdown tasks, we simply
+        call the close event's accept method.
+
+        '''
+        if self.clEventObj:
+            self.clEventObj.accept()
