@@ -102,7 +102,7 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
 
     def getWeight(self):
         self.numpad.msgLabel.setText("Enter Weight to Transfer")
-        if self.numpad.exec_():
+        if self.numpad.exec():
             self.wtLabel.setText(self.numpad.value)
             self.transWeight=float(self.numpad.value)
             self.transDevice=self.manualDevice
@@ -118,7 +118,7 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
 
     def getCount(self):
         self.numpad.msgLabel.setText("Enter Count to Transfer")
-        self.numpad.exec_()
+        self.numpad.exec()
         self.cntLabel.setText(self.numpad.value)
         self.transCount=float(self.numpad.value)
 
@@ -131,11 +131,11 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
             self.fromBasketType.setEnabled(True)
             self.fromBasketType.clear()
 
-            sql = ("  SELECT baskets.basket_type FROM baskets WHERE baskets.ship = "+self.ship+" AND baskets.survey="+self.survey+" AND baskets.event_id="+self.activeHaul+" AND baskets.sample_id="+
+            sql = ("SELECT baskets.basket_type FROM baskets WHERE baskets.ship = "+self.ship+" AND baskets.survey="+self.survey+" AND baskets.event_id="+self.activeHaul+" AND baskets.sample_id="+
                                   self.fromSampleKey+" GROUP BY baskets.basket_type")
             query = self.db.dbQuery(sql)
 
-            for basketType in query:
+            for basketType, in query:
                 self.fromBasketType.addItem(basketType)
                 self.fromBasketType.setCurrentIndex(-1)
         else:
@@ -149,7 +149,7 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
             "is not NULL ORDER BY gear_options.basket_type")
             query = self.db.dbQuery(sql)
 
-            for basketType in query:
+            for basketType, in query:
                 self.toBasketType.addItem(basketType)
                 self.toBasketType.setCurrentIndex(-1)
 
@@ -168,7 +168,7 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
         if self.sender().text()=='OK':
             if self.transWeight==0:
                 self.message.setMessage(self.errorIcons[1],self.errorSounds[1],'No transfer weight provided...', 'info')
-                self.message.exec_()
+                self.message.exec()
                 return
             # check weight
             sql = ("  SELECT sum(baskets.weight) FROM baskets WHERE baskets.ship = "+self.ship+" AND baskets.survey="+
