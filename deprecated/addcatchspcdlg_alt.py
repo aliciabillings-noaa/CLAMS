@@ -165,7 +165,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg_alt2.Ui_addcatchspcDlg):
         if len(subcats)>1:# species has multiple subclasses in species associations
             self.listDialog = listseldialog.ListSelDialog(subcats, 'Short',  self)
             self.listDialog.label.setText('Choose Size Class')
-            if self.listDialog.exec_():
+            if self.listDialog.exec():
                 if (self.listDialog.itemList.currentRow() < 0):
                     #  no name selected
                     self.message.setMessage(self.errorIcons[1], self.errorSounds[1],

@@ -503,7 +503,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         #  7-26-18 - RHT: Added a dialog which gets the SBE mounting location and
         #  create an instance of the set location dialog
         sbeLocationlDlg = sbeSetLocation.sbeSetLocation()
-        sbeLocationlDlg.exec_()
+        sbeLocationlDlg.exec()
 
         #  make sure that the user specified a location
         if (sbeLocationlDlg.location is None):

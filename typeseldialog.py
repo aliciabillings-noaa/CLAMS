@@ -85,7 +85,7 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
             self.basketType=self.sender().text()
             if self.basketType=='Count':
                 self.numDlg.msgLabel.setText("Enter Count")
-                self.numDlg.exec_()
+                self.numDlg.exec()
                 if (self.numDlg.value != None):
                     #  get the value from the numpad
                     self.count=self.numDlg.value
