@@ -48,7 +48,7 @@ class UDPDevice(QObject):
 
         udp://0.0.0.0:1234
 
-    and emits "whole messages" via the SerialDataReceived signal. Typically this class
+    and emits "whole messages" via the SensorDataReceived signal. Typically this class
     is used internally by the SensorMonitor class which manages the thread and the
     creation and destruction of this object.
 
@@ -58,9 +58,9 @@ class UDPDevice(QObject):
     #  define the UDPDevice class's signals
     DCEControlState = pyqtSignal(str, list)
     SerialControlChanged = pyqtSignal(str, str, bool)
-    SerialDataReceived = pyqtSignal(str, str, object)
-    SerialPortClosed = pyqtSignal(str)
-    SerialError = pyqtSignal(str, object)
+    SensorDataReceived = pyqtSignal(str, str, object)
+    SensorClosed = pyqtSignal(str)
+    SensorError = pyqtSignal(str, object)
 
     def __init__(self, deviceParams):
 
@@ -91,7 +91,7 @@ class UDPDevice(QObject):
                     #  compile the regular expression
                     self.parseExp = re.compile(deviceParams['parseExp'])
                 except Exception as e:
-                    self.SerialError.emit(self.deviceName, SerialError('Invalid regular expression configured for ' +
+                    self.SensorError.emit(self.deviceName, SensorError('Invalid regular expression configured for ' +
                             self.deviceName, parent=e))
             elif deviceParams['parseType'].upper() == 'DELIMITED':
                 self.parseType = 1
@@ -132,7 +132,7 @@ class UDPDevice(QObject):
             self.port = int(portParts[2])
 
         except Exception as e:
-            self.SerialError.emit(self.deviceName, SerialError('Unable to create UDP based port for ' +
+            self.SensorError.emit(self.deviceName, SensorError('Unable to create UDP based port for ' +
                     self.deviceName + '. Invalid port option.', parent=e))
             self.udp_socket = None
 
@@ -147,19 +147,19 @@ class UDPDevice(QObject):
         if self.udp_socket is None:
             try:
                 #  create and open the UDP port
-                self.udp_socket = QtNetwork.QUdpSocket()
+                self.udp_socket = QtNetwork.QUdpSocket(self)
                 self.udp_socket.readyRead.connect(self.udp_data_available)
                 self.udp_socket.bind(self.port)
 
             except Exception as e:
-                self.SerialError.emit(self.deviceName, SerialError('Unable to open UDP based port for device ' +
+                self.SensorError.emit(self.deviceName, SensorError('Unable to open UDP based port for device ' +
                        self.deviceName + '.', parent=e))
 
 
     @pyqtSlot(list)
     def stopPolling(self, deviceList):
         """
-          Close our UDP port and emit the SerialPortClosed signal
+          Close our UDP port and emit the SensorClosed signal
         """
 
         #  check if this signal is for us
@@ -167,21 +167,15 @@ class UDPDevice(QObject):
             #  this is not the droid we're looking for
             return
 
-        if self.udp_socket.state() > 0:
+        #  disconnect readyRead
+        self.udp_socket.readyRead.disconnect()
 
-            self.udp_socket.readyRead.disconnect()
-
+        if self.udp_socket.state().value > 0:
             #  close the UDP socket
             self.udp_socket.close()
 
-            self.udp_socket = None
-
-            #  emit the SerialPortClosed signal
-            self.SerialPortClosed.emit(self.deviceName)
-
-        else:
-            #  if the poll timer is None, we aren't running so we immediately emit the closed signal
-            self.SerialPortClosed.emit(self.deviceName)
+        #  emit the closed signal
+        self.SensorClosed.emit(self.deviceName)
 
 
     @pyqtSlot(str, bool)
@@ -288,16 +282,16 @@ class UDPDevice(QObject):
                                     data = line
                             except Exception as e:
                                 data = None
-                                err = SerialError('Error parsing input from ' + self.deviceName + \
+                                err = SensorError('Error parsing input from ' + self.deviceName + \
                                                    '. Incorrect parsing configuration or malformed data stream.', \
                                                    parent=e)
 
                             # emit a signal containing data from this line
-                            self.SerialDataReceived.emit(self.deviceName, data, err)
+                            self.SensorDataReceived.emit(self.deviceName, data, err)
 
                     elif (self.cmdPromptLen > 0) and (line[-self.cmdPromptLen:] == self.cmdPrompt):
                         #  this line (or the end of it) matches the command prompt
-                        self.SerialDataReceived.emit(self.deviceName, line, err)
+                        self.SensorDataReceived.emit(self.deviceName, line, err)
 
                     else:
                         #  this line of data is not complete - insert in buffer
@@ -351,18 +345,18 @@ class UDPDevice(QObject):
 
                     except Exception as e:
                         data = None
-                        err = SerialError('Error parsing input from ' + self.deviceName + \
+                        err = SensorError('Error parsing input from ' + self.deviceName + \
                                 '. Incorrect parsing configuration or malformed data stream.', \
                                 parent=e)
 
                     # emit a signal containing data from this line
-                    self.SerialDataReceived.emit(self.deviceName, data, err)
+                    self.SensorDataReceived.emit(self.deviceName, data, err)
 
 
 #
-#  SerialDevice Exception class
+#  UDPDevice Exception class
 #
-class SerialError(Exception):
+class SensorError(Exception):
     def __init__(self, msg, parent=None):
         self.errText = msg
         self.parent = parent

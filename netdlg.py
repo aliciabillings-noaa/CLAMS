@@ -16,10 +16,10 @@
 """
 .. module:: netdlg
 
-    :synopsis: netdlg is a dialog that collects net opening dimensions, 
+    :synopsis: netdlg is a dialog that collects net opening dimensions,
                headrope depth and wire out and is used during the trawl event
-               to periodically collect this info between EQ and Haulback.  
-               
+               to periodically collect this info between EQ and Haulback.
+
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
@@ -49,7 +49,6 @@ class NetDlg(QDialog, ui_NetDlg.Ui_netDlg):
         self.setupUi(self)
         self.settings = parent.settings
         self.db = parent.db
-        self.backLogger = parent.backLogger
         self.activeEvent = parent.activeEvent
         self.survey = parent.survey
         self.ship = parent.ship
@@ -63,16 +62,16 @@ class NetDlg(QDialog, ui_NetDlg.Ui_netDlg):
         self.editFlag = False
         self.doneEditing = False
         self.numpad = numpad.NumPad(self)
-        
+
         #  set up signals
         for btn in self.buttons:
-            btn.connect.clicked(self.getValue)
+            btn.clicked.connect(self.getValue)
             btn.setText('')
 
-        self.okBtn.connect.clicked(self.doneClicked)
-        self.addRecordBtn.connect.clicked(self.addRecord)
-        self.deleteBtn.connect.clicked(self.deleteRecord)
-        self.netTable.connect.itemSelectionChanged(self.editData)
+        self.okBtn.clicked.connect(self.doneClicked)
+        self.addRecordBtn.clicked.connect(self.addRecord)
+        self.deleteBtn.clicked.connect(self.deleteRecord)
+        self.netTable.itemSelectionChanged.connect(self.editData)
 
         if self.reloaded:
             self.reloadData()
@@ -104,7 +103,7 @@ class NetDlg(QDialog, ui_NetDlg.Ui_netDlg):
                 "IN('NetVerticalOpening','NetHorizontalOpening','HeadRopeDepth'," +
                 "'TrawlWireOut') GROUP BY time_stamp ORDER BY time_stamp ASC")
         query = self.db.dbQuery(sql)
-        
+
         #  for each time, insert the associated data in the table widget
         row=0
         for timestamp, in query:
@@ -128,7 +127,7 @@ class NetDlg(QDialog, ui_NetDlg.Ui_netDlg):
 
 
     def editData(self):
-        
+
         if self.doneEditing:
             self.doneEditing=False
             return
@@ -160,7 +159,7 @@ class NetDlg(QDialog, ui_NetDlg.Ui_netDlg):
 
 
     def addRecord(self):
-        
+
         # update record
         if self.editFlag:
             for i in range(len(self.measurements)):
@@ -185,15 +184,15 @@ class NetDlg(QDialog, ui_NetDlg.Ui_netDlg):
                         #  measurement exists, update the value
                         sql = ("UPDATE " + self.schema + ".event_stream_data SET measurement_value='" +
                                 self.buttons[i].text() + "' WHERE ship=" + self.ship + " AND survey=" +
-                                self.survey + " AND event_id=" + self.activeEvent + 
+                                self.survey + " AND event_id=" + self.activeEvent +
                                 " AND measurement_type='" + self.measurements[i] +
-                                "' AND time_stamp=to_timestamp('" + 
+                                "' AND time_stamp=to_timestamp('" +
                                 self.netTable.item(self.netTable.currentRow(), 0).text() +
                                 "','MMDDYYYY HH24:MI:SS.FF3')")
                         self.db.dbExec(sql)
                 else:
                     sql = ("DELETE FROM " + self.schema + ".event_stream_data WHERE ship=" +
-                            self.ship + " AND survey=" + self.survey + " AND event_id=" + 
+                            self.ship + " AND survey=" + self.survey + " AND event_id=" +
                             self.activeEvent + " AND measurement_type='" + self.measurements[i] +
                             "' AND time_stamp=to_timestamp('" +
                             self.netTable.item(self.netTable.currentRow(), 0).text() +
@@ -204,7 +203,7 @@ class NetDlg(QDialog, ui_NetDlg.Ui_netDlg):
             self.addRecordBtn.setText('Add \nRecord')
             self.doneEditing=True
             self.netTable.clearSelection()
-            
+
         else:# new record
 
             if self.reloaded:

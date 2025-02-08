@@ -56,7 +56,7 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
         self.activePartition=parent.activePartition
         self.db=parent.db
         self.basketTypes=parent.basketTypes
-        self.serMonitor=parent.serMonitor
+        self.sensorMonitor=parent.sensorMonitor
         self.devices=parent.devices
         self.sounds=parent.sounds
         self.validList=[1, 1, 1]
@@ -65,17 +65,20 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
         self.manualDevice=parent.manualDevice
         self.transCount=0
         self.transWeight=0
+
         # set up dialog windows
         self.message=messagedlg.MessageDlg(self)
         self.numpad = numpad.NumPad(self)
         self.typeDlg = typeseldialog.TypeSelDialog(self)
 
-
         # populate lists
         self.sampleIds={}
-        sql = ("SELECT samples.sample_id, species.common_name, samples.parent_sample, samples.subcategory FROM samples, species WHERE "+
-        "samples.species_code=species.species_code AND samples.ship="+self.ship+" AND samples.survey="+
-        self.survey+" AND samples.event_id="+self.activeHaul+" AND samples.partition='"+self.activePartition+"' AND samples.species_code <>0")
+        sql = ("SELECT samples.sample_id, species.common_name, samples.parent_sample," +
+                "samples.subcategory FROM samples, species WHERE " +
+                "samples.species_code=species.species_code AND samples.ship=" +
+                self.ship + " AND samples.survey=" + self.survey + " AND samples.event_id=" +
+                self.activeHaul + " AND samples.partition='" + self.activePartition +
+                "' AND samples.species_code <> 0")
         query = self.db.dbQuery(sql)
 
         for id, commonName, parentSample, subCategory in query:
@@ -98,7 +101,7 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
         self.toSampleSpc.activated[int].connect(self.getSampleList)
         self.fromBasketType.activated[int].connect(self.getOK)
         self.toBasketType.activated[int].connect(self.getOK)
-        self.serMonitor.SerialDataReceived.connect(self.getAuto)
+        self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
 
     def getWeight(self):
         self.numpad.msgLabel.setText("Enter Weight to Transfer")
@@ -124,29 +127,33 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
 
     def getSampleList(self):
 
-        box=str(self.sender().objectName())
+        box = self.sender().objectName().lower()
         if box.startswith('from'):
-            self.fromSpc=str(self.fromSampleSpc.currentText())
-            self.fromSampleKey=self.sampleIds[self.fromSampleSpc.currentText()]
+            self.fromSpc = self.fromSampleSpc.currentText()
+            self.fromSampleKey = self.sampleIds[self.fromSampleSpc.currentText()]
             self.fromBasketType.setEnabled(True)
             self.fromBasketType.clear()
 
-            sql = ("SELECT baskets.basket_type FROM baskets WHERE baskets.ship = "+self.ship+" AND baskets.survey="+self.survey+" AND baskets.event_id="+self.activeHaul+" AND baskets.sample_id="+
-                                  self.fromSampleKey+" GROUP BY baskets.basket_type")
+            sql = ("SELECT baskets.basket_type FROM baskets WHERE baskets.ship = " +
+                    self.ship + " AND baskets.survey=" + self.survey +
+                    " AND baskets.event_id=" + self.activeHaul + " AND baskets.sample_id=" +
+                    self.fromSampleKey+" GROUP BY baskets.basket_type")
             query = self.db.dbQuery(sql)
 
             for basketType, in query:
                 self.fromBasketType.addItem(basketType)
                 self.fromBasketType.setCurrentIndex(-1)
         else:
-            self.toSpc=str(self.toSampleSpc.currentText())
+            self.toSpc=self.toSampleSpc.currentText()
             self.toSampleKey=self.sampleIds[self.toSampleSpc.currentText()]
             self.toBasketType.setEnabled(True)
             self.toBasketType.clear()
 
-            sql = ("SELECT gear_options.basket_type FROM gear_options INNER JOIN events ON gear_options.gear=events.gear "+
-            "WHERE events.ship="+self.ship+" AND events.survey="+self.survey+" AND events.event_id="+self.activeHaul+" AND gear_options.basket_type "+
-            "is not NULL ORDER BY gear_options.basket_type")
+            sql = ("SELECT gear_options.basket_type FROM gear_options INNER JOIN " +
+                    "events ON gear_options.gear=events.gear WHERE events.ship=" +
+                    self.ship+" AND events.survey="+self.survey+" AND events.event_id="+
+                    self.activeHaul+" AND gear_options.basket_type "+
+                    "is not NULL ORDER BY gear_options.basket_type")
             query = self.db.dbQuery(sql)
 
             for basketType, in query:
@@ -155,7 +162,7 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
 
 
     def getOK(self):
-        if self.fromBasketType.currentIndex()>=0 and self.toBasketType.currentIndex()>=0:
+        if self.fromBasketType.currentIndex() >= 0 and self.toBasketType.currentIndex() >= 0:
             self.getWtBtn.setEnabled(True)
             self.fromType=self.fromBasketType.currentText()
             self.toType=self.toBasketType.currentText()
@@ -163,41 +170,46 @@ class TransferDlg(QDialog, ui_TransferDlg.Ui_transferDlg):
                 self.getCntBtn.setEnabled(True)
 
 
-    def  bail(self):
+    def bail(self):
         # make sure you have goods
-        if self.sender().text()=='OK':
+        if self.sender().text() == 'OK':
             if self.transWeight==0:
-                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],'No transfer weight provided...', 'info')
+                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
+                        'No transfer weight provided...', 'info')
                 self.message.exec()
                 return
+
             # check weight
-            sql = ("  SELECT sum(baskets.weight) FROM baskets WHERE baskets.ship = "+self.ship+" AND baskets.survey="+
-                                  self.survey+" AND baskets.event_id="+self.activeHaul+" AND baskets.sample_id = "+self.fromSampleKey+
-                                    " AND baskets.basket_type ='"+self.fromType+"'")
+            sql = ("SELECT sum(baskets.weight) FROM baskets WHERE baskets.ship = "+
+                    self.ship+" AND baskets.survey="+ self.survey+" AND baskets.event_id="+
+                    self.activeHaul+" AND baskets.sample_id = "+self.fromSampleKey+
+                    " AND baskets.basket_type ='"+self.fromType+"'")
             query = self.db.dbQuery(sql)
             wt, = query.first()
-            fullWeight=float(wt)
-            if (fullWeight-self.transWeight)<0: # the transfer is more than the total
-                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],"Transfer weight exceeds original sample weight, can't do...", 'info')
+            fullWeight = float(wt)
+            if (fullWeight-self.transWeight) < 0: # the transfer is more than the total
+                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
+                        "Transfer weight exceeds original sample weight, can't do...", 'info')
                 return
 
-            if not self.transCount==0:
+            if not self.transCount == 0:
                 #  only verify count if source and destination are both count sample types
                 #  (subsample will not have a count at this time so you can't verify)
                 if self.fromType== 'Count':
-                    sql = ("SELECT sum(baskets.count) FROM baskets WHERE baskets.ship = "+self.ship+" AND baskets.survey="+self.survey+
-                    " AND baskets.event_id="+self.activeHaul+" AND baskets.sample_id = "+self.fromSampleKey+
-                    " AND baskets.basket_type ='Count'")
+                    sql = ("SELECT sum(baskets.count) FROM baskets WHERE baskets.ship = "+
+                        self.ship+" AND baskets.survey="+self.survey+ " AND baskets.event_id="+
+                        self.activeHaul+" AND baskets.sample_id = "+self.fromSampleKey+
+                        " AND baskets.basket_type ='Count'")
                     query = self.db.dbQuery(sql)
                     cnt, = query.first()
                     fullCount=float(cnt)
-                    if (fullCount-self.transCount)<0:
-                        self.message.setMessage(self.errorIcons[1],self.errorSounds[1],"Transfer count exceeds original sample weight, You're asking the impossible...", 'info')
+                    if (fullCount-self.transCount) < 0:
+                        self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
+                            "Transfer count exceeds original sample weight, You're asking the impossible.", 'info')
                         return
 
             self.accept()
-        else: # cancel button
+
+        else:
+            #  user hit cancel button
             self.reject()
-
-
-

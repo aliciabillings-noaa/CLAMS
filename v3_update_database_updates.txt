@@ -19,3 +19,6 @@ INSERT INTO "CLAMSBASE2"."APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE
 INSERT INTO "CLAMSBASE2"."SPECIES_PARAMETERS" (SPECIES_PARAMETER, DESCRIPTION) VALUES ('Image_File', 'The path to the image file relative to the configured "images" directory. Includes any path elements, file name and extension. E.g. "fishpics/AFSC/pollock.jpg"')
 
 INSERT INTO "CLAMSBASE2"."APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('CheckForPreviousOccurrence', 'True', 'If True, CLAMS will check for the "Previous_Occurrence" species_data attribute when adding species to the catch and alert the user if a new species is encountered. It will add/update this attribute if the user adds the species. If False, CLAMS does not check if you have seen this species before or not.')
+
+UPDATE APPLICATION_EVENTS SET EVENT_MODULE = 'MACETrawlEvent' WHERE EVENT_MODULE='StartMACETrawlEvent'
+

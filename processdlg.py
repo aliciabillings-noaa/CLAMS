@@ -70,7 +70,7 @@ class ProcessDlg(QDialog, ui_ProcessDlg.Ui_processDlg):
             self.procBtn.setEnabled(False)
 
     def edit(self):
-        hlDialog = eventseldlg.EventSelDlg(self.parent, onlyCatch=True)
+        hlDialog = eventseldlg.EventSelDlg(self.parent, catchOnly=True)
         hlDialog.newEventBtn.setEnabled(False)
         if hlDialog.exec():
             self.activeEvent = hlDialog.activeEvent

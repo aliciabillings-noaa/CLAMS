@@ -90,7 +90,7 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         self.resize(size)
 
         #  connect signals
-        self.trawlEventBtn.clicked.connect(self.launchEvent)
+        self.trawlEventBtn.clicked.connect(self.logEvent)
         self.procBtn.clicked.connect(self.processHaul)
         self.utilitiesBtn.clicked.connect(self.utilities)
         self.adminBtn.clicked.connect(self.administration)
@@ -395,12 +395,13 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         self.schemaLabel.setText("Schema: " + self.schema)
 
 
-    def launchEvent(self):
+    def logEvent(self):
         """
-          launchEvent opens up the event launcher allowing the user to select the event
-          they want to log.
+          logEvent displays the event launcher so the user can select the
+          type of event to start.
         """
 
+        #  create an instance of the even launcher dialog and run it
         eventLauncher = EventLauncher.EventLauncher(self)
         eventLauncher.exec()
 

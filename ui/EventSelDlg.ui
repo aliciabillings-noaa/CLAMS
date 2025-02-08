@@ -22,6 +22,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>24</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -44,7 +45,8 @@
        <property name="font">
         <font>
          <family>Arial Black</family>
-         <pointsize>14</pointsize>
+         <pointsize>11</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -123,6 +125,7 @@
         <font>
          <family>Arial Black</family>
          <pointsize>20</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -148,6 +151,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>20</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -168,6 +172,7 @@
           <font>
            <family>Arial Black</family>
            <pointsize>20</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>

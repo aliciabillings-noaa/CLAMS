@@ -18,15 +18,15 @@
 
     :synopsis: CLAMSlength presents the CLAMS length form. The length form
                is used to collect length measurements for a selected species
-               and sex in a given haul and partition. 
+               and sex in a given haul and partition.
                Species will appear in the length form once they have been
                entered from the catch form for the associated haul and partition.
                Length measurements can be auto recorded with a serial connection
                or manually entered with a keypad.  The type of length needs to be specified
                but the default length type for each species will be used first, if available in
-               the database. 
-               Recorded length data for each selected species are presented in the table 
-               display and a length-frequency plot. 
+               the database.
+               Recorded length data for each selected species are presented in the table
+               display and a length-frequency plot.
                The length form is launched from the haul form.
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
@@ -67,20 +67,20 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
     can be either manual or automatic from a serial device.  Measurements are loaded
     to the database and a table and plot view of the length data are shown.
     '''
-    
+
     def __init__(self, parent=None):
         '''
             The CLAMS Length dialog initialization method.  Gets basic information
             and sets up the length form
         '''
-        
+
         #  call superclass init methods, GUI form setup method, and set to delete object on close
         super(CLAMSLength, self).__init__(parent)
         self.setupUi(self)
-        
+
         #  copy some info from parent for convenience
         self.db = parent.db
-        self.serMonitor = parent.serMonitor
+        self.sensorMonitor = parent.sensorMonitor
         if not self.db.db.isOpen():
             self.db.dbOpen()
         self.workStation = parent.workStation
@@ -94,7 +94,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.blue = parent.blue
         self.black = parent.black
         self.scientist = parent.scientist
-        
+
         # setup reoccuring dlgs
         self.numDialog = numpad.NumPad(self)
         self.message = messagedlg.MessageDlg(self)
@@ -107,7 +107,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
             self.admin = True
         else:
             self.admin = False
-            
+
         # initialize variables
         self.activeSpcName = None
         self.comment = ''
@@ -126,21 +126,21 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.sciLabel.setText(self.scientist)
         p = self.scientist.split(' ')
         self.firstName = p[0]
-        
+
         # set up some table bits
         self.sumTable.horizontalHeader().setVisible(False)
         self.sumTable.setColumnCount(1)
-        
+
         # set default sampling Method
         sql = "SELECT sampling_method FROM sampling_methods"
         query = self.db.dbQuery(sql)
         for sampling_method,  in query:
             self.samplingMethodBox.addItem(sampling_method)
         self.samplingMethodBox.setCurrentIndex(self.samplingMethodBox.findText('random'))
-        
+
         # populate species window
         self.updateSpecies()
-        
+
         # set up tables for data display
         font = QFont('helvetica', 14, -1, False)
         self.measureView.setFont(font)
@@ -153,7 +153,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.measureView.setSelectionModel(self.selModel)
         #self.measureView.horizontalHeader().setResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.measureView.show()
-        
+
         # set up length frequency plot
         self.lfPlotScene = histogramplot.HistogramPlot(self)
         self.lfPlot.setScene(self.lfPlotScene)
@@ -165,14 +165,14 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.appSettings = QSettings('CLAMS', 'CatchForm')
         size = self.appSettings.value('winsize', QSize(1000,725))
         position = self.appSettings.value('winposition', QPoint(10,10))
-        
+
        #  check the current position and size to make sure the app is on the screen
         position, size = self.checkWindowLocation(position, size)
 
         #  now move and resize the window
         self.move(position)
         self.resize(size)
-        
+
         # connect signals and slots
         self.deleteBtn.clicked.connect(self.goDelete)
         self.doneBtn.clicked.connect(self.close)
@@ -186,8 +186,8 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         # manual length
         self.manualBtn.clicked.connect(self.getManual)
         # auto lengths from serial device
-        self.serMonitor.SerialDataReceived.connect(self.getAuto)
-        
+        self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
+
         # connect to serial devices
         self.openSerial()
 
@@ -196,7 +196,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         It queries the species that have been entered into the catch form
         for the current haul and partition and adds them to the species list
         '''
-        
+
         # populate species window with species that have been measured in by the catch form
         # first gather all the species information for the current haul and partition
         sql = ("SELECT species.common_name, species.scientific_name, samples.species_code, samples.sample_id, samples.subcategory"+
@@ -211,14 +211,14 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.sampleKeys = []
         self.speciesCodes = []
         self.subCats = []
-        
+
         for common_name, scientific_name, species_code, sample_id,  subcategory in query:
-            
+
             # check to see if the sample has a specified scientific or common name
             sql0 = ("SELECT PARAMETER_VALUE FROM sample_data WHERE sample_parameter='sample_display_name' AND ship="+
                     self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+ " AND sample_id="+sample_id)
             query0 = self.db.dbQuery(sql0)
-            
+
             # if there is a name category specified in the sample_data table,
             # use that for the assignment
             sample_name,  = query0.first()
@@ -229,14 +229,14 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                     species = common_name
             else:
                 species = common_name
-            
+
             # append the name of the subcategory to the name
             subcat=subcategory
             if subcat != 'None':
                 name = species+'-'+subcat
             else:
                 name = species
-            
+
             # populate the lists with species information
             self.speciesList.addItem(name)
             self.speciesCodes.append(species_code)
@@ -247,12 +247,12 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
     def getSpecies(self):
         '''getSpecies is called when a species is selected from the species list.
         Species data, including the max, min, primary and secondary lengths,
-        are queried and saved.  
+        are queried and saved.
         The primary length type for the species is set as the default
         measurement type.
         Additionally, the species picture is set & and the sex boxes are reset.
         '''
-        
+
         # set active species and inform the user
         self.activeSpcName = self.speciesList.currentItem().text()
         self.freeze = True
@@ -260,7 +260,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                 "Changing the Active Species to: \n \n"+ self.activeSpcName ,'info')
         self.addspec.exec()
         self.freeze = False
-        
+
         #  reset the GUI
         self.lengthTypeBox.clear()
         self.sumTable.setEnabled(True)
@@ -281,7 +281,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                     self.activeSpcCode+" AND subcategory='" + self.activeSpcSubcat +
                     "' AND lower(species_parameter)='" + params[i] + "'")
             query = self.db.dbQuery(sql)
-            value,  = query.first() 
+            value,  = query.first()
             if value:
                 vals[i] = value
 
@@ -312,7 +312,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         if vals[3] != None:
             self.lengthTypeBox.addItem(vals[3])
             self.lenthTypes = self.lenthTypes + ",'" + vals[3] + "'"
-            
+
         # get picture
         if self.activeSpcSubcat != 'None':
             imgName = self.activeSpcCode+"_"+self.activeSpcSubcat
@@ -345,11 +345,11 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         '''getManual is triggered when the manual length button is pressed
         This allows a user to enter a length using manual number pad.
         '''
-        
+
         self.manualFlag = True
         self.overrideFlag = False
-        
-        # make sure there is an active species and sex selected.  If there is not, 
+
+        # make sure there is an active species and sex selected.  If there is not,
         # we will have problems inserting into the database later, so inform the user
         if self.activeSpcName == None:
             self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
@@ -361,19 +361,19 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                     "Please select a sex!",'info')
             self.message.exec()
             return
-        
+
         while self.valFlag:
             self.numDialog.msgLabel.setText("Enter Length in cm")
             self.numDialog.exec()
             val = self.numDialog.value
-            
+
             # can this be converted to a float?  If not, it is no good, so pass and wait for the next
             try:
                 float(val)
                 self.value = val
             except:
                 return
-                
+
             # now check to see if it is within the acceptable range.  If not show a warning and ask if user wants to reenter.
             if float(self.value) > self.minLength and float(self.value) < self.maxLength:# measurement within specs
                 # call writeTable to insert this measurement into the database
@@ -405,14 +405,14 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
             float(val)
         except:
             return
-        
+
         if self.freeze:# we're working on a previous length, do not interrupt with new measurement
             return
-        
+
         self.manualFlag = False
         self.overrideFlag = False
-        
-        # make sure there is an active species and sex selected.  If there is not, 
+
+        # make sure there is an active species and sex selected.  If there is not,
         # we will have problems inserting into the database later, so inform the user
         if self.activeSpcName == None:
             self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
@@ -424,7 +424,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                     "Please select a sex!",'info')
             self.message.exec()
             return
-        
+
         # set the value to be written as the input value
         self.value = val
         # now check to see if it is within the acceptable range.  If not show a warning and ask if user wants to reenter.
@@ -455,7 +455,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         Gets the button that was pressed, color codes the buttons appropriately
         and sets the current sex to the one that was pressed.
         '''
-        
+
         button = self.sender().text()
         if button == 'Male':
             self.maleBtn.setPalette(self.blue)
@@ -498,7 +498,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         or when the length type is changed or when an entry has been deleted.
         Re-query the data from the database to display what has been saved.
         '''
-        
+
         if self.admin:
             sql = ("SELECT a.specimen_id, a.length, b.sex "+
                     " FROM "+
@@ -556,7 +556,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                   " AND b.specimen_id = a.specimen_id) ORDER BY a.specimen_id")
 
         self.measureModel.setQuery(sql, self.db.db)
-        
+
         #TODO: Manually add headers and data to a QTableView instead of the QSqlModelView
         # This will be faster and consistent with the Catch module- see updateTables method in CLAMScatch
 
@@ -568,7 +568,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         or when the length type is changed or when an entry has been deleted.
         Re-query the data from the database to display in the plot to display what has been saved.
         '''
-        
+
         # clear the plot area and initialize the length array
         self.lfPlotScene.clearPlot()
         self.lmax = []
@@ -603,7 +603,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                   " AND b.survey = a.survey "+
                   " AND b.event_id = a.event_id "+
                   " AND b.specimen_id = a.specimen_id)")
-        
+
         # otherwise (not at an administrative station), query just the lengths measured at the current workstation
         else:
             sql = ("SELECT a.length, b.sex "+
@@ -657,7 +657,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         into the specimen and measurement tables.
         Once data have been written, the display table and plot are updated
         '''
-        
+
         self.specimenKey = None
 
         #  check if this is a random or non-random sample
@@ -731,32 +731,32 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         '''getMeasureRow gets the data from the row that is selected,
         including querying any comments from the database associated with the measurement
         '''
-        
+
         self.selRecord = []
         selObj = self.measureView.currentIndex()
         for i in range(3):
             index = self.measureModel.index(selObj.row(), i, QModelIndex())
             self.selRecord.append(self.measureModel.data(index, Qt.ItemDataRole.DisplayRole))
         self.specimenKey = str(round(self.selRecord[0]))
-        
+
         # get any comments
         self.comment = ''
         sql = ("SELECT comments FROM specimen WHERE specimen_id = "+self.specimenKey+" AND ship="+self.ship+
         " AND survey="+self.survey+" AND event_id="+self.activeHaul)
         query = self.db.dbQuery(sql)
         val, = query.first()
-        
+
         if val:
             self.comment = val
 
 
     def goDelete(self):
         '''goDelete is called when the delete button is pressed.
-        A question check is presented to user to make sure it was not a mistake 
+        A question check is presented to user to make sure it was not a mistake
         and then the associated data are deleted from the database
         then reloadTable is called to refresh the displayed data
         '''
-        
+
         if not self.selRecord[0] == None:
             # make sure this was not a mistake and the data should be deleted
             self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "Are you sure you want to permanently delete this record, "+self.firstName+"?", 'choice')
@@ -765,13 +765,13 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                 sql = ("DELETE FROM measurements WHERE ship="+self.ship+
                     " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND specimen_id = "+str(self.selRecord[0])) # delete away
                 self.db.dbExec(sql)
-                
+
                 # delete from the specimen table
                 sql = ("DELETE FROM specimen WHERE ship="+self.ship+
                     " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND specimen_id = "+str(self.selRecord[0])) # delete away
                 self.db.dbExec(sql)
                 self.comment = ''
-                
+
                 # reload to display fresh data
                 self.reloadTable()
 
@@ -800,7 +800,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.sumTable.setItem(0, 0,QTableWidgetItem('0'))
         self.sumTable.setItem(1, 0,QTableWidgetItem('0'))
         self.sumTable.setItem(2, 0,QTableWidgetItem('0'))
-        
+
         # Add each count by sex to the table and sum for total
         for N,  sex in query:
             if sex.lower() == 'male':
@@ -810,7 +810,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
             elif sex.lower() == 'unsexed':
                 self.sumTable.setItem(2, 0,QTableWidgetItem(N))
             counts.append(int(N))
-        
+
         self.sumTable.setItem(3, 0,QTableWidgetItem(str(sum(counts))))
 
 
@@ -821,20 +821,20 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         the current workstation and Length module.  The sound file name
         for each device is also queried and saved.
         '''
-        
+
         # initialize the lists that will be populated with measurements, devices and sounds
         self.measurements = []
         self.devices = []
         self.sounds = []
-        
-        # query device_configuration and measurement_setup tables 
+
+        # query device_configuration and measurement_setup tables
         sql = ("SELECT measurement_setup.measurement_type, measurement_setup.device_id, device_configuration.parameter_value FROM " +
                                 "device_configuration INNER JOIN measurement_setup ON device_configuration.device_id " +
                                 "= measurement_setup.device_id WHERE measurement_setup.workstation_id=" +
                                 self.workStation+" AND measurement_setup.gui_module='Length' AND " +
                                 "device_configuration.device_parameter = 'SoundFile'")
         query = self.db.dbQuery(sql)
-        
+
         # loop through results and store them in the lists for measurements, devices and sounds
         for type,  device_id, sound_file in query:
             self.measurements.append(type)
@@ -859,11 +859,11 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
 
         if (self.specimenKey == None):
             return
-        
+
         # pull up key dialog and tack on the current comment associated with the measurement
         keyDialog = keypad.KeyPad(self.comment, self)
         keyDialog.exec()
-        
+
         # is everything looks ok, make a new comment and insert into the database
         if keyDialog.okFlag:
             string = keyDialog.dispEdit.toPlainText()

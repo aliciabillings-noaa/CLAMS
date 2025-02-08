@@ -99,7 +99,7 @@ class ZebraLabelPrinter(QObject):
                            }
 
         #  connect the QSerialMonitor signal
-        self.SenMonObj.SerialDataReceived.connect(self.rxData)
+        self.SenMonObj.SensorDataReceived.connect(self.rxData)
 
 
        #  send the reset command

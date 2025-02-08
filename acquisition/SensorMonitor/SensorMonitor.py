@@ -16,9 +16,11 @@
 """
 .. module:: SensorMonitor
 
-    :synopsis: SensorMonitor watches a collection of serial ports,
-               TCP, and UDP ports and emits a signal when data is
-               received by any of the monitored ports.
+    :synopsis: SensorMonitor watches a collection of devices or sensors
+               connected via serial or network ports ports and emits a
+               signal when data is received from any of the devices.
+               The data is optionally parsed. It allows you to easily
+               send and receive data to/from your devices or sensors.
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |
@@ -32,7 +34,6 @@
 | Maintained by:
 |       Rick Towler   <rick.towler@noaa.gov>
 """
-
 
 
 from PyQt6.QtCore import pyqtSignal, QObject, QThread, pyqtSlot
@@ -74,7 +75,7 @@ class SensorMonitor(QObject):
 
     **Signals**
 
-    **SerialDataReceived** -- This signal is emitted when a complete line of
+    **SensorDataReceived** -- This signal is emitted when a complete line of
     data is received by one of the monitored serial ports. If the line is
     parsed, the signal is only emitted if the parsing method returns data.
 
@@ -86,17 +87,18 @@ class SensorMonitor(QObject):
         @rtype: String
         @returns: The data received by the port identified by the device name.
         @rtype: Exception
-        @returns: If there is an error parsing the data,
+        @returns: If there is an error parsing the data, this will be a
+                  SensorError object containing the error information.
 
     """
 
     #  define this class's signals
     SerialControlState = pyqtSignal(str, str, bool)
     SerialControlChanged = pyqtSignal(str, dict)
-    SerialDataReceived = pyqtSignal(str, str, object)
-    SerialDevicesStopped = pyqtSignal()
-    SerialError = pyqtSignal(str, object)
-    txSerialData = pyqtSignal(str, str)
+    SensorDataReceived = pyqtSignal(str, str, object)
+    SensorsStopped = pyqtSignal()
+    SensorError = pyqtSignal(str, object)
+    txSensorData = pyqtSignal(str, str)
     getSerialCTL = pyqtSignal(str)
     setSerialRTS = pyqtSignal(str, bool)
     setSerialDTR = pyqtSignal(str, bool)
@@ -106,15 +108,12 @@ class SensorMonitor(QObject):
     def __init__(self, parent=None):
         """Initialize this SensorMonitor instance."""
         super(SensorMonitor, self).__init__(None)
-        #QObject.__init__(self, parent)
 
         #  create the devices dictionary which is keyed by device name and stores the
         #  various parameters for that device.
         self.devices = dict()
 
-        #  create the threads dictionary which is keyed by the QThread object and
-        #  stores a reference to the device object.
-        self.threads = dict()
+        self.nThreads = 0
 
 
     def addDevice(self, deviceName, port, baud, parseType, parseExp, parseIndex, cmdPrompt='',
@@ -136,7 +135,7 @@ class SensorMonitor(QObject):
         *baud* is the serial port baud rate such as 9600 or 115200 etc.
 
         *parseType* specifies how the incoming data is parsed before the data is emitted
-        via the *SerialDataReceived* signal. Valid values are:
+        via the *SensorDataReceived* signal. Valid values are:
 
             ``None`` -- No parsing is performed but newline characters are stripped.
 
@@ -176,8 +175,8 @@ class SensorMonitor(QObject):
         output a command prompt which lacks a newline character. Setting *cmdPrompt* to
         the text of this command prompt will result in the command prompt line being
         handled like a regular line where the text of the command prompt is emitted via
-        the *SerialDataReceived* signal. This allows the method handling the
-        *SerialDataReceived* signal to "respond" to the command prompt.
+        the *SensorDataReceived* signal. This allows the method handling the
+        *SensorDataReceived* signal to "respond" to the command prompt.
 
         *byteSize* (optional) a number specifying the number of data bits. Possible values
         are ``5``, ``6``, ``7``, and ``8``. Default is ``8``.
@@ -212,10 +211,10 @@ class SensorMonitor(QObject):
 
         if deviceName in self.devices:
             #  device name is already in use - issue error
-            raise SerialError('Device name ' + deviceName + ' is already in use. Specify a unique name.')
+            raise SensorError('Device name ' + deviceName + ' is already in use. Specify a unique name.')
 
         #  store the parameters for this device - we don't actually create the device here. We but
-        #  create the SensorMonitorThread object when the device is started.
+        #  create the SerialDevice or UDPDevice objecst when the device is started.
         self.devices[deviceName] = {'deviceName':deviceName,
                                     'port':port,
                                     'baud':baud,
@@ -240,7 +239,7 @@ class SensorMonitor(QObject):
           specified, moves the object to a new thread, and starts the thread. The
           SensorMonitorThread objects then open their serial port and start polling
           As data is received from the individual ports it is sent via the
-          ``SerialDataReceived`` signal.
+          ``SensorDataReceived`` signal.
 
           You can start specific devices by setting the `devices` keyword to a list
           of device(s) you want to start. If you do not specify any devices, all
@@ -274,41 +273,42 @@ class SensorMonitor(QObject):
                     #  this is a udp based port
                     doUDP = True
 
-            #  create the serialDevice object
+            #  create the sensorDevice object
             if not doUDP:
-                serialDevice = SerialDevice.SerialDevice(self.devices[device])
+                sensorDevice = SerialDevice.SerialDevice(self.devices[device])
             else:
-                serialDevice = UDPDevice.UDPDevice(self.devices[device])
+                sensorDevice = UDPDevice.UDPDevice(self.devices[device])
 
             #  connect us to the SensorMonitorThread's signals
-            serialDevice.SerialDataReceived.connect(self.dataReceived)
-            serialDevice.SerialControlChanged.connect(self.controlDataChanged)
-            serialDevice.DCEControlState.connect(self.controlDataState)
-            serialDevice.SerialError.connect(self.serialError)
+            sensorDevice.SensorDataReceived.connect(self.dataReceived)
+            sensorDevice.SerialControlChanged.connect(self.controlDataChanged)
+            sensorDevice.DCEControlState.connect(self.controlDataState)
+            sensorDevice.SensorError.connect(self.error)
 
             #  connect our signals to the SensorMonitorThread
-            self.txSerialData.connect(serialDevice.write)
-            self.getSerialCTL.connect(serialDevice.getControlLines)
-            self.setSerialRTS.connect(serialDevice.setRTS)
-            self.setSerialDTR.connect(serialDevice.setDTR)
-            self.stopDevice.connect(serialDevice.stopPolling)
+            self.txSensorData.connect(sensorDevice.write)
+            self.getSerialCTL.connect(sensorDevice.getControlLines)
+            self.setSerialRTS.connect(sensorDevice.setRTS)
+            self.setSerialDTR.connect(sensorDevice.setDTR)
+            self.stopDevice.connect(sensorDevice.stopPolling)
 
             #  create a thread to run the monitor in
             thread = QThread(self)
 
             #  move the monitor to it
-            serialDevice.moveToThread(thread)
+            sensorDevice.moveToThread(thread)
 
             #  connect thread specific signals and slots - this facilitates starting,
             #  stopping, and deletion of the threads.
-            thread.started.connect(serialDevice.startPolling)
-            serialDevice.SerialPortClosed.connect(self.deviceStopped)
+            thread.started.connect(sensorDevice.startPolling)
+            sensorDevice.SensorClosed.connect(self.sensorStopped)
             thread.finished.connect(self.threadCleanup)
             thread.finished.connect(thread.deleteLater)
 
-            #  store references to our new objects
-            self.threads[thread] = serialDevice
+            #  store references to our new objects and keep count
             self.devices[device]['thread'] = thread
+            self.devices[device]['object'] = sensorDevice
+            self.nThreads += 1
 
             #  and finally, start the thread - this will also start polling
             thread.start()
@@ -327,9 +327,9 @@ class SensorMonitor(QObject):
         """
 
         #  first check if any devices are running
-        if len(self.threads) == 0:
-            #  no devices are running so just emit the SerialDevicesStopped signal
-            self.SerialDevicesStopped.emit()
+        if self.nThreads == 0:
+            #  no devices are running so just emit the SensorsStopped signal
+            self.SensorsStopped.emit()
         else:
             #  at least one device is being monitored so tell the device(s) to stop
             if devices == None:
@@ -404,9 +404,9 @@ class SensorMonitor(QObject):
         `deviceName` must be set to the name of a configured device
         """
 
-        #  send the txSerialData signal to the monitoring threads
+        #  send the txSensorData signal to the monitoring threads
         if deviceName in self.devices:
-            self.txSerialData.emit(deviceName, data)
+            self.txSensorData.emit(deviceName, data)
 
 
     def getControlLines(self, deviceName):
@@ -420,7 +420,7 @@ class SensorMonitor(QObject):
     @pyqtSlot(str, str, object)
     def dataReceived(self, deviceName, data, err):
         # consolidates the RX data signals from the individual monitoring threads and re-emit
-        self.SerialDataReceived.emit(deviceName, data, err)
+        self.SensorDataReceived.emit(deviceName, data, err)
 
 
     @pyqtSlot(str, list)
@@ -440,30 +440,22 @@ class SensorMonitor(QObject):
 
 
     @pyqtSlot(str, object)
-    def serialError(self, deviceName, errorObj):
+    def error(self, deviceName, errorObj):
         # consolidates the error signals from the individual monitoring threads and re-emit
-        self.SerialError.emit(deviceName, errorObj)
+        self.SensorError.emit(deviceName, errorObj)
 
 
     @pyqtSlot(str)
-    def deviceStopped(self, deviceName):
-        """deviceStopped is called when a device's serial port is closed. After the port
-        is closed, we stop the thread and optionally remove the device from SensorMonitor.
-        Final thread cleanup is handled in threadCleanup()
+    def sensorStopped(self, deviceName):
+        """deviceStopped is called when a device's port is closed. After the port
+        is closed, we stop the thread. Final thread cleanup is handled in
+        threadCleanup()
 
         This method should not be called directly.
         """
 
         if self.devices[deviceName]['thread']:
             self.devices[deviceName]['thread'].quit()
-
-        #  update the thread accounting
-        del(self.threads[self.devices[deviceName]['thread']])
-        self.devices[deviceName]['thread'] = None
-        
-        #  check if we're removing this device
-        if self.devices[deviceName]['remove']:
-            del self.devices[deviceName]
 
 
     @pyqtSlot()
@@ -479,37 +471,32 @@ class SensorMonitor(QObject):
         #  get a reference to the thread that is shutting down
         thread = QObject.sender(self)
 
-        if thread in self.threads:
+        #  look for this thread in our device dict. If we find it, we
+        #  dereference the python references to our thread and sensor
+        #  object. At this point we know they have been destroyed on
+        #  the Qt side, so we can dereference them so they can be
+        #  garbage collected without error.
+        for device in self.devices:
+            if thread == self.devices[device]['thread']:
+                self.devices[device]['thread'] = None
+                self.devices[device]['object'] = None
+                self.nThreads -= 1
 
-            #  delete the reference to the thread
-            del self.threads[thread]
+                #  check if we're removing this device
+                if self.devices[device]['remove']:
+                    del self.devices[device]
 
-            #  emit the SerialDevicesStopped signal if all threads have stopped
-            if len(self.threads) == 0:
-                self.SerialDevicesStopped.emit()
-
+        if self.nThreads == 0:
+            self.SensorsStopped.emit()
 
 
 #
 #  SensorMonitor Exception class
 #
-class SerialError(Exception):
+class SensorError(Exception):
     def __init__(self, msg, parent=None):
         self.errText = msg
         self.parent = parent
-
-    def __str__(self):
-        return repr(self.errText)
-
-
-class SerialPortError(Exception):
-    def __init__(self, devices, parent=None):
-        self.devices = devices
-        self.devNames = devices.keys()
-        if (len(devices) == 1):
-            self.errText = 'Error opening device ' + str(self.devNames[0])
-        else:
-            self.errText = 'Error opening devices ' + ','.join(self.devNames)
 
     def __str__(self):
         return repr(self.errText)

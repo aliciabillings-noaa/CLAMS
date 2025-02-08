@@ -42,6 +42,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 import Clamsbase2Functions
 from ui import ui_CLAMSProcess
+import devices
 import CLAMShaul
 import CLAMScatch
 #import CLAMSspecimen
@@ -75,7 +76,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.partitions=[]
         self.activePartition=None
         self.methotFlag=False
-        self.clEventObj = None
+        self.sensorsClosed = False
 
         #  set up some colors
         self.blue = QPalette()
@@ -275,108 +276,61 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
 
         '''
 
-        #TODO: SensorMonitor is an evolution of SerialMonitor which also supports TCP and UDP
-        #      based data sources. This code should be updated to move away from only setting
-        #      up serial based devices to support network devices too.
 
-        #  create an instance of the sensor monitor
-        self.serMonitor = SensorMonitor.SensorMonitor()
+        #  Set up sensors - first create an instance of SensorMonitor
+        #  which will handle all the details of receiving and parsing
+        #  data from our devices/sensors.
+        self.sensorMonitor = SensorMonitor.SensorMonitor()
 
-        #  connect the SerialDevicesStopped signal which tells us
-        #  when all acquisition threads have stopped. We make sure
-        #  we don't exit before all threads have stopped.
-        self.serMonitor.SerialDevicesStopped.connect(self.devicesClosed)
+        #  connect the SensorsStopped signal which tells us when all
+        #  sensorMonitor's acquisition threads have stopped so we make
+        #  sure we don't exit before all threads have stopped.
+        self.sensorMonitor.SensorsStopped.connect(self.devicesClosed)
 
-        #  connect the SerialError signal to inform the user of any
-        #  sensor errors.
-        self.serMonitor.SerialError.connect(self.serialError)
+        #  connect the SensorError signal to inform the user of any
+        #  sensor errors. Errors will be emitted asyncronously.
+        self.sensorMonitor.SensorError.connect(self.sensorError)
 
-        #  query the devices attached to this station
-        sql = ("SELECT MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME " +
-                "FROM MEASUREMENT_SETUP INNER JOIN DEVICES ON " +
-                "MEASUREMENT_SETUP.DEVICE_ID = DEVICES.DEVICE_ID WHERE " +
-                "MEASUREMENT_SETUP.WORKSTATION_ID = " +  self.workStation +
-                " AND MEASUREMENT_SETUP.DEVICE_INTERFACE = 'Serial'" +
-                " GROUP BY MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME")
-        devQuery = self.db.dbQuery(sql)
+        #  get the devices attached to this workstation
+        deviceData = devices.getDevices(self.db, self.workStation)
 
-        #  loop thru the devices querying their parameters and adding them to serial monitor
-        for deviceID, deviceName in devQuery:
-            #  query the connection parameters for this device
-            sql = ("SELECT DEVICE_PARAMETER, PARAMETER_VALUE FROM device_configuration" +
-                    " WHERE DEVICE_ID = " + deviceID)
-            paramQuery = self.db.dbQuery(sql)
-
-            #  loop thru the parameters and stick in a dictionary
-            connPar = {}
-            for devParam, paramVal in paramQuery:
-                connPar.update({devParam:paramVal})
-
-            #  extract the parameters
+        #  set up each device
+        for deviceName in deviceData:
+            #  first try to get the configuration parameters for this device
+            #  this will fail if a required parameter is missing.
             try:
-                #  extract the required parameters
-                port = connPar['SerialPort']
-                baud = int(connPar['BaudRate'])
-            except:
-                QMessageBox.critical(self, "ERROR", "<font size = 14> Incomplete " +
-                        "serial configuration data in 'DEVICE_CONFIGURATION' for device " +
-                        deviceName + ". The device will not be enabled.")
+                deviceParams = devices.getDeviceParameters(self.db, deviceName,
+                        deviceData[deviceName]['id'], deviceData[deviceName]['interface'])
+            except Exception as e:
+                messageText = ("Error initializing device ::: " + str(e) +
+                        '. This device will be disabled.' )
+                QMessageBox.warning(self, "WARNING", "<font size = 13>" + messageText)
                 continue
 
-            #  extract the optional parameters and if missing provide sane defaults
-            parseType = str(connPar.get('ParseType', 'None'))
-            parseExp = str(connPar.get('ParseExpression', ''))
-            parseIndex = int(connPar.get('ParseIndex', 0))
-            cmdPrompt = str(connPar.get('CommandPrompt', ''))
-            if (parseType.lower() == 'regex'):
-                try:
-                    #  the regex parser requires both the expression and the index
-                    parseExp = connPar['ParseExpression']
-                    parseIndex = int(connPar['ParseIndex'])
-                except:
-                    QMessageBox.critical(self, "ERROR", "<font size = 14> Incomplete " +
-                            "regex configuration data in 'DEVICE_CONFIGURATION' for device " +
-                            deviceName + ". The device will not be enabled.")
-                    continue
+            #if deviceData[deviceName]['interface'] == 'scs':
+            #    continue
+            #print(deviceData[deviceName]['interface'])
 
-            #  add the device to the serial monitor
-            try:
-                self.serMonitor.addDevice(deviceID, port, baud, parseType, parseExp,
-                        parseIndex, cmdPrompt)
-            except Exception as e:
-                #  there was an issue adding the device - report it to the user and move on
-                QMessageBox.critical(self, "ERROR", "<font size = 14> Error " +
-                        "adding " + deviceName + " to the SensorMonitor. " +
-                        str(e) + ":" + str(e.parent) + ". The device will not be enabled.")
+            #  add this device to the sensor monitor
+            self.sensorMonitor.addDevice(*deviceParams)
 
         #  now that all devices are added - start monitoring them. This will cause
         #  SensorMonitor to open serial or network ports and in the case of serial
         #  ports start polling. SensorMonitor will buffer data until full messages
         #  are received. Those messages are optionally parsed and then SensorMonitor
         #  emits a signal with the parsed data.
-        self.serMonitor.startMonitoring()
+        self.sensorMonitor.startMonitoring()
 
         #  If there are any errors opening ports, SensorMonitor will emit the
-        #  serialError signal for each device with an issue
+        #  SensorError signal for each device with an issue
 
 
     @pyqtSlot(str, object)
-    def serialError(self, deviceID, obj):
+    def sensorError(self, deviceName, obj):
 
-        #  There was an issue with a device
-
-        #  first get the human readable device name
-        sql = ("SELECT device_name FROM devices" +
-                " WHERE device_id=" + deviceID)
-        query = self.db.dbQuery(sql)
-        deviceName, = query.first()
-
-        #  construct the error text
-        errText = 'Error opening device ' + deviceName
-
-        #  display a warning dialog
-        QMessageBox.warning(self, "Serial Port Error", "<font size = 14>" +
-                errText + ". This device will be not be enabled.")
+        #  There was an issue with a device display a warning dialog
+        QMessageBox.warning(self, "Sensor/Device Error", "<font size = 14>" +
+                obj.errText + " This device will be not be enabled.")
 
 
     def editCodendState(self):
@@ -555,73 +509,81 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         for now.
         '''
 
-        #  set the status for this workstation to closed
-        sql = ("UPDATE workstations SET status='closed', " +
-                "current_event=0 WHERE workstation_ID=" + self.workStation)
-        self.db.dbExec(sql)
+        #  only exit when all sensors have closed
+        if self.sensorsClosed:
+            #  all sensors closed. store the application size and position
+            self.appSettings.setValue('winposition', self.pos())
+            self.appSettings.setValue('winsize', self.size())
 
-        #  check if we're the last station working on this event to close
-        sql = ("SELECT workstation_id FROM workstations WHERE status='open' AND " +
-                "current_event=" + self.activeHaul)
-        query = self.db.dbQuery(sql)
+            #  and accept to close
+            event.accept()
+        else:
 
-        if not query.first():
-            #  we ARE the last station working on this event. We'll do some checks on the
-            #  data compute some summary data that is inserted into the database
 
-            #  check "normal" trawls, don't check methots and skip when testing flag is set
-            if not self.methotFlag and not self.testing:
-                #  do some basic checks on the data we just collected to make sure
-                #  we didn't miss anything big.
-                self.sampleValidation1()
-
-                if self.returnFlag:
-                    #  user chose to fix the problem so we don't exit
-                    event.ignore()
-                    return
-
-            # populate the total partition weights into the event_data table
-            self.totalHaulWeight()
-
-            # this is the last station to close - reset the active haul
-            sql = ("UPDATE application_configuration SET parameter_value = 0" +
-                    " WHERE parameter = 'ActiveHaul'")
+            #  set the status for this workstation to closed
+            sql = ("UPDATE workstations SET status='closed', " +
+                    "current_event=0 WHERE workstation_ID=" + self.workStation)
             self.db.dbExec(sql)
 
-        #  update the CATCH_SUMMARY table for this event - we'll update it every time
-        #  a station exits to ensure that it is fully up-to-date
+            #  check if we're the last station working on this event to close
+            sql = ("SELECT workstation_id FROM workstations WHERE status='open' AND " +
+                    "current_event=" + self.activeHaul)
+            query = self.db.dbQuery(sql)
 
-        ok, error_txt = self.updateCatchSummary()
-        if not ok:
-            #  let the user know there was a problem
-            self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
-                    error_txt, 'info')
-            self.message.exec()
+            if not query.first():
+                #  we ARE the last station working on this event. We'll do some checks on the
+                #  data compute some summary data that is inserted into the database
 
-        # tell SensorMonitor to shut down
-        self.serMonitor.stopMonitoring()
+                #  check "normal" trawls, don't check methots and skip when testing flag is set
+                if not self.methotFlag and not self.testing:
+                    #  do some basic checks on the data we just collected to make sure
+                    #  we didn't miss anything big.
+                    self.sampleValidation1()
 
-        #  SensorMonitor will emit the SerialDevicesStopped signal when all
-        #  network and serial connections are closed. We finish shutting down
-        #  in the SerialDevicesStopped event handler devicesClosed below.
-        self.clEventObj = event
+                    if self.returnFlag:
+                        #  user chose to fix the problem so we don't exit
+                        event.ignore()
+                        return
 
-        #  store the application size and position
-        self.appSettings.setValue('winposition', self.pos())
-        self.appSettings.setValue('winsize', self.size())
+                # populate the total partition weights into the event_data table
+                self.totalHaulWeight()
+
+                # this is the last station to close - reset the active haul
+                sql = ("UPDATE application_configuration SET parameter_value = 0" +
+                        " WHERE parameter = 'ActiveHaul'")
+                self.db.dbExec(sql)
+
+            #  update the CATCH_SUMMARY table for this event - we'll update it every time
+            #  a station exits to ensure that it is fully up-to-date
+            ok, error_txt = self.updateCatchSummary()
+            if not ok:
+                #  let the user know there was a problem
+                self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
+                        error_txt, 'info')
+                self.message.exec()
+
+            #  tell SensorMonitor to shut down. SensorMonitor will signal after
+            #  all threads have stopped.
+            self.sensorMonitor.stopMonitoring()
+
+            #  lastly ignore this event for now and wait for
+            #  our sensors to close
+            event.ignore()
 
 
     def devicesClosed(self):
         '''devicesClosed is called when the SensorMonitor emits the
-        SerialDevicesStopped signal which lets us know all acquisition
-        threads have stopped.
-
-        Since we have done all of the other shutdown tasks, we simply
-        call the close event's accept method.
-
+        SensorsStopped signal which lets us know all acquisition
+        threads have stopped. Once they are stopped we can close the
+        form without error. (Qt gets angry when threads are destroyed
+        while running.) Set sensorsClosed to True and call close()
+        again.
         '''
-        if self.clEventObj:
-            self.clEventObj.accept()
+
+        #  set sensorsClosed to True and call close() again
+        self.sensorsClosed = True
+        self.close()
+
 
 
     def totalHaulWeight(self):

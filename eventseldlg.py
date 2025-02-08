@@ -45,9 +45,9 @@ from ui import ui_EventSelDlg
 
 class EventSelDlg(QDialog, ui_EventSelDlg.Ui_eventselDlg):
 
-    def __init__(self, parent, onlyCatch=True):
+    def __init__(self, parent, catchOnly=True):
         '''
-        set onlyCatch to False to show all events and True to only
+        set catchOnly to False to show all events and True to only
         show events that retain catch.
         '''
 
@@ -75,7 +75,7 @@ class EventSelDlg(QDialog, ui_EventSelDlg.Ui_eventselDlg):
 
         #  query out the events that used gear that can retain catch and add to
         #  the table.
-        if onlyCatch:
+        if catchOnly:
             sql = ("SELECT a.event_id, a.gear FROM (SELECT event_id, gear, " +
                     "ship, survey FROM events) a JOIN (SELECT gear, gear_type " +
                     "FROM gear) b ON a.gear = b.gear JOIN (SELECT gear_type, " +
@@ -96,7 +96,7 @@ class EventSelDlg(QDialog, ui_EventSelDlg.Ui_eventselDlg):
             self.eventTable.insertRow(rowCount)
             self.eventTable.setItem(rowCount, 0, QTableWidgetItem(event_id))
 
-            if onlyCatch:
+            if catchOnly:
                 #  check if the event is "closed" defined by having a HB time
                 sql = ("SELECT parameter_value FROM event_data WHERE event_parameter='Haulback'" +
                         " AND event_id=" + event_id + " AND ship=" + parent.ship +
@@ -161,7 +161,7 @@ class EventSelDlg(QDialog, ui_EventSelDlg.Ui_eventselDlg):
         sql = ("SELECT MAX(event_id) FROM events WHERE survey ="+
                 self.survey + "and ship= " + self.ship)
         query = self.db.dbQuery(sql)
-        lastEvent = query.first()
+        lastEvent, = query.first()
         if lastEvent is None:
             lastEvent = 0
         else:

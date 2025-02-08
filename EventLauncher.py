@@ -43,6 +43,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 import importlib
 from events import *
+import eventseldlg
 from ui import ui_EventLauncher
 
 class EventLauncher(QDialog, ui_EventLauncher.Ui_EventLauncher):
@@ -54,6 +55,8 @@ class EventLauncher(QDialog, ui_EventLauncher.Ui_EventLauncher):
 
         #  store our reference to our database connection
         self.db = parent.db
+        self.ship = parent.ship
+        self.survey = parent.survey
         self.parent = parent
 
         #  connect the cancel button signal
@@ -62,12 +65,13 @@ class EventLauncher(QDialog, ui_EventLauncher.Ui_EventLauncher):
         #  create a list of button references ordered from top to bottom
         self.eventButtons = [self.pbEvent1, self.pbEvent2, self.pbEvent3, self.pbEvent4,
                 self.pbEvent5, self.pbEvent6, self.pbEvent7, self.pbEvent8]
+
         #  and connect their signals and initially hide all of them
         for button in self.eventButtons:
             button.clicked.connect(self.eventButtonClicked)
             button.hide()
 
-        #  now extract the events from the application_events table and update the buttons
+        #  First extract the events from the application_events table and update the buttons
         #  Also build a dict of events and their package, module, and entry class names
         nEvents = 0
         self.eventInfo = {}
@@ -75,7 +79,7 @@ class EventLauncher(QDialog, ui_EventLauncher.Ui_EventLauncher):
                 self.parent.schema + ".application_events ORDER BY event_name")
         eventQuery = self.db.dbQuery(sql)
 
-        #  loop through the events
+        #  loop through the events and set the button text and other bits
         for event_name, event_package, event_module, event_class, active in eventQuery:
             self.eventButtons[nEvents].setText(event_name)
             if active.lower() in ['1','y']:
@@ -89,22 +93,37 @@ class EventLauncher(QDialog, ui_EventLauncher.Ui_EventLauncher):
 
     def eventButtonClicked(self):
 
+        event_name =  QObject.sender(self).text()
+
         #  get the event details
-        eventDetails = self.eventInfo[QObject.sender(self).text()]
+        eventDetails = self.eventInfo[event_name]
 
-        #  create a handle to its init function
-        #exec('eventFuncHandle=' + eventDetails[1] + '.' + eventDetails[2])
+        if 'trawl' in event_name.lower():
+            #  create an instance of the event selection dialog showing
+            #  only catch events
+            eventSelectDialog = eventseldlg.EventSelDlg(self, catchOnly=True)
+        else:
+            #  create an instance of the event selection dialog
+            eventSelectDialog = eventseldlg.EventSelDlg(self)
 
-        moduleName = 'events.' + eventDetails[0] + '.' + eventDetails[1] + '.' + eventDetails[2]
+        #  display the event select dialog
+        if eventSelectDialog.exec():
+
+            #  check if a event number was selected - exit if not
+            if eventSelectDialog.activeEvent == None:
+                return
+
+        #  import the selected event form module
+        moduleName = 'events.' + eventDetails[0] + '.' + eventDetails[1]
         module = importlib.import_module(moduleName)
 
-        #  hid the dialog
+        #  hide this dialog
         self.hide()
 
-        #  and use the handle to call the function
-        module(self.parent)
+        #  and use the handle to instantiate and start the configured event form
+        module.Event(eventSelectDialog.activeEvent, self.parent)
 
-        #  close the dialog
+        #  close this dialog
         self.accept()
 
 

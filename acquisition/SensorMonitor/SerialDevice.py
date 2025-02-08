@@ -19,7 +19,7 @@
     :synopsis: SerialDevice handles I/O for an individual serial port.
                It is intended to be run in its own thread and polls the serial
                port, buffers the received data, processes it, and emits "whole
-               messages" via the SerialDataReceived signal. Typically this
+               messages" via the SensorDataReceived signal. Typically this
                class is used internally by the SensorMonitor class which
                manages the threads and the creation and destruction of this
                object.
@@ -50,9 +50,9 @@ class SerialDevice(QObject):
     #  define the SerialDevice class's signals
     DCEControlState = pyqtSignal(str, list)
     SerialControlChanged = pyqtSignal(str, str, bool)
-    SerialDataReceived = pyqtSignal(str, str, object)
-    SerialPortClosed = pyqtSignal(str)
-    SerialError = pyqtSignal(str, object)
+    SensorDataReceived = pyqtSignal(str, str, object)
+    SensorClosed = pyqtSignal(str)
+    SensorError = pyqtSignal(str, object)
 
     def __init__(self, deviceParams):
 
@@ -94,7 +94,7 @@ class SerialDevice(QObject):
                     #  compile the regular expression
                     self.parseExp = re.compile(deviceParams['parseExp'])
                 except Exception as e:
-                    self.SerialError.emit(self.deviceName, SerialError('Invalid regular expression configured for ' +
+                    self.SensorError.emit(self.deviceName, SensorError('Invalid regular expression configured for ' +
                             self.deviceName, parent=e))
             elif deviceParams['parseType'].upper() == 'DELIMITED':
                 self.parseType = 1
@@ -153,7 +153,7 @@ class SerialDevice(QObject):
                 self.serialPort.xonxoff = True
 
         except Exception as e:
-            self.SerialError.emit(self.deviceName, SerialError('Unable to create serial port for ' +
+            self.SensorError.emit(self.deviceName, SensorError('Unable to create serial port for ' +
                     self.deviceName + '. Invalid port option.', parent=e))
 
 
@@ -195,13 +195,13 @@ class SerialDevice(QObject):
 
             except Exception as e:
                 #  we were unable to open the serial port
-                self.SerialError.emit(self.deviceName, SerialError("Unable to open serial port " +
+                self.SensorError.emit(self.deviceName, SensorError("Unable to open serial port " +
                         "for device " + self.deviceName + ".", parent=e))
                 self.pollTimer = None
-                
-                #  emit the SerialPortClosed signal to ensure that we clean up
+
+                #  emit the SensorClosed signal to ensure that we clean up
                 #  threads correctly
-                self.SerialPortClosed.emit(self.deviceName)
+                self.SensorClosed.emit(self.deviceName)
 
 
     @pyqtSlot(list)
@@ -234,12 +234,12 @@ class SerialDevice(QObject):
             self.serialPort.flush()
             self.serialPort.close()
 
-            #  emit the SerialPortClosed signal
-            self.SerialPortClosed.emit(self.deviceName)
+            #  emit the SensorClosed signal
+            self.SensorClosed.emit(self.deviceName)
 
         else:
             #  if the poll timer is None, we aren't running so we immediately emit the closed signal
-            self.SerialPortClosed.emit(self.deviceName)
+            self.SensorClosed.emit(self.deviceName)
 
 
     @pyqtSlot(str, bool)
@@ -363,16 +363,16 @@ class SerialDevice(QObject):
                                     data = line
                             except Exception as e:
                                 data = None
-                                err = SerialError('Error parsing input from ' + self.deviceName + \
+                                err = SensorError('Error parsing input from ' + self.deviceName + \
                                                    '. Incorrect parsing configuration or malformed data stream.', \
                                                    parent=e)
 
                             # emit a signal containing data from this line
-                            self.SerialDataReceived.emit(self.deviceName, data, err)
+                            self.SensorDataReceived.emit(self.deviceName, data, err)
 
                     elif (self.cmdPromptLen > 0) and (line[-self.cmdPromptLen:] == self.cmdPrompt):
                         #  this line (or the end of it) matches the command prompt
-                        self.SerialDataReceived.emit(self.deviceName, line, err)
+                        self.SensorDataReceived.emit(self.deviceName, line, err)
 
                     else:
                         #  this line of data is not complete - insert in buffer
@@ -426,12 +426,12 @@ class SerialDevice(QObject):
 
                     except Exception as e:
                         data = None
-                        err = SerialError('Error parsing input from ' + self.deviceName + \
+                        err = SensorError('Error parsing input from ' + self.deviceName + \
                                            '. Incorrect parsing configuration or malformed data stream.', \
                                            parent=e)
 
                     # emit a signal containing data from this line
-                    self.SerialDataReceived.emit(self.deviceName, data, err)
+                    self.SensorDataReceived.emit(self.deviceName, data, err)
 
 
     @pyqtSlot()
@@ -465,7 +465,7 @@ class SerialDevice(QObject):
 #
 #  SerialDevice Exception class
 #
-class SerialError(Exception):
+class SensorError(Exception):
     def __init__(self, msg, parent=None):
         self.errText = msg
         self.parent = parent

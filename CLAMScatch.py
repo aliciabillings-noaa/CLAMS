@@ -66,7 +66,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  copy some info from parent for convenience
         self.db = parent.db
-        self.serMonitor = parent.serMonitor
+        self.sensorMonitor = parent.sensorMonitor
         self.workStation = parent.workStation
         self.activeHaul = parent.activeHaul
         self.survey = parent.survey
@@ -133,7 +133,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  connect the SensorMonitor SerialDataReceived signal to the
         #  getAuto method which processes input from devices.
-        self.serMonitor.SerialDataReceived.connect(self.getAuto)
+        self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
 
         #  restore the application state
         self.appSettings = QSettings('CLAMS', 'CatchForm')
@@ -211,7 +211,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         printerId, printerName = query.first()
         if printerId:
             #  initialize the Label Printer
-            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.serMonitor, printerName)
+            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, printerName)
         else:
             #  no printer configured
             self.printer = None
@@ -1586,7 +1586,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 commentText = commentText + ' ' + line
 
             #  update the comment in samples
-            sql = ("UPDATE samples SET comments='" + p + "' WHERE ship="+self.ship +
+            sql = ("UPDATE samples SET comments='" + commentText + "' WHERE ship="+self.ship +
                     " AND survey=" + self.survey + " AND event_id = " + self.activeHaul +
                     " AND sample_id = "+self.activeSampleKey)
             self.db.dbExec(sql)

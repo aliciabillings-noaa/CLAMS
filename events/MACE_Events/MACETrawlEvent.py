@@ -45,6 +45,7 @@
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
+import devices
 from ui import ui_MACETrawlEvent
 import numpad
 import keypad
@@ -54,10 +55,9 @@ import netdlg
 import timedlg
 from acquisition.SensorMonitor import SensorMonitor
 
-class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
+class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
-
-    def __init__(self, parent=None):
+    def __init__(self, eventID, parent):
         '''
             The CLAMS Trawl event dialog initialization method. This method will
             set some default attributes, connect signals, and perform some other
@@ -69,29 +69,17 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         super().__init__(parent)
         self.setupUi(self)
 
-
-
         #  copy some properties from our parent
         self.db = parent.db
         self.schema = parent.schema
-        self.activeEvent=parent.activeEvent
+        self.activeEvent = eventID
         self.survey=parent.survey
         self.ship=parent.ship
         self.settings=parent.settings
         self.errorSounds=parent.errorSounds
         self.errorIcons=parent.errorIcons
         self.workStation=parent.workStation
-        self.birdStatus=parent.birdStatus
-        self.mammalStatus=parent.mammalStatus
         self.testing=parent.testing
-        self.reloaded = parent.reloaded
-
-        #  setup reoccurring dialogs
-        self.numpad = numpad.NumPad(self)
-        self.message = messagedlg.MessageDlg(self)
-        self.timeDlg = timedlg.TimeDlg(self)
-        self.timeDlg.enableGetTimeButton(False)
-        self.netdlg = netdlg.NetDlg(self)
 
         #  define default variable values
         self.fishingFlag = False
@@ -107,7 +95,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 self.accessLabel3, self.accessLabel4]
         self.buttons=[self.btn1,self.btn2,self.btn3,self.btn4,self.btn5
                 ,self.btn6,self.btn7,self.btn8,self.btn9]
-        self.eventTimer=QTime()
+        self.eventTimer = QTime()
         self.recordStream=False
         self.dispVector=['','','']
         self.SCSPollRate = 1
@@ -116,6 +104,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.scsVersion = 5
         self.psoStarted = False
         self.oathTaken = False
+        self.lastSCSWriteTime = {}
 
         #  max number of seconds data extracted from haul_stream_data during event button edits
         #  are allow to differ from the new event time. This is the half window size. The closest
@@ -129,11 +118,11 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
         # color palettes
         self.red=QPalette()
-        self.red.setColor(QPalette.ButtonText,QColor(230, 0, 0))
+        self.red.setColor(QPalette.ColorRole.ButtonText,QColor(230, 0, 0))
         self.green=QPalette()
-        self.green.setColor(QPalette.ButtonText,QColor(0, 230, 0))
+        self.green.setColor(QPalette.ColorRole.ButtonText,QColor(0, 230, 0))
         self.yellow=QPalette()
-        self.yellow.setColor(QPalette.ButtonText,QColor(180, 180, 0))
+        self.yellow.setColor(QPalette.ColorRole.ButtonText,QColor(180, 180, 0))
         self.haulLabel.setText(self.activeEvent)
 
         #  connect the form's signals
@@ -143,7 +132,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.transBtn.clicked.connect(self.getTransect)
         self.stratumBtn.clicked.connect(self.getStratum)
         self.commentBtn.clicked.connect(self.getComment)
-        self.doneBtn.clicked.connect(self.goExit)
+        self.doneBtn.clicked.connect(self.close)
 
         #  now connect the event action button signals
         for btn in self.buttons:
@@ -167,6 +156,8 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         #  set up the event duration timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.displayTime)
+
+        self.show()
 
         #  set up the initialization timer
         initTimer = QTimer(self)
@@ -197,7 +188,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         query = self.db.dbQuery(sql)
         val, = query.first()
         if val:
-            self.self.streamSlowLogInterval = val
+            self.streamSlowLogInterval = val
 
         #  populate the gear combobox
         self.gearBox.setEnabled(True)
@@ -228,120 +219,67 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 self.abort = True
                 self.close()
 
-        # Set up sensors
+        #  setup reoccurring dialogs
+        self.numpad = numpad.NumPad(self)
+        self.message = messagedlg.MessageDlg(self)
+        self.timeDlg = timedlg.TimeDlg(self)
+        self.timeDlg.enableGetTimeButton(False)
+        self.netdlg = netdlg.NetDlg(self)
 
-
-
-        #  create an instance of the sensor monitor
+        #  Set up sensors - first create an instance of SensorMonitor
+        #  which will handle all the details of receiving and parsing
+        #  data from our devices/sensors.
         self.sensorMonitor = SensorMonitor.SensorMonitor()
 
-        #  connect the SerialDevicesStopped signal which tells us
-        #  when all acquisition threads have stopped. We make sure
-        #  we don't exit before all threads have stopped.
-        self.serMonitor.SerialDevicesStopped.connect(self.devicesClosed)
+        #  connect the SensorDataReceived signal. This is emitted when
+        #  a sensor transmits a full line of data, after the line is
+        #  parsed.
+        self.sensorMonitor.SensorDataReceived.connect(self.writeStream)
 
-        #  connect the SerialError signal to inform the user of any
-        #  sensor errors.
-        self.serMonitor.SerialError.connect(self.deviceError)
+        #  connect the SensorsStopped signal which tells us when all
+        #  sensorMonitor's acquisition threads have stopped so we make
+        #  sure we don't exit before all threads have stopped.
+        self.sensorMonitor.SensorsStopped.connect(self.devicesClosed)
 
+        #  connect the SensorError signal to inform the user of any
+        #  sensor errors. Errors will be emitted asyncronously.
+        self.sensorMonitor.SensorError.connect(self.deviceError)
 
+        #  get the devices attached to this workstation
+        deviceData = devices.getDevices(self.db, self.workStation)
 
-        #  set the SCS "last write" time used to track SCS logging interval
-        self.lastSCSWriteTime = {}
-        self.setupSCSSensors()
+        #  set up each device
+        for deviceName in deviceData:
+            #  first try to get the configuration parameters for this device
+            #  this will fail if a required parameter is missing.
+            try:
+                deviceParams = devices.getDeviceParameters(self.db, deviceName,
+                        deviceData[deviceName]['id'], deviceData[deviceName]['interface'])
+            except Exception as e:
+                messageText = ("Error initializing device ::: " + str(e) +
+                        '. This device will be disabled.' )
+                QMessageBox.warning(self, "WARNING", "<font size = 13>" + messageText)
+                continue
 
-#        self.scsClient.datagramReceived.connect(self.writeStream)
-#        self.scsClient.dataTimeout.connect(self.scsTimeout)
+            #  add this device to the sensor monitor
+            self.sensorMonitor.addDevice(*deviceParams)
+
+            #  set the initial "last write" time for this device
+            self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
+
         self.SCSisActive = True
-
-    def addSensors(db, sensorMonitor):
-
-        #  query the devices attached to this station
-        sql = ("SELECT measurement_setup.device_id,devices.device_name," +
-                "measurement_setup.device_interface " +
-                "FROM measurement_setup INNER JOIN DEVICES ON " +
-                "measurement_setup.device_id = DEVICES.device_id WHERE " +
-                "measurement_setup.workstation_id = " +  self.workStation +
-                " GROUP BY measurement_setup.DEVICE_ID, DEVICES.DEVICE_NAME")
-        devQuery = db.dbQuery(sql)
-
-        #  loop thru the devices querying their parameters and adding them to serial monitor
-        for deviceID, deviceName, deviceInterface in devQuery:
-
-            #  query the connection parameters for this device
-            sql = ("SELECT device_parameter,parameter_value FROM device_configuration" +
-                    " WHERE device_id=" + deviceID)
-            paramQuery = db.dbQuery(sql)
-
-            #  loop thru the parameters and stick in a dictionary
-            connectionParams = {}
-            for devParam, paramVal in paramQuery:
-                connectionParams.update({devParam.lower():paramVal})
-
-            #  extract the required parameters based on the device interface
-            deviceInterface = deviceInterface.lower()
-            if deviceInterface in ['network','scs']:
-                #  This is a network based device
-                if 'networkport' not in connectionParams:
-                    raise ValueError("The required 'NetworkPort' device_configuration " +
-                            "parameter is missing for the network based device '" + deviceName + "'")
-                port = connectionParams['networkport']
-                baud = None
-
-            elif deviceInterface == 'serial':
-                #  this is a serial based - serialport and baudrate params are required
-                if 'serialport' not in connectionParams:
-                    raise ValueError("The required 'SerialPort' device_configuration " +
-                            "parameter is missing for serial device '" + deviceName + "'")
-                port = connectionParams['serialport']
-
-                if 'baudrate' not in connectionParams:
-                    raise ValueError("The required 'BaudRate' device_configuration " +
-                            "parameter is missing for serial device '" + deviceName + "'")
-                try:
-                    baud = int(connectionParams['baudrate'])
-                except:
-                    raise ValueError("Unable to convert 'BaudRate' parameter " +
-                            connectionParams['baudrate'] + "to an integer for " +
-                            "serial device '" + deviceName + "'")
-            else:
-                raise ValueError("Unknown device_interface '" + deviceInterface +
-                        "' for device '" + deviceName + "'")
-
-            #  extract the optional parameters and if missing provide sane defaults
-            parseType = str(connectionParams.get('parsetype', 'None'))
-            parseExp = str(connectionParams.get('parseexpression', ''))
-            parseIndex = int(connectionParams.get('parseindex', 0))
-            cmdPrompt = str(connectionParams.get('commandprompt', ''))
-
-            #  if this device is configured for regex parsing, get the parse expression
-            if (parseType.lower() == 'regex'):
-                if 'parseexpression' not in connectionParams:
-                    raise ValueError("The required 'ParseExpression' parameter required for " +
-                            "Regex parsing is missing for the device '" + deviceName +
-                            "' in the device_configuration table")
-                parseExp = connectionParams['parseexpression']
-
-
-
-
-            #  add the device to the serial monitor
-            sensorMonitor.addDevice(deviceID, port, baud, parseType, parseExp,
-                    parseIndex, cmdPrompt)
-
 
         #  now that all devices are added - start monitoring them. This will cause
         #  SensorMonitor to open serial or network ports and in the case of serial
         #  ports start polling. SensorMonitor will buffer data until full messages
         #  are received. Those messages are optionally parsed and then SensorMonitor
         #  emits a signal with the parsed data.
-        self.serMonitor.startMonitoring()
+        self.sensorMonitor.startMonitoring()
 
         #  If there are any errors opening ports, SensorMonitor will emit the
-        #  serialError signal for each device with an issue
+        #  SensorError signal for each device with an issue.
 
-
-
+        print("MOOO!")
 
 
     def getScientistName(self, dialogMessage):
@@ -789,7 +727,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         #              the assumptions re: # of parameters and their values. This
         #              needs to be reworked so parameters and matched with values
         #              somehow and the logic doesn't have to be hard coded.
-        if self.buttons[ind].text().endsWith('EQ'):
+        if 'eq' in self.buttons[ind].text().lower():
             #  make sure we're not in the middle of an observation period
             if self.psoStarted:
                 QMessageBox.information(self, 'Attention!',"<font size = 14>You must end the protected species " +
@@ -806,7 +744,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 self.SCSLogInterval = self.streamEQHBLogInterval
                 self.netdlg.setTime=time
 
-        elif self.buttons[ind].text().endsWith('Haulback'):
+        elif 'haulback' in self.buttons[ind].text().lower():
             #  make sure we're not in the middle of an observation period
             if self.psoStarted:
                 QMessageBox.information(self, 'Attention!',"<font size = 14>You must end the protected species " +
@@ -823,7 +761,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 self.SCSLogInterval = self.streamSlowLogInterval
                 self.netdlg.setTime=time
 
-        elif self.buttons[ind].text() == 'ProtectedSppObsStart':
+        elif self.buttons[ind].text().lower() == 'protectedsppobsstart':
 
             #  check if we've already started the repeatable protected spp watch
             if self.psoStarted:
@@ -837,7 +775,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
             parameter=[self.buttons[ind].text(), ['ProtectedSppObserver', 'ProtectedSppObsStart']]
             self.psoStarted = True
 
-        elif self.buttons[ind].text() == 'ProtectedSppObsEnd':
+        elif self.buttons[ind].text().lower() == 'protectedsppobsend':
             #  check if we've already started the repeatable protected spp watch
             if not self.psoStarted:
                 QMessageBox.information(self, 'Achtung!',"<font size = 14>You have already stopped your most recent " +
@@ -870,7 +808,7 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         #  corresponded with one measurement so a check here is at the button level, not the measurement
         #  level so we have to only allow buttons to have all unique (event_data) or all repeatable
         #  (event_stream_data). We should probably move this check so it operates at the measurement level.
-        if self.buttons[ind].text() not in ['ProtectedSppObsEnd', 'ProtectedSppObsStart']:
+        if self.buttons[ind].text().lower() not in ['protectedsppobsend', 'protectedsppobsstart']:
             #  check to see if we already have data for this button in the database
             gotVal=False
             sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship=" + self.ship +
@@ -1179,129 +1117,44 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
     def stopStream(self):
         self.timer.stop()
-        if self.scsVersion == 4:
-            self.scsClient.disconnect()
 
 
-    def setupSCS(self):
-        '''
-        setupSCS starts the process of connecting to SCS and configuring the
-        SCS sensor subscriptions
-        '''
+    def setupDevices(self):
+        """setupDevices sets up any serial or network devices attached to this workstation.
+        Devices provide data to CLAMS and are things like GPS units, Gyros, scales, length boards,
+        and barcode readers. In the Event context, devices are usually GPS, wind and vessel
+        speed and heading indicators, air and water temp, etc.
 
-        #  try to connect to the scs server
-        try:
-            #  initiate connection with SCS server
-            self.scsClient.connect()
-        except:
-            self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "Failed to connect to " +
-                "SCS server - check IP and port settings in application configuration!" +
-                "If you continue, there will be NO SCS DATA LOGGED during the event.", 'info')
-            self.message.exec()
-            return
-
-        #  query the sensor descriptions from database,
-        self.receiveSensorDescriptions()
-
-        #  the rest of the SCS setup is handled in receiveSCSDescriptions
-
-
-    def receiveSCSDescriptions(self, data):
-        '''
-        receiveSCSDescriptions completes the SCS initialization
-        '''
-
-        self.sensorList=[]
-        self.devices=[]
-        self.deviceNames=[]
-        self.measureTypes=[]
-        badSCSDevices = []
-
-        #  we've received the Sensor Description data - get the keys from the dictionary
-        keys = data.keys()
-        self.scsSensorList = []
-        for k in keys:
-            self.scsSensorList.append(k)
-
-        #  now get the list of desired sensors from the database
-        sql = ("SELECT " + self.schema + ".measurement_setup.measurement_type, " + self.schema +
-                ".devices.device_id, " + self.schema + ".devices.device_name, " + self.schema +
-                ".measurement_setup.device_interface FROM " + self.schema + ".measurement_setup, " +
-                self.schema + ".devices " + "WHERE " + self.schema + ".measurement_setup.device_id=" +
-                self.schema + ".devices.device_id AND "+ self.schema + ".measurement_setup.workstation_id=" +
-                self.workStation+" AND " + self.schema + ".measurement_setup.gui_module='TrawlEvent'")
-        query = self.db.dbQuery(sql)
-        for mtype, id, deviceName, interface in query:
-
-            #  store our types, device ids, and names
-            self.measureTypes.append(mtype)
-            self.devices.append(id)
-            self.deviceNames.append(deviceName)
-
-            #  check if this is an SCS device
-            if interface == 'SCS':
-                #  check if it is available from the server
-                if (deviceName in self.scsSensorList):
-                    #  device is available
-                    self.sensorList.append(deviceName)
-                else:
-                    #  the device specified in the database is NOT available, note it
-                    badSCSDevices.append(deviceName)
-
-        #  report any bad SCS device names
-        if (len(badSCSDevices) > 0):
-            messageText = ('Error connecting one or more SCS devices. The following SCS device(s) do not exist:<br>' +
-                    '     <br>'.join(badSCSDevices) + '<br>Consult with survey and update these sensor names in the DEVICES table.')
-            QMessageBox.warning(self, "WARNING", "<font size = 13>" + messageText)
-
-        #  create the SCS subscriptions
-        self.scsSubscription = self.scsClient.subscribe(self.sensorList, self.SCSPollRate)
-
-        self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
-
-
-    def setupSCSSensors(self):
-        """
-        setupSCSSensors completes the SCS installation for SCS 5+, connecting sensors to ports queried from the database
         """
 
-        self.deviceIDs = []
-        self.devicePorts = []
-        self.sensorList=[]
-        self.devices=[]
-        self.deviceNames=[]
-        self.measureTypes=[]
+#        self.deviceIDs = []
+#        self.devicePorts = []
+#        self.sensorList=[]
+#        self.devices=[]
+#        self.deviceNames=[]
+#        self.measureTypes=[]
 
-        sql = ("SELECT device_id, parameter_value FROM " + self.schema + ".device_configuration " +
-                " WHERE device_parameter='NetworkPort'")
-        query = self.db.dbQuery(sql)
-        for id, port in query:
-            self.deviceIDs.append(id)
-            self.devicePorts.append(port)
+        #  get the devices attached to this workstation
+        deviceData = devices.getDevices(self.db, self.workStation)
 
-        #  now get the list of desired sensors from the database
-        sql = ("SELECT " + self.schema + ".measurement_setup.measurement_type, " + self.schema +
-                ".devices.device_id, " + self.schema + ".devices.device_name FROM " + self.schema + ".measurement_setup, " +
-                self.schema + ".devices " + "WHERE " + self.schema + ".measurement_setup.device_id=" +
-                self.schema + ".devices.device_id AND "+ self.schema + ".measurement_setup.workstation_id=" +
-                self.workStation+" AND " + self.schema + ".measurement_setup.device_interface='SCS'")
-        query = self.db.dbQuery(sql)
-
-        for mtype, device, deviceName in query:
-
-            #  store our types, device ids, and names
-            if not device in self.deviceIDs:
-                messageText = ('Error connecting SCS device. The following SCS device does not have a port set up:<br>' +
-                    '     <br>'.join(deviceName) + '<br>Consult with survey and update this sensor port in the DEVICE_CONFIGURATION table.')
+        #  set up each device
+        for deviceName in deviceData:
+            #  first try to get the configuration parameters for this device
+            #  this will fail if a required parameter is missing.
+            try:
+                deviceParams = devices.getDeviceParameters(self.db, deviceName,
+                        deviceData[deviceName]['id'], deviceData[deviceName]['interface'])
+            except Exception as e:
+                messageText = ("Error initializing device ::: " + str(e) +
+                        '. This device will be disabled.' )
                 QMessageBox.warning(self, "WARNING", "<font size = 13>" + messageText)
-            else:
-                self.measureTypes.append(mtype)
-                self.devices.append(device)
-                self.deviceNames.append(deviceName)
+                continue
 
-                self.scsClient.addSensor(deviceName, str(self.settings[QString('SCSHost')]),
-                        int(self.devicePorts[self.deviceIDs.index(device)].toString()), 'UDP')
-                self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
+            #  add this device to the sensor monitor
+            self.sensorMonitor.addDevice(deviceParams)
+
+            #  set the initial "last write" time for this device
+            self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
 
 
     def writeStream(self, data):
@@ -1605,10 +1458,6 @@ class MACETrawlEvent(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
         #  the comment text persists in the comment dialog for the duration of the event.
         #  It is also updated when the event for is closed.
-
-
-    def goExit(self):
-        self.close()
 
 
     def exitCheck(self):
