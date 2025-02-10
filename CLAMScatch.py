@@ -1242,7 +1242,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             return
 
         # update database - first check if this is a non-count basket type
-        if editDlg.count == '-':
+        if editDlg.count == '-' or not editDlg.count:
             #  this is not a count basket - set count to NULL
             editDlg.count = 'NULL'
 

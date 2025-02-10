@@ -175,12 +175,12 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
 
         if self.sender()==self.startIDBtn:
             self.numDialog.msgLabel.setText("Enter Start ID number")
-            if not self.numDialog.exec_():
+            if not self.numDialog.exec():
                 return
             self.startIDLabel.setText(self.numDialog.value)
         else:
             self.numDialog.msgLabel.setText("Enter End ID number")
-            if not self.numDialog.exec_():
+            if not self.numDialog.exec():
                 return
             self.endIDLabel.setText(self.numDialog.value)
 
@@ -243,7 +243,7 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
     def changeSpeciesAssignment(self):
         self.message.setMessage(self.errorIcons[1],self.errorSounds[1], "Are you sure you want to " +
                 "change the species assignment for these fish?", 'choice')
-        if self.message.exec_():
+        if self.message.exec():
             try:
                 newSampleKey=self.sampleDict[self.newSpeciesBox.currentText()]
 
@@ -308,7 +308,7 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
     def changeSexAssignment(self):
         self.message.setMessage(self.errorIcons[1],self.errorSounds[1], "Are you sure you want to change " +
                 "the sex assignment for these fish?", 'choice')
-        if self.message.exec_():
+        if self.message.exec():
             try:
 
                 #  get the new sex

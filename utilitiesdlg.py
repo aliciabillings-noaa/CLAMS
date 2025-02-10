@@ -97,7 +97,7 @@ class UtilitiesDlg(QDialog, ui_UtilitiesDlg.Ui_utilitiesdlg):
 
     def setupDevices(self):
         dlg = devicesetupdlg.DeviceSetupDlg(self)
-        dlg.exec_()
+        dlg.exec()
 
 
     def loadStreamData(self):
@@ -125,14 +125,14 @@ class UtilitiesDlg(QDialog, ui_UtilitiesDlg.Ui_utilitiesdlg):
         hlDialog.notBtn.hide()
         hlDialog.haulTab.setCurrentIndex(1)
         hlDialog.haulTab.setTabEnabled(0, False)
-        if not hlDialog.exec_():
+        if not hlDialog.exec():
             #  user cancelled action
             return
 
 
         self.activeHaul = hlDialog.activeHaul
         loaddlg = streamloaddlg.StreamLoadDlg(self)
-        loaddlg.exec_()
+        loaddlg.exec()
 
     def doneClicked(self):
         self.reject()

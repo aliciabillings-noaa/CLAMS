@@ -128,4 +128,4 @@ if __name__ == "__main__":
     db.open()
 
     form = AdminDlg(db)
-    app.exec_()
+    app.exec()

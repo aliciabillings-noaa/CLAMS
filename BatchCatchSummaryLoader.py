@@ -255,5 +255,5 @@ if __name__ == "__main__":
     form = batch_catch(odbcSource, database_user, password, schema, surveyStart,
             surveyEnd, overwrite, ships, logDir)
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 

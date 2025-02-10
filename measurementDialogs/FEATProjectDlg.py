@@ -180,7 +180,7 @@ class FEATProjectDlg(QDialog):
         """
         self.project = "FEAT " + self.sender().text()
         self.numpad.msgLabel.setText("Enter number collected...")
-        if not self.numpad.exec_():
+        if not self.numpad.exec():
             #  user cancelled action
             return
         #  get the number from the numpad
@@ -191,7 +191,7 @@ class FEATProjectDlg(QDialog):
             self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
                                     "You have entered 0 (zero) for the number collected, which is not allowed. "
                                     "Please enter a valid number.", 'info')
-            self.message.exec_()
+            self.message.exec()
         else:
             self.collected_num = val
             # enter into the database
@@ -214,7 +214,7 @@ class FEATProjectDlg(QDialog):
                 self.message.setMessage(self.errorIcons[2], self.errorSounds[2], 'Problem inserting the record into '
                                                                                  'the Specimen table:'
                                                                                  ' ' + str(e), 'info')
-                self.message.exec_()
+                self.message.exec()
 
             # get the newly created specimen key
             query = QtSql.QSqlQuery("SELECT max(specimen_id) FROM specimen WHERE ship=" + self.ship + " AND survey=" +

@@ -65,7 +65,7 @@ class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
 
     def getGuide(self):
         matGuide = matguide.MatGuide(self)
-        matGuide.exec_()
+        matGuide.exec()
 
     def closeEvent(self, event):
 
