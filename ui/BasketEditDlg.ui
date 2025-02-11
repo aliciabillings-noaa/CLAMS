@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>534</width>
-    <height>236</height>
+    <height>225</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Edit</string>
+   <string>Edit Basket</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <item>
@@ -21,6 +21,7 @@
        <property name="font">
         <font>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -33,7 +34,10 @@
       <widget class="QTableWidget" name="editBasket">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -56,7 +60,10 @@
          </property>
          <property name="font">
           <font>
+           <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
           </font>
          </property>
          <property name="text">
@@ -80,7 +87,10 @@
          </property>
          <property name="font">
           <font>
+           <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
           </font>
          </property>
          <property name="text">

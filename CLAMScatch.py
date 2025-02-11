@@ -1218,22 +1218,29 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.validList[self.basketTypes.index('Count')] = 1
 
         #  set up the basket type dialog button states
-        self.typeDlg.buttonSetup(self.validList, self.basketTypes)
+        #  set getCount to False because we will handle the count
+        #  number within the basketeditdlg
+        self.typeDlg.buttonSetup(self.validList, self.basketTypes,
+                getCount=False)
 
-        #  get the current basket selection - first get the basket_id
-        selRecord = [self.basketTable.verticalHeaderItem(self.basketTable.currentRow()).text()]
-
-        #  then append the weight, count, and type to our list
-        for item in self.basketTable.selectedItems():
-            selRecord.append(item.text())
+        #  get the current basket selection
+        currentRow = self.basketTable.currentRow()
 
         #  check if something is selected
-        if not selRecord:
+        if currentRow < 0:
             self.message.setMessage(self.errorIcons[2], self.errorSounds[1],
                     "Please select a basket to edit " + self.firstName,'info')
             self.message.exec()
             self.freeze = False
             return
+
+        #  build a list with the nasket id, weight, count, and type
+        #  first get the ID
+        selRecord = [self.basketTable.verticalHeaderItem(currentRow).text()]
+
+        #  then append the weight, count, and type to our list
+        for item in self.basketTable.selectedItems():
+            selRecord.append(item.text())
 
         #  present the edit dialog
         header = ['Basket ID', 'Weight', 'Count', 'Sample Type' ]
@@ -1244,7 +1251,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             return
 
         # update database - first check if this is a non-count basket type
-        if editDlg.count == '-' or not editDlg.count:
+        if editDlg.count == '-':
             #  this is not a count basket - set count to NULL
             editDlg.count = 'NULL'
 
@@ -1254,7 +1261,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                 " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
                 self.selRecord[0])
-        print(sql)
         self.db.dbExec(sql)
 
         self.freeze=False

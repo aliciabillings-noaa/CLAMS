@@ -56,10 +56,22 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
             button.hide()
 
         self.numDlg = parent.numpad
+        self.getCount = True
 
 
-    def buttonSetup(self, validList, basketTypes):
+    def buttonSetup(self, validList, basketTypes, getCount=True):
+        '''buttonSetup sets up the buttons in the dialog based on the
+        basket types and what types are valid for the specific sample.
 
+        buttons labels are set for all basket types, then the valid ones
+        for the sample this basket will apply to will be enabled.
+
+        When getCount is set to True, the numpad will be displayed
+        after the count type is selected to get the count number.
+        This is set to False when editing a basket so we can handle
+        getting the count from within the basket edit dialog.
+
+        '''
 
         #  first hide buttons
         for button in self.buttons:
@@ -71,33 +83,40 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
             self.buttons[i].setText(basketTypes[i])
             self.buttons[i].clicked.connect(self.selType)
 
-
+        #  enable/disable based on the list of valid types
         for i in range(len(validList)):
-            print(validList[i])
             if not validList[i]:
                 self.buttons[i].setEnabled(False)
             else:
                 self.buttons[i].setEnabled(True)
 
+        #  set the state of getCount - when true, we will display
+        #  the numpad if the user selects "count" type. If false,
+        #  we don't.
+        self.getCount = getCount
+
 
     def selType(self):
-            self.count=None
-            self.basketType=self.sender().text()
-            if self.basketType=='Count':
-                self.numDlg.msgLabel.setText("Enter Count")
-                self.numDlg.exec()
-                if (self.numDlg.value != None):
-                    #  get the value from the numpad
-                    self.count=self.numDlg.value
-                else:
-                    # the user cancelled the numpad selection
-                    return
+        '''selType is called when the user clicks a basket type button
 
+        '''
+        self.count = None
+        self.basketType = self.sender().text()
+        if self.basketType.lower() == 'count' and self.getCount:
+            self.numDlg.msgLabel.setText("Enter Count")
+            self.numDlg.exec()
+            if (self.numDlg.value != None):
+                #  get the value from the numpad
+                self.count=self.numDlg.value
+            else:
+                # the user cancelled the numpad selection
+                return
 
-            self.accept()
+        self.accept()
+
 
     def closeEvent(self, event=None):
-        if self.basketType==None:
+        if self.basketType == None:
             self.reject()
-            pass
+
 

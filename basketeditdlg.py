@@ -14,10 +14,12 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-.. module:: ABLImMatSalmonSpecialStudiesDlg
+.. module:: basketeditdlg
 
-    :synopsis: ABLImMatSalmonSpecialStudiesDlg presents a dialog to choose optional special studies
-                performed; specific for ABL
+    :synopsis: basketeditdlg presents a dialog to edit a single basket.
+               It is presented when a user selects a basket from the
+               baskets table in the Catch module and then clicks the
+               "edit" button.
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
@@ -34,20 +36,12 @@
 |       Kresimir Williams   <kresimir.williams@noaa.gov>
 |       Mike Levine   <mike.levine@noaa.gov>
 |       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
-| Updated January 2025 by:
 |       Alicia Billings <alicia.billings@noaa.gov>
-|           specific updates:
-|               - PyQt import statement
-|               - signal/slot connections
-|               - moved variable declarations into __init__
-|               - added some function explanation
-|               - fixed any PEP8 issues
-|               - added a main to test if works (commented out)
-|
-| NOTE: cannot test this until it is called with parent values
 """
 
+from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *
+from PyQt6.QtGui import *
 from ui import ui_BasketEditDlg
 import numpad
 
@@ -68,18 +62,22 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         self.sounds = parent.sounds
         self.errorIcons = parent.errorIcons
         self.errorSounds = parent.errorSounds
+        self.headerFont = QFont("Arial Black", 14, -1, False)
 
         # set up edit basket table
+        self.editBasket.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self.editBasket.setColumnCount(len(header))
         self.editBasket.setRowCount(1)
         self.editBasket.verticalHeader().setVisible(False)
-#        self.editBasket.setColumnWidth(0, 150)
-#        self.editBasket.setColumnWidth(1, 116)
-#        self.editBasket.setColumnWidth(2, 116)
-#        self.editBasket.setColumnWidth(3, 116)
+        self.editBasket.horizontalHeader().setStretchLastSection(True)
         for i in range(len(header)):
-            self.editBasket.setHorizontalHeaderItem(i, QTableWidgetItem(header[i]))
-            self.editBasket.setItem(0, i, QTableWidgetItem(items[i]))
+            headerItem = QTableWidgetItem(header[i])
+            headerItem.setFont(self.headerFont)
+            self.editBasket.setHorizontalHeaderItem(i, headerItem)
+
+            #  set up the values cells
+            self.setColumnValue(i, items[i])
+        self.editBasket.resizeColumnsToContents()
 
         self.weight = items[1]
         self.count = items[2]
@@ -92,6 +90,21 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         self.cancelBtn.clicked.connect(self.getCancel)
         self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
 
+
+    def setColumnValue(self, col, value):
+
+        #  set up the values cells -
+        tableItem = QTableWidgetItem(value)
+        tableItem.setFont(self.headerFont)
+        if col == 0:
+            #  the first cell (basket id) is not editble
+            tableItem.setFlags(Qt.ItemFlag.NoItemFlags)
+        else:
+            #  the other cells are selectable
+            tableItem.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+        self.editBasket.setItem(0, col, tableItem)
+
+
     def getEdit(self):
         """
         brings up a number pad (if selected weight or count edits) or a way to choose basket type
@@ -99,35 +112,87 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         :return: none
         """
         col = self.editBasket.currentColumn()
+
+        #  column 0 is the basket ID which is uneditable
+
         if col == 1:
-            # selected weight
+            # selected weight - show the numpad to get the new weight
+
             self.numpad.msgLabel.setText("Enter the New Weight")
             if not self.numpad.exec():
+                #  user hit cancel
                 return
-            self.weight = self.numpad.value
-            self.editBasket.setItem(0, 1, QTableWidgetItem(self.weight))
+
+            #  numpad forces the user to enter a valid number, but
+            #  they can enter nothing so we need to make sure a number
+            #  was entered.
+            if self.numpad.value != '':
+                #  number entered, update thtable
+                self.weight = self.numpad.value
+                self.setColumnValue(col, self.weight)
+
         elif col == 2:
             # selected count
             currentCount = self.editBasket.currentItem().text()
-            if currentCount == '-':
-                self.basketType = "Count"
-                self.editBasket.setItem(0, 3, QTableWidgetItem(self.basketType))
+
+            #  present the numpad to get the new count
             self.numpad.msgLabel.setText("Enter the New Count")
             if not self.numpad.exec():
+                #  user hit cancel
                 return
+
+            #  check if the user entered a number
+            if self.numpad.value == '':
+                return
+
+            #  user entered a count and the current type may not be "Count"
+            #  so update the type
+            if currentCount == '-':
+                self.basketType = "Count"
+                self.setColumnValue(3, self.basketType)
+
+            #  now update the count
             self.count = self.numpad.value
-            self.editBasket.setItem(0, 2, QTableWidgetItem(self.count))
+            self.setColumnValue(col, self.count)
+
         elif col == 3:
             # selected basket type
+
+            #  store the old type and count
+            oldType = self.basketType
+            oldCount = self.count
+
+            #  show the sample type selection dialog
             self.typeDlg.exec()
             self.basketType = self.typeDlg.basketType
-            self.editBasket.setItem(0, 3, QTableWidgetItem(self.basketType))
-            if self.basketType == 'Count':
-                self.count = self.typeDlg.count
-                self.editBasket.setItem(0, 2, QTableWidgetItem(self.count))
+
+            #  check if it has changed
+            if oldType.lower() == self.basketType.lower():
+                #  same type selected, do nothing more
+                return
+
+            #  if they selected the count type, display the numpad to get the count
+            if self.basketType.lower() == 'count':
+
+                self.numpad.msgLabel.setText("Enter the Count")
+                if self.numpad.exec() and self.numpad.value != '':
+                    #  user entered a count - update type and count in table
+                    self.basketType = self.typeDlg.basketType
+                    self.count = self.numpad.value
+                else:
+                    #  user bailed on a count so we revert to the old values
+                    self.basketType = oldType
+                    self.count = oldCount
+
             else:
                 self.count = '-'
-                self.editBasket.setItem(0, 2, QTableWidgetItem('-'))
+                self.basketType
+
+            self.setColumnValue(col, self.basketType)
+            self.setColumnValue(2, self.count)
+
+        self.editBasket.resizeColumnsToContents()
+
 
     def getAuto(self, device, val):
         """
@@ -136,10 +201,14 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         :param val: value that is sent
         :return: none
         """
+
         self.weight = val
-        self.editBasket.setItem(0, 0, QTableWidgetItem(self.weight))
-        self.transDevice = device
+        self.setColumnValue(1, self.weight)
+        self.editBasket.resizeColumnsToContents()
+
+        #  play the device sound
         self.sounds[self.devices.index(device)].play()
+
 
     def getOK(self):
         """
@@ -148,6 +217,7 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         """
         self.okFlag = True
         self.done(1)
+
 
     def getCancel(self):
         """
