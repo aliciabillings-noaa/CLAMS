@@ -63,7 +63,7 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
 
         self.validList = parent.validList
         self.typeDlg = parent.typeDlg
-        self.serMonitor = parent.serMonitor
+        self.sensorMonitor = parent.sensorMonitor
         self.devices = parent.devices
         self.sounds = parent.sounds
         self.errorIcons = parent.errorIcons
@@ -73,24 +73,24 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         self.editBasket.setColumnCount(len(header))
         self.editBasket.setRowCount(1)
         self.editBasket.verticalHeader().setVisible(False)
-        self.editBasket.setColumnWidth(0, 150)
-        self.editBasket.setColumnWidth(1, 116)
-        self.editBasket.setColumnWidth(2, 116)
-        self.editBasket.setColumnWidth(3, 116)
+#        self.editBasket.setColumnWidth(0, 150)
+#        self.editBasket.setColumnWidth(1, 116)
+#        self.editBasket.setColumnWidth(2, 116)
+#        self.editBasket.setColumnWidth(3, 116)
         for i in range(len(header)):
             self.editBasket.setHorizontalHeaderItem(i, QTableWidgetItem(header[i]))
             self.editBasket.setItem(0, i, QTableWidgetItem(items[i]))
 
-        self.weight = items[0]
-        self.count = items[1]
-        self.basketType = items[2]
+        self.weight = items[1]
+        self.count = items[2]
+        self.basketType = items[3]
         self.numpad = numpad.NumPad(self)
 
         # signal/slot connections
         self.editBasket.itemSelectionChanged.connect(self.getEdit)
         self.okBtn.clicked.connect(self.getOK)
         self.cancelBtn.clicked.connect(self.getCancel)
-        self.serMonitor.SerialDataReceived.connect(self.getAuto)
+        self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
 
     def getEdit(self):
         """
@@ -101,7 +101,7 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         col = self.editBasket.currentColumn()
         if col == 1:
             # selected weight
-            self.numpad.msgLabel.setText("Punch in the New Weight")
+            self.numpad.msgLabel.setText("Enter the New Weight")
             if not self.numpad.exec():
                 return
             self.weight = self.numpad.value
@@ -137,7 +137,7 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         :return: none
         """
         self.weight = val
-        self.editBasket.setItem(0, 1, QTableWidgetItem(self.weight))
+        self.editBasket.setItem(0, 0, QTableWidgetItem(self.weight))
         self.transDevice = device
         self.sounds[self.devices.index(device)].play()
 

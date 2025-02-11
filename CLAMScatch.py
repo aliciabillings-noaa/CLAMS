@@ -1220,8 +1220,10 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  set up the basket type dialog button states
         self.typeDlg.buttonSetup(self.validList, self.basketTypes)
 
-        #  get the current basket selection
-        selRecord = []
+        #  get the current basket selection - first get the basket_id
+        selRecord = [self.basketTable.verticalHeaderItem(self.basketTable.currentRow()).text()]
+
+        #  then append the weight, count, and type to our list
         for item in self.basketTable.selectedItems():
             selRecord.append(item.text())
 
@@ -1234,7 +1236,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             return
 
         #  present the edit dialog
-        header = ['Weight', 'Count', 'Sample Type' ]
+        header = ['Basket ID', 'Weight', 'Count', 'Sample Type' ]
         editDlg = basketeditdlg.BasketEditDlg(header, selRecord, self)
         editDlg.exec()
         if not editDlg.okFlag:
@@ -1252,6 +1254,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                 " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
                 self.selRecord[0])
+        print(sql)
         self.db.dbExec(sql)
 
         self.freeze=False
@@ -1581,9 +1584,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
             #  strip newlines from the comment before updating database
             newComment = self.comment.split('\n')
-            commentText = ''
-            for line in newComment:
-                commentText = commentText + ' ' + line
+            commentText = ' '.join(newComment)
 
             #  update the comment in samples
             sql = ("UPDATE samples SET comments='" + commentText + "' WHERE ship="+self.ship +
