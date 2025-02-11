@@ -193,4 +193,4 @@ if __name__ == "__main__":
     db.open()
 
     form = SelectActiveSurveyDlg(db)
-    app.exec_()
+    app.exec()

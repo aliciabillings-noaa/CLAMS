@@ -301,4 +301,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     form = CLAMSCatchSummaryLoader(dataSource, schema, user, password)
     form.show()
-    app.exec_()
+    app.exec()
