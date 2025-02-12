@@ -1,19 +1,54 @@
+# coding=utf-8
+
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
+
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
 """
-updated November 2022 to PyQt6 and Python 3 by Alicia Billings, NWFSC
-specific updates:
-- PyQt import statements
-- updated signal/slots
-- added some function explanation
-- fixed any PEP8 issues
-- updated the QEvent and Qt referenced to add the enum for pyqt6
-- updated the getDigit function since QString is no longer a think with pyqt6
-- added a main to test if works (commented out)
+.. module:: IGFDlg
+
+    :synopsis: Dialog to capture the number associated with an IGF sample
+
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assessment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Mike Levine   <mike.levine@noaa.gov>
+|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+| Updated February 2025 by:
+|       Alicia Billings <alicia.billings@noaa.gov>
+|           specific updates:
+|               - PyQt import statement
+|               - signal/slot connections
+|               - added some function explanation
+|               - fixed any PEP8 issues
+|               - added a main to test if works (commented out)
+|
+| NOTE: cannot test this until it is called with parent values
 """
 
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import QEvent, Qt, QObject
-from ui.xga import ui_NumPad
+from ui import ui_NumPad
 from sys import argv
 
 
