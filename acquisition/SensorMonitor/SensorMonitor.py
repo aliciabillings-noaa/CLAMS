@@ -118,7 +118,7 @@ class SensorMonitor(QObject):
 
     def addDevice(self, deviceName, port, baud, parseType, parseExp, parseIndex, cmdPrompt='',
                   byteSize=8, parity='N', stopBits=1, flowControl='NONE', pollRate=500,
-                  txRate=500, initialState = (True, True)):
+                  txRate=500, initialState = (True, True), udpTxOnly=False):
         """Add a device to the list of devices that SensorMonitor watches.
 
         *deviceName* is a string that serves as a unique identfier for the serial port.
@@ -207,6 +207,10 @@ class SensorMonitor(QObject):
         *initialState* (optional) a 2-tuple of booleans containing the initial state of the
         control lines RTS and DTR (in that order) for the serial port when added to the
         monitor
+
+        *udpTxOnly* (optional) Set to True to suppres the creation of the receive port when
+        creating a UDP port. This only applies to UDP ports and is only used when sending
+        data to from same machine you are receiving on
         """
 
         if deviceName in self.devices:
@@ -229,6 +233,7 @@ class SensorMonitor(QObject):
                                     'pollRate':pollRate,
                                     'txRate':txRate,
                                     'initialState':initialState,
+                                    'udpTxOnly':udpTxOnly,
                                     'remove': False,
                                     'thread':None}
 

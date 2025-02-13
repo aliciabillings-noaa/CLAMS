@@ -73,6 +73,7 @@ class UDPDevice(QObject):
         self.rts = deviceParams['initialState'][0]
         self.dtr = deviceParams['initialState'][1]
         self.udp_socket = None
+        self.tx_socket = None
 
         #  define a list that stores the state of the control lines: order is [CTS, DSR, RI, CD]
         self.controlLines = [False, False, False, False]
@@ -125,10 +126,16 @@ class UDPDevice(QObject):
         self.cmdPrompt = deviceParams['cmdPrompt']
         self.cmdPromptLen = len(self.cmdPrompt)
 
+        #  set the txOnly argument. This is a special parameter for the UDP
+        #  socket that prohibits the creation of the receive socket and is
+        #  used in cases where you are sending data to the same host you're
+        #  receiving on. This is a very uncommon situation.
+        self.txOnly = deviceParams['udpTxOnly']
+
         try:
             #  create the local UDP port we'll use to listen on
             portParts = deviceParams['port'].split(':')
-            self.ip = portParts[1].strip('/')
+            self.ip = QtNetwork.QHostAddress(portParts[1].strip('/'))
             self.port = int(portParts[2])
 
         except Exception as e:
@@ -147,9 +154,14 @@ class UDPDevice(QObject):
         if self.udp_socket is None:
             try:
                 #  create and open the UDP port
-                self.udp_socket = QtNetwork.QUdpSocket(self)
-                self.udp_socket.readyRead.connect(self.udp_data_available)
-                self.udp_socket.bind(self.port)
+                if not self.txOnly:
+                    self.udp_socket = QtNetwork.QUdpSocket(self)
+                    self.udp_socket.readyRead.connect(self.udp_data_available)
+                    self.udp_socket.bind(self.port)
+                else:
+                    self.udp_socket = None
+                self.tx_socket = QtNetwork.QUdpSocket(self)
+                self.tx_socket.bind()
 
             except Exception as e:
                 self.SensorError.emit(self.deviceName, SensorError('Unable to open UDP based port for device ' +
@@ -167,12 +179,17 @@ class UDPDevice(QObject):
             #  this is not the droid we're looking for
             return
 
-        #  disconnect readyRead
-        self.udp_socket.readyRead.disconnect()
+        #  disconnect readyRead and close the rx socket
+        if self.udp_socket:
+            self.udp_socket.readyRead.disconnect()
+            if self.udp_socket.state().value > 0:
+                #  close the receive socket
+                self.udp_socket.close()
 
-        if self.udp_socket.state().value > 0:
-            #  close the UDP socket
-            self.udp_socket.close()
+        #  close the Tx socket
+        if self.tx_socket:
+            if self.tx_socket.state().value > 0:
+                self.tx_socket.close()
 
         #  emit the closed signal
         self.SensorClosed.emit(self.deviceName)
@@ -209,11 +226,14 @@ class UDPDevice(QObject):
     @pyqtSlot(str, str)
     def write(self, deviceName, data):
         """
-          Write data to the serial port. This method is not supported for UDP sockets
-          which are listen/read only
+          Write data to the UDP port.
         """
-
-        pass
+        if deviceName == self.deviceName:
+            bytes = self.tx_socket.writeDatagram(data.encode(), self.ip, self.port)
+            if bytes < 0:
+                err = SensorError('Error writing datagram for ' + deviceName +
+                        ': ' + self.udp_socket.errorString())
+                self.SensorError.emit(deviceName, err)
 
 
     @pyqtSlot()
@@ -283,8 +303,8 @@ class UDPDevice(QObject):
                             except Exception as e:
                                 data = None
                                 err = SensorError('Error parsing input from ' + self.deviceName + \
-                                                   '. Incorrect parsing configuration or malformed data stream.', \
-                                                   parent=e)
+                                        '. Incorrect parsing configuration or malformed data stream.', \
+                                        parent=e)
 
                             # emit a signal containing data from this line
                             self.SensorDataReceived.emit(self.deviceName, data, err)

@@ -1,0 +1,55 @@
+
+#  Sensor Settings
+
+sensors:
+
+    specimen_scale:
+      #  Type of sensor - can be UDP, TCP, or Serial
+        type: UDP
+      #  If the port type is UDP or TCP, you must set the destination IP and port.
+      #  These settings are ignored if the type is Serial
+
+      #  specify the destination address - this is the IP of your CLAMS workstation.
+      #  If testing locally, as is typical, this should be 127.0.0.1
+      #    Typical addresses:
+      #           127.0.0.255              Local loopback - Use for testing on your local machine
+      #           161.55.247.X            When you are on the AFSC VPN, you must Tx to your VPN IP
+      #                                        (use ipconfig to get IP)
+        ip: 127.0.0.1
+        #  specify the port - ports for each sensor must be unique
+        port: 26000
+
+      #  If type is serial, the comport and baud must be provided. These settings
+      #  are ignored if the type is UDP or TCP.
+        comport: COM12
+        baud: 9600
+
+      #  'pre' and 'post' specify the text that is prepended and appended to
+      #  the simulated values entered into the textbox to send. This is intended
+      #  to make the message match output from your device without having
+      #  to add it to the textbox. These settings are OPTIONAL.
+        pre: P01 FISH     0.000kg    0.000kg
+        post: kg
+
+    basket_scale:
+        type: UDP
+        ip: 127.0.0.1
+        port: 26001
+        comport: COM13
+        baud: 9600
+        pre: P01 FISH     0.000kg    0.000kg
+        post: kg
+
+    lengthboard:
+        type: Serial
+        ip: 127.0.0.1
+        port: 26002TCP.
+        comport: COM11
+        baud: 9600
+
+    barcode:
+        type: Serial
+        ip: 127.0.0.1
+        port: 26003
+        comport: COM13
+        baud: 9600
