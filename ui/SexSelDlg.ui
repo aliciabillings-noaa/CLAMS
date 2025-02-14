@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>233</width>
-    <height>209</height>
+    <width>282</width>
+    <height>248</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,7 +21,6 @@
        <property name="font">
         <font>
          <pointsize>12</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -32,10 +31,16 @@
      </item>
      <item>
       <widget class="QPushButton" name="maleBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize">
         <size>
          <width>165</width>
-         <height>35</height>
+         <height>50</height>
         </size>
        </property>
        <property name="font">
@@ -50,10 +55,16 @@
      </item>
      <item>
       <widget class="QPushButton" name="femaleBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize">
         <size>
          <width>165</width>
-         <height>35</height>
+         <height>50</height>
         </size>
        </property>
        <property name="font">
@@ -68,10 +79,16 @@
      </item>
      <item>
       <widget class="QPushButton" name="noneBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize">
         <size>
          <width>165</width>
-         <height>35</height>
+         <height>50</height>
         </size>
        </property>
        <property name="font">
