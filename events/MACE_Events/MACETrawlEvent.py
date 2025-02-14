@@ -279,8 +279,6 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         #  If there are any errors opening ports, SensorMonitor will emit the
         #  SensorError signal for each device with an issue.
 
-        print("MOOO!")
-
 
     def getScientistName(self, dialogMessage):
         '''
@@ -455,8 +453,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                     self.buttons[i].text().endsWith('Haulback'))):
                 #  one of them is not complete - ask if we should consider this a live event
                 reply = QMessageBox.question(self, 'Achtung!',"<font size = 14>This haul was not completed. " +
-                        "Is this event still taking place?</font>", QMessageBox.Yes, QMessageBox.No)
-                if reply==QMessageBox.Yes:
+                        "Is this event still taking place?</font>", QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                if reply==QMessageBox.StandardButton.Yes:
                     #  this event is ongoing - set up for an active event
 
                     #  determine what SCS logging rate we should use
@@ -489,7 +487,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         if nCompletedButtons == 2:
             QMessageBox.information(self, 'Kipaumbele!',"<font size=14>This haul appears to have been completed. " +
                     "You can only edit it. New time values must be within the original time span of the event. " +
-                    "No new stream data will be recorded.</font>", QMessageBox.Ok)
+                    "No new stream data will be recorded.</font>", QMessageBox.StandardButton.Ok)
 
 
     def getOptions(self):
@@ -838,8 +836,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
             if self.dataTable.item(ind, 0) != None:
                 reply = QMessageBox.question(self, 'Achtung!',"<font size = 14>This will change the button time, " +
                         "and if this is an EQ or HB button the GPS location of this button press. Are you " +
-                        "sure you want to do this?</font>", QMessageBox.Yes, QMessageBox.No)
-                if reply == QMessageBox.No:
+                        "sure you want to do this?</font>", QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                if reply == QMessageBox.StandardButton.No:
                     #  user cancelled edit - nothing to do
                     return
                 else:
@@ -863,9 +861,9 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                             "be out of the time span of the original event as no event stream data is " +
                             "available. If you continue, the existing event_data entries for this action will " +
                             "be empty and you will need to fill them manually. Are you SURE you want to do this?</font>",
-                            QMessageBox.No | QMessageBox.Yes, QMessageBox.No)
+                            QMessageBox.StandardButton.No | QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
 
-                    if ok == QMessageBox.No:
+                    if ok == QMessageBox.StandardButton.No:
                         #  user aborted edit
                         return
 
@@ -923,8 +921,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 reply = QMessageBox.question(self, 'Achtung!',"<font size = 14>You've already pressed the " +
                         self.buttons[ind].text() + " button, are you sure you want to do this?\n" +
                         "Doing so will overwrite the data in the database with current values.</font>",
-                        QMessageBox.Yes, QMessageBox.No)
-                if reply==QMessageBox.No:
+                        QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                if reply==QMessageBox.StandardButton.No:
                     #  user cancelled - nothing to do
                     return
 
@@ -990,7 +988,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                                               "the horn that wakes the sleepers, the shield that guards the realms of whales. \n"+
                                               "I pledge my life and honor to the Whale's Watch, for this trawl and all the trawls to come.")
                                     QMessageBox.question(self, 'Please take the Oath',"<font size = 14>" + oathText + "</font>",
-                                            QMessageBox.Yes, QMessageBox.No)
+                                            QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
                                     self.oathTaken = True
                             else:
                                 #  for now we are forcing the selection
@@ -1009,8 +1007,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
                     obsComment = ''
                     reply = QMessageBox.question(self, 'Comments? Suggestions?',"<font size = 14>" + questionText + "</font>",
-                            QMessageBox.Yes, QMessageBox.No)
-                    if reply==QMessageBox.Yes:
+                            QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                    if reply==QMessageBox.StandardButton.Yes:
                         #  present the comment dialog
                         keyDialog = keypad.KeyPad('', self)
                         keyDialog.exec()
@@ -1035,7 +1033,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 else:
 
                     # this is a new record for this button
-                    query = QtSql.QSqlQuerysql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, event_id, " +
+                    sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, event_id, " +
                             "partition, event_parameter, parameter_value) VALUES ("+ self.ship+","+self.survey+","+
                             self.activeEvent + ",'" + partition + "','" + parameter[0] + "','" + time+"')")
                     self.db.dbExec(sql)
@@ -1109,8 +1107,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
     def scsTimeout(self, timeInt):
         if self.SCSisActive:
-            QMessageBox.warning(self,'SCS warning!', "SCS data has not been updated for "+str(timeInt)+" seconds." +
-                                                                " Entries into each event will be old.  Be careful!")
+            QMessageBox.warning(self,'SCS warning!', "SCS data has not been updated for "+
+                    str(timeInt)+" seconds. Entries into each event will be old.  Be careful!")
         self.statusBar.showMessage('SCS Disconnected', timeInt*1000)
         self.SCSisActive = False
 
@@ -1626,22 +1624,22 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                         " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'Stratum', '"+self.stratumBtn.text()+"')")
                 self.db.dbExec(sql)
 
-            # write checkboxes
-            if self.marMammalBox.isChecked():
-                status='Y'
-            else:
-                status='N'
-            sql = ("INSERT INTO " + self.schema + ".event_data (ship,survey,event_id,partition,event_parameter,parameter_value) VALUES "+
-                                    " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'MarineMammalPresent','"+status+"')")
-            self.db.dbExec(sql)
-
-            if self.seaBirdBox.isChecked():
-                status='Y'
-            else:
-                status='N'
-            sql = ("INSERT INTO " + self.schema + ".event_data (ship,survey,event_id,partition,event_parameter,parameter_value) VALUES "+
-                    " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'EndangeredSeabirdPresent','"+status+"')")
-            self.db.dbExec(sql)
+#            # write checkboxes
+#            if self.marMammalBox.isChecked():
+#                status='Y'
+#            else:
+#                status='N'
+#            sql = ("INSERT INTO " + self.schema + ".event_data (ship,survey,event_id,partition,event_parameter,parameter_value) VALUES "+
+#                                    " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'MarineMammalPresent','"+status+"')")
+#            self.db.dbExec(sql)
+#
+#            if self.seaBirdBox.isChecked():
+#                status='Y'
+#            else:
+#                status='N'
+#            sql = ("INSERT INTO " + self.schema + ".event_data (ship,survey,event_id,partition,event_parameter,parameter_value) VALUES "+
+#                    " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'EndangeredSeabirdPresent','"+status+"')")
+#            self.db.dbExec(sql)
 
             # write accessories
             for accessory in self.gaLabelList:
@@ -1673,20 +1671,9 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
     @pyqtSlot(str, object)
     def deviceError(self, deviceID, obj):
 
-        #  There was an issue with a device
-
-        #  first get the human readable device name
-        sql = ("SELECT device_name FROM devices" +
-                " WHERE device_id=" + deviceID)
-        query = self.db.dbQuery(sql)
-        deviceName, = query.first()
-
-        #  construct the error text
-        errText = 'Error opening device ' + deviceName
-
-        #  display a warning dialog
-        QMessageBox.warning(self, "Serial Port Error", "<font size = 14>" +
-                errText + ". This device will be not be enabled.")
+        #  There was an issue with a device. display a warning dialog
+        QMessageBox.warning(self, "Sensor/Device Error", "<font size = 14>" +
+                obj.errText + " This device will be not be enabled.")
 
 
     def devicesClosed(self):

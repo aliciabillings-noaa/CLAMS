@@ -51,6 +51,7 @@ class NetDlg(QDialog, ui_NetDlg.Ui_netDlg):
         self.db = parent.db
         self.activeEvent = parent.activeEvent
         self.survey = parent.survey
+        self.schema = parent.schema
         self.ship = parent.ship
         self.defTime = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
         self.reloaded = parent.reloaded
