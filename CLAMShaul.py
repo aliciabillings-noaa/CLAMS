@@ -81,7 +81,7 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
         self.settings = parent.settings
         self.errorSounds = parent.errorSounds
         self.errorIcons = parent.errorIcons
-        self.serMonitor = parent.serMonitor
+        self.sensorMonitor = parent.sensorMonitor
         self.blue = parent.blue
         self.black = parent.black
         self.scientist = parent.scientist
