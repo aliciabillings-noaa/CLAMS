@@ -26,7 +26,6 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
         self.settings=parent.settings
         self.errorSounds=parent.errorSounds
         self.errorIcons=parent.errorIcons
-      #  self.backLogger=parent.backLogger
         #setup reoccuring dlgs
         self.numDialog = numpad.NumPad(self)
         self.message=messagedlg.MessageDlg(self)
@@ -284,14 +283,12 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
 
                         #  insert the last SQL statement into the local log file
                         query = self.db.dbQuery(sql)
-                        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss') + "," + query.lastQuery())
 
 
                         sql = ("UPDATE measurements SET sample_id =" + newSampleKey+
                                 " WHERE specimen_id = "+ str(specimen_id)+" AND ship=" + self.ship +
                                 " AND survey=" + self.survey + " AND event_id=" + self.activeHaul)
                         query = self.db.dbQuery(sql)
-                        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss') + "," + query.lastQuery())
 
                 #  now re-enable the constraint with validation
                 sql = ("ALTER TABLE measurements ENABLE CONSTRAINT MEASUREMENT_SPECIMEN_FK;")
@@ -352,7 +349,6 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
                                 " AND measurement_type = 'sex'")
                         #  insert the last SQL statement into the local log file
                         query1 = self.db.dbQuery(sql)
-                        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss') + "," + query1.lastQuery())
 
 
                 #  attempt to enable the constraints
