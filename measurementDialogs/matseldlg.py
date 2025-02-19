@@ -58,7 +58,7 @@ class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
         self.db = parent.db
         self.settings = parent.settings
         self.speciesName = parent.activeSpcName
-        self.activeSpcCode = parent.activeSpCode
+        self.activeSpcCode = parent.activeSpcCode
 
         # variable declarations
         self.result = ()
@@ -70,19 +70,20 @@ class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
         # get maturity stage names
         mat_stage_sql = "SELECT parameter_value FROM species_data " \
                         "WHERE lower(species_parameter)='maturity_table' AND species_code=" + self.activeSpcCode
-        mat_stage_query = self.db.dbQuery(mat_stage_sql)
-        if not mat_stage_query.first():
+        query = self.db.dbQuery(mat_stage_sql)
+        mat_stage_query, = query.first()
+        if not mat_stage_query:
             return
 
         mat_desc_sql = "SELECT md.button_text, md.description_text_female " \
-                       "FROM maturity_description AS md, maturity_tables AS mt " \
-                       "WHERE (mt.maturity_table = md.maturity_table) AND " \
-                       "(mt.maturity_table = " + mat_stage_query.value(0).toString() + ")"
+                       "FROM maturity_description md JOIN maturity_tables mt " \
+                       "ON (mt.maturity_table = md.maturity_table) WHERE " \
+                       "(mt.maturity_table = " + mat_stage_query + ")"
         query = self.db.dbQuery(mat_desc_sql)
         maturityBtnText = []
-
-        while query.next():
-            maturityBtnText.append(query.value(0).toString())
+        
+        for button_text, description in query:
+            maturityBtnText.append(button_text)
 
         # signal/slot connections
         self.guideBtn.clicked.connect(self.getGuide)

@@ -99,8 +99,9 @@ class BarcodeDuplicate(QObject):
         sql = ("SELECT device_id FROM measurements WHERE measurement_type=" +
                 "'barcode' AND measurement_value ='" + currentValue + "'")
         query = self.db.dbQuery(sql)
-
-        if query.first():
+        isbarCode,  = query.first()
+        
+        if isbarCode:
             #  This barcode exists in the database
             result = (False, "This barcode number already exists in the database. " +
                     "Do you want to rescan?")
