@@ -60,7 +60,6 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         #  set up the GUI
         super(CLAMSProcess, self).__init__(parent)
         self.setupUi(self)
-        #self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
         # initialize variables
         self.reloadFlag=False
@@ -77,6 +76,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.activePartition=None
         self.methotFlag=False
         self.sensorsClosed = False
+        self.sensorsStopping = False
 
         #  set up some colors
         self.blue = QPalette()
@@ -114,6 +114,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
 
         #  set the event number
         self.haulLabel.setText(self.activeHaul)
+
 
         # get the scientist - first get the list of active scientists
         self.sciList=[]
@@ -275,7 +276,6 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
 
 
         '''
-
 
         #  Set up sensors - first create an instance of SensorMonitor
         #  which will handle all the details of receiving and parsing
@@ -519,7 +519,6 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
             event.accept()
         else:
 
-
             #  set the status for this workstation to closed
             sql = ("UPDATE workstations SET status='closed', " +
                     "current_event=0 WHERE workstation_ID=" + self.workStation)
@@ -563,7 +562,9 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
                 self.message.exec()
 
             #  tell SensorMonitor to shut down. SensorMonitor will signal after
-            #  all threads have stopped.
+            #  all threads have stopped. We set the sensorsStopping attribute so
+            #  we know that this is an intentional shutdown
+            self.sensorsStopping = True
             self.sensorMonitor.stopMonitoring()
 
             #  lastly ignore this event for now and wait for
@@ -580,9 +581,14 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         again.
         '''
 
-        #  set sensorsClosed to True and call close() again
-        self.sensorsClosed = True
-        self.close()
+        #  we check if this is an intentional shutdown and if so, close
+        #  the form. This method will also be called if every sensor
+        #  fails to start when the form is initializing and we *don't*
+        #  want to close the form in that case.
+        if  self.sensorsStopping:
+            #  set sensorsClosed to True and call close() again
+            self.sensorsClosed = True
+            self.close()
 
 
 

@@ -452,7 +452,7 @@ class SensorMonitor(QObject):
 
     @pyqtSlot(str)
     def sensorStopped(self, deviceName):
-        """deviceStopped is called when a device's port is closed. After the port
+        """sensorStopped is called when a device's port is closed. After the port
         is closed, we stop the thread. Final thread cleanup is handled in
         threadCleanup()
 
