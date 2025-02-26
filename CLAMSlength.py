@@ -69,9 +69,8 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
     '''
 
     def __init__(self, parent=None):
-        '''
-            The CLAMS Length dialog initialization method.  Gets basic information
-            and sets up the length form
+        ''' The CLAMS Length dialog initialization method.  Gets basic information
+            and sets up the length form.
         '''
 
         #  call superclass init methods, GUI form setup method, and set to delete object on close
@@ -145,14 +144,13 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         # set up tables for data display
         font = QFont('helvetica', 14, -1, False)
         self.measureView.setFont(font)
-        self.measureModel = QtSql.QSqlQueryModel() #TODO: change this to a QTableView using QtDesigner, following ~ line of ClamScatch
+        self.measureModel = QtSql.QSqlQueryModel() #TODO: change this to a QTableView using QtDesigner, following ~ line of ClamsCatch
         self.measureView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.measureView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.measureView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.measureView.setModel(self.measureModel)
         self.selModel = QItemSelectionModel(self.measureModel, self.measureView)
         self.measureView.setSelectionModel(self.selModel)
-        #self.measureView.horizontalHeader().setResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.measureView.show()
 
         # set up length frequency plot

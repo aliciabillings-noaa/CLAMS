@@ -46,7 +46,7 @@ from ui import ui_CLAMSProcess
 import devices
 import CLAMShaul
 import CLAMScatch
-#import CLAMSspecimen
+import CLAMSspecimen
 import CLAMSlength
 import CLAMSSpeciesFix
 from acquisition.SensorMonitor import SensorMonitor
@@ -482,8 +482,8 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.specBtn.setPalette(self.blue)
 
         #  show the specimen form
-        #specimenWindow = CLAMSspecimen.CLAMSSpecimen(self)
-        #specimenWindow.exec()
+        specimenWindow = CLAMSspecimen.CLAMSSpecimen(self)
+        specimenWindow.exec()
 
         #  set the button color back now that the form is closed
         self.specBtn.setPalette(self.black)

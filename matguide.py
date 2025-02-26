@@ -12,7 +12,6 @@ class MatGuide(QDialog, ui_MatGuide.Ui_matGuide):
     def __init__(self,  parent=None):
         super(MatGuide, self).__init__(parent)
         self.setupUi(self)
-        self.setAttribute(Qt.WA_DeleteOnClose)
         self.db=parent.db
         self.speciesName=parent.speciesName
         self.settings=parent.settings

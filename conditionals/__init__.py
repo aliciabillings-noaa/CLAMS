@@ -1,10 +1,1 @@
-from gonadweightlimit import GonadWeightLimit
-from gonadweightlimitcollection import GonadWeightLimitCollection
-from lengthsexmaturity import LengthSexMaturity
-from takingovaryfemalerockfish import TakingOvaryFemaleRockfish
-from takingovarypollock import TakingOvaryPollock
-from takingovaryrockfish import TakingOvaryRockfish
-from bodycount10 import BodyCount10
-from bodycount50 import BodyCount50
-from bodyorheadsalmon import BodyOrHeadSalmon
-from noovarywhenmale import NoOvaryWhenMale
+
