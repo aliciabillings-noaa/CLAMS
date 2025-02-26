@@ -450,6 +450,13 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         else:
             # This is a event processing station - first check if we allow the event to
             # be changed when any other stations are open.
+            if 'AllowEventChangeWhileProcessing' not in self.settings:
+                #  one or more CLAMS workstations are open - do not update active ship/survey
+                QMessageBox.warning(self, "Warning", "<font size = 12>The 'AllowEventChangeWhileProcessing' " +
+                        "parameter is missing from the Application_Configuration table. The default value " +
+                        "of 'False' will be assumed.")
+                self.settings['AllowEventChangeWhileProcessing'] = 'False'
+
             if self.settings['AllowEventChangeWhileProcessing'].lower() == 'false':
                 #  we do not allow a change when other stations are open so check if any are
                 stationOpen = False
@@ -460,8 +467,6 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
                         stationOpen = True
                         break
                 if stationOpen:
-                    #  This check
-                    pass
                     #  one or more CLAMS workstations are open - do not update active ship/survey
                     QMessageBox.critical(self, "ERROR", "<font size = 12>One or more CLAMS workstations "+
                             "are open. The active event cannot be changed when workstations are open. " +

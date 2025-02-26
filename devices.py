@@ -67,36 +67,46 @@ def getSoftwareDevices(db, workstationID):
     return devices
 
 
-def getDevices(db, workstationID):
+def getDevices(db, workstationID, softwareOnly=False, hardwareOnly=False):
     '''getDevices returns a dictionary, keyed by device name
     containing the device ID and device interface for serial or network
     based devices connected to the specified workstation.
     '''
 
     devices = {}
+    whereMod = ""
+
+    if softwareOnly:
+        whereMod = ("AND LOWER(devices.device_interface) IN " +
+                "('software') ")
+    if hardwareOnly:
+        whereMod = ("AND LOWER(devices.device_interface) IN " +
+                "('scs','network','serial') ")
 
     #  query the devices attached to this station
     sql = ("SELECT measurement_setup.device_id,devices.device_name," +
-            "measurement_setup.measurement_type,measurement_setup.device_interface " +
-            "FROM measurement_setup INNER JOIN DEVICES ON " +
+            "devices.device_interface,measurement_setup.measurement_type," +
+            "measurement_setup.gui_module FROM measurement_setup INNER JOIN DEVICES ON " +
             "measurement_setup.device_id=devices.device_id WHERE " +
             "measurement_setup.workstation_id=" +  workstationID +
-            " AND devices.active=1 AND LOWER(measurement_setup.device_interface) IN " +
-            "('scs','network','serial') GROUP BY measurement_setup.device_id," +
-            "devices.device_name,measurement_setup.measurement_type," +
-            "measurement_setup.device_interface")
+            " AND devices.active=1 " + whereMod)
     devQuery = db.dbQuery(sql)
-    for deviceID, deviceName, measurementType, deviceInterface in devQuery:
+    for deviceID, deviceName, deviceInterface, measurementType, guiModule in devQuery:
         if deviceName not in devices:
             devices[deviceName] = {'id':deviceID, 'interface':deviceInterface.lower(),
-                    'measurementTypes':[measurementType]}
+                    'measurements':{guiModule.lower():[measurementType]}}
         else:
-            devices[deviceName]['measurementTypes'].append(measurementType)
+            if guiModule.lower() not in devices[deviceName]['measurements']:
+                devices[deviceName]['measurements'][guiModule.lower()] = [measurementType]
+            else:
+                devices[deviceName]['measurements'][guiModule.lower()].append(measurementType)
 
     return devices
 
 
 def getDeviceParameters(db, deviceName, deviceID, deviceInterface):
+
+    deviceParams = {}
 
     #  query the connection parameters for this device
     sql = ("SELECT device_parameter,parameter_value FROM device_configuration" +
@@ -115,44 +125,42 @@ def getDeviceParameters(db, deviceName, deviceID, deviceInterface):
         if 'networkport' not in connectionParams:
             raise ValueError("The required 'NetworkPort' device_configuration " +
                     "parameter is missing for the network based device '" + deviceName + "'")
-        port = connectionParams['networkport']
-        baud = None
+        deviceParams['port'] = connectionParams['networkport']
+        deviceParams['baud'] = None
 
     elif deviceInterface == 'serial':
         #  this is a serial based - serialport and baudrate params are required
         if 'serialport' not in connectionParams:
             raise ValueError("The required 'SerialPort' device_configuration " +
                     "parameter is missing for serial device '" + deviceName + "'")
-        port = connectionParams['serialport']
+        deviceParams['port'] = connectionParams['serialport']
 
         if 'baudrate' not in connectionParams:
             raise ValueError("The required 'BaudRate' device_configuration " +
                     "parameter is missing for serial device '" + deviceName + "'")
         try:
-            baud = int(connectionParams['baudrate'])
+            deviceParams['baud'] = int(connectionParams['baudrate'])
         except:
             raise ValueError("Unable to convert 'BaudRate' parameter " +
                     connectionParams['baudrate'] + "to an integer for " +
                     "serial device '" + deviceName + "'")
-    else:
-        raise ValueError("Unknown device_interface '" + deviceInterface +
-                "' for device '" + deviceName + "'")
 
     #  extract the optional parameters and if missing provide sane defaults
-    parseType = str(connectionParams.get('parsetype', 'None'))
-    parseExp = str(connectionParams.get('parseexpression', ''))
-    parseIndex = int(connectionParams.get('parseindex', 0))
-    cmdPrompt = str(connectionParams.get('commandprompt', ''))
+    deviceParams['parseType'] = str(connectionParams.get('parsetype', 'None'))
+    deviceParams['parseExp'] = str(connectionParams.get('parseexpression', ''))
+    deviceParams['parseIndex'] = str(connectionParams.get('parseindex', 0))
+    deviceParams['commandPrompt'] = str(connectionParams.get('commandprompt', ''))
+    deviceParams['soundFile'] = str(connectionParams.get('soundfile', ''))
 
     #  if this device is configured for regex parsing, get the parse expression
-    if (parseType.lower() == 'regex'):
+    if (deviceParams['parseType'] .lower() == 'regex'):
         if 'parseexpression' not in connectionParams:
             raise ValueError("The required 'ParseExpression' parameter required for " +
                     "Regex parsing is missing for the device '" + deviceName +
                     "' in the device_configuration table")
-        parseExp = connectionParams['parseexpression']
+        deviceParams['parseExp'] = connectionParams['parseexpression']
 
-    return (deviceName, port, baud, parseType, parseExp, parseIndex, cmdPrompt)
+    return deviceParams
 
 
 

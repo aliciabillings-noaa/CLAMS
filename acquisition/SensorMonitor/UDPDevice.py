@@ -132,16 +132,16 @@ class UDPDevice(QObject):
         #  receiving on. This is a very uncommon situation.
         self.txOnly = deviceParams['udpTxOnly']
 
-        try:
-            #  create the local UDP port we'll use to listen on
-            portParts = deviceParams['port'].split(':')
-            self.ip = QtNetwork.QHostAddress(portParts[1].strip('/'))
-            self.port = int(portParts[2])
+#        try:
+        #  create the local UDP port we'll use to listen on
+        portParts = deviceParams['port'].split(':')
+        self.ip = QtNetwork.QHostAddress(portParts[1].strip('/'))
+        self.port = int(portParts[2])
 
-        except Exception as e:
-            self.SensorError.emit(self.deviceName, SensorError('Unable to create UDP based port for ' +
-                    self.deviceName + '. Invalid port option.', parent=e))
-            self.udp_socket = None
+#        except Exception as e:
+#            self.SensorError.emit(self.deviceName, SensorError('Unable to create UDP based port for ' +
+#                    self.deviceName + '. Invalid port option.', parent=e))
+#            self.udp_socket = None
 
 
     @pyqtSlot()

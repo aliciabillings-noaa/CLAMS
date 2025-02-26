@@ -1,6 +1,6 @@
 
 #  specify the local network interface to use. Set to 0.0.0.0 to listen/transmit on all interfaces
-local_address: 0.0.0.0
+local_address: 127.0.0.1
 
 #  specify the local port to transmit from
 local_port: 44999
@@ -11,7 +11,8 @@ local_port: 44999
 #           192.167.117.255       Dyson science network broadcast address - use when on the DY
 #           161.55.247.X            When you are on the AFSC VPN, you must Tx to your VPN IP (use ipconfig to get IP)
 #dest_address: 192.168.0.155
-dest_address: 161.55.247.29
+#dest_address: 161.55.247.29
+dest_address: 127.0.0.1
 
 #  specify the transmit interval in milliseconds. Usually 1000-2000 is reasonable for most testing.
 tx_interval_ms:  1000

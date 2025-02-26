@@ -47,11 +47,11 @@
 """
 
 # imports
+import os
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from PyQt6 import QtSql
-from PyQt6.QtMultimedia import QSoundEffect
 from ui import  ui_CLAMSLength
 import numpad
 import keypad
@@ -94,6 +94,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.blue = parent.blue
         self.black = parent.black
         self.scientist = parent.scientist
+        self.deviceData = parent.deviceData
 
         # setup reoccuring dlgs
         self.numDialog = numpad.NumPad(self)
@@ -162,7 +163,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
 
         # set up window position
         #  restore the application state
-        self.appSettings = QSettings('CLAMS', 'CatchForm')
+        self.appSettings = QSettings('CLAMS', 'LengthForm')
         size = self.appSettings.value('winsize', QSize(1000,725))
         position = self.appSettings.value('winposition', QPoint(10,10))
 
@@ -188,8 +189,8 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         # auto lengths from serial device
         self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
 
-        # connect to serial devices
-        self.openSerial()
+#        # connect to serial devices
+#        self.openSerial()
 
     def updateSpecies(self):
         '''updateSpecies is called when the Length form is initialized.
@@ -313,17 +314,27 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
             self.lengthTypeBox.addItem(vals[3])
             self.lenthTypes = self.lenthTypes + ",'" + vals[3] + "'"
 
-        # get picture
-        if self.activeSpcSubcat != 'None':
+        # set up picture
+        if self.activeSpcSubcat.lower() != 'none':
             imgName = self.activeSpcCode+"_"+self.activeSpcSubcat
         else:
             imgName = self.activeSpcCode
 
+        #  currently, all fish images must be .jpg.
+        imgName = imgName + ".jpg"
+
+        #  load the fish pic, if available
+        self.picLabel.clear()
         pic = QImage()
-        if pic.load(self.settings['ImageDir']+'\\fishPics\\'+imgName+".jpg"):
+        if pic.load(self.settings['ImageDir'] + 'fishPics' + os.sep + imgName):
+            pic = pic.scaled(self.picLabel.size(),Qt.AspectRatioMode.KeepAspectRatio)
             self.picLabel.setPixmap(QPixmap.fromImage(pic))
+            self.picLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            self.picLabel.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         else:
-             self.picLabel.clear()
+            #  no pic available
+            self.picLabel.clear()
+            self.picLabel.setText("<Image Unavailable>")
 
         # check for existing records going through length type changed
         self.lengthTypeChanged()
@@ -346,7 +357,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         This allows a user to enter a length using manual number pad.
         '''
 
-        self.manualFlag = True
+
         self.overrideFlag = False
 
         # make sure there is an active species and sex selected.  If there is not,
@@ -374,6 +385,9 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
             except:
                 return
 
+            #  set the active device ID to 0 to indicate software
+            self.activeDeviceId = '0'
+
             # now check to see if it is within the acceptable range.  If not show a warning and ask if user wants to reenter.
             if float(self.value) > self.minLength and float(self.value) < self.maxLength:# measurement within specs
                 # call writeTable to insert this measurement into the database
@@ -395,25 +409,35 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.valFlag = True
 
 
-    def getAuto(self, device, val):
+
+# TODO: NEED TO MAP MEASUREMENT TYPE TO DEVICE, THEN CHECK IF THE MEASUREMENT TYPE IS PROVIDED BY
+#       THE DEVICE NAMED IN getAuto. IF SO, RECORD THE VALUE. IF NOT, IGNORE.
+
+    @pyqtSlot(str, str, object)
+    def getAuto(self, device_name, val, err):
         '''getAuto is called when the connected serial device sends a signal with the device and the value.
         Check to make sure the value can be converted to a float, do some check on species, sex,
         and the acceptable length range.  If these pass, call writeTable to insert the measurement into the database.
         '''
-        # can this be converted to a float?  If not, it is no good, so poss and wait for the next
+
+        print(device_name, val)
+
+        #  check if we're working on a previous length, if so  do not interrupt with new measurement
+        if self.freeze:
+            return
+
+        #  check if this is a device we're interested in, if not, ignore this data.
+        #  first check if there are any length measurements
+        if 'length' not in self.deviceData[device_name]['measurements']:
+            return
+
+        #  make sure this is a number
         try:
-            float(val)
+            val = float(val)
         except:
             return
 
-        if self.freeze:# we're working on a previous length, do not interrupt with new measurement
-            return
-
-        self.manualFlag = False
-        self.overrideFlag = False
-
-        # make sure there is an active species and sex selected.  If there is not,
-        # we will have problems inserting into the database later, so inform the user
+        # make sure there is an active species and sex selected.
         if self.activeSpcName == None:
             self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
                     "Please select a species!", 'info')
@@ -425,29 +449,37 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
             self.message.exec()
             return
 
+        self.overrideFlag = False
+
         # set the value to be written as the input value
         self.value = val
-        # now check to see if it is within the acceptable range.  If not show a warning and ask if user wants to reenter.
-        if float(self.value) > self.minLength and float(self.value) < self.maxLength:# measurement within specs
-            # call writeTable to insert this measurement into the database
-            self.writeTable()
-            lengthSound = self.sounds[self.devices.index(device)]
-            if lengthSound:
-                lengthSound.play()
-        else:
+
+        self.activeDeviceId = self.deviceData[device_name]['id']
+
+        #  play the sound associated with this device if provided
+        if self.deviceData[device_name]['soundeffect']:
+            self.deviceData[device_name]['soundeffect'].play()
+
+        # now check to see if it is within the acceptable range.  If not show a
+        # warning and ask if user wants to reenter.
+        if self.value < self.minLength or self.value > self.maxLength:
+            #  value is out of range
             self.freeze = True
             self.message.setMessage(self.errorIcons[1],self.errorSounds[1], self.firstName +
                     ", The length is out of range for this. Do you want to reenter length?", 'choice')
             if self.message.exec():
-                self.valFlag = True
+                return
             else:
                 self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                         "You're in big trouble, "+self.firstName, 'info')
                 self.message.exec()
+
                 # insert the data anyway, even though the length fell outside the acceptable range
                 self.overrideFlag = True
-                self.writeTable()
-            self.freeze = False
+
+        #  write the data into the database
+        self.writeTable()
+        self.freeze = False
 
 
     def getSex(self):
@@ -663,13 +695,6 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         #  check if this is a random or non-random sample
         samplingMethod = self.samplingMethodBox.currentText()
 
-        #  check if the database is open
-        if not self.db.db.isOpen():
-            self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                    "Database is not connected - restart clams",'info')
-            self.message.exec()
-            return
-
         # write specimen table
         sql_insert = ("INSERT INTO specimen (ship,survey,event_id,sample_id,workstation_id," +
                 "scientist,sampling_method,protocol_name,comments) VALUES ("+self.ship+","+self.survey+
@@ -684,12 +709,6 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         query = self.db.dbQuery(sql)
         self.specimenKey, = query.first()
 
-        #  set the device ID based on manual or electronic entry
-        if self.manualFlag:
-            deviceId = '0'
-        else:
-            deviceId = self.devices[0]
-
         # get length_type
         len_type = self.lengthTypeBox.currentText()
 
@@ -698,8 +717,8 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
             #  Insert the length type that is selected in the lengthTypeBox combo 'len_type', now skip insert of 'length' type
             sql = ("INSERT INTO measurements (ship, survey,event_id,sample_id,specimen_id," +
                     "measurement_type,device_id,measurement_value) VALUES ("+self.ship+","+self.survey+","+
-                    self.activeHaul+ ","+self.sampleKey+","+self.specimenKey+",'"+len_type+"',"+deviceId+
-                    ",'"+self.value+"')")
+                    self.activeHaul+ ","+self.sampleKey+","+self.specimenKey+",'"+len_type+"',"+self.activeDeviceId+
+                    ",'"+str(self.value)+"')")
             self.db.dbExec(sql)
 
             # write sex
@@ -709,8 +728,9 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
             self.db.dbExec(sql)
 
             if self.overrideFlag:
-                sql = ("INSERT INTO overrides (scientist, record_id, crime, table_name) VALUES ('"+
-                        self.scientist+"',"+self.specimenKey+", 'length range','measurement')")
+                sql = ("INSERT INTO overrides (ship,survey,event_id,table_name,scientist,description) VALUES ('"+
+                        self.ship + "," + self.survey+ "," + self.activeHaul + "," +self.specimenKey+
+                        "'measurements'," +self.scientist+"','Length is outside of valid range.')")
                 self.db.dbExec(sql)
 
             # update table
@@ -802,7 +822,10 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.sumTable.setItem(2, 0,QTableWidgetItem('0'))
 
         # Add each count by sex to the table and sum for total
-        for N,  sex in query:
+        for N, sex in query:
+            #  check if this is a bad entry and skip
+            if sex is None:
+                continue
             if sex.lower() == 'male':
                 self.sumTable.setItem(0, 0,QTableWidgetItem(N))
             elif sex.lower() == 'female':
@@ -814,42 +837,42 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.sumTable.setItem(3, 0,QTableWidgetItem(str(sum(counts))))
 
 
-    def openSerial(self):
-        '''openSerial is called when the form is initialized.  It queries
-        the device configuration and measurement setup tables to determine
-        which measurement and device combinations are associated with
-        the current workstation and Length module.  The sound file name
-        for each device is also queried and saved.
-        '''
-
-        # initialize the lists that will be populated with measurements, devices and sounds
-        self.measurements = []
-        self.devices = []
-        self.sounds = []
-
-        # query device_configuration and measurement_setup tables
-        sql = ("SELECT measurement_setup.measurement_type, measurement_setup.device_id, device_configuration.parameter_value FROM " +
-                                "device_configuration INNER JOIN measurement_setup ON device_configuration.device_id " +
-                                "= measurement_setup.device_id WHERE measurement_setup.workstation_id=" +
-                                self.workStation+" AND measurement_setup.gui_module='Length' AND " +
-                                "device_configuration.device_parameter = 'SoundFile'")
-        query = self.db.dbQuery(sql)
-
-        # loop through results and store them in the lists for measurements, devices and sounds
-        for type,  device_id, sound_file in query:
-            self.measurements.append(type)
-            self.devices.append(device_id)
-            if sound_file:
-                hasExt = sound_file.split('.')
-                if len(hasExt) > 1:
-                    soundFile = (self.settings['SoundsDir'] + sound_file)
-                else:
-                    soundFile = (self.settings['SoundsDir'] + sound_file + '.wav')
-                soundEffect = QSoundEffect()
-                soundEffect.setSource(QUrl.fromLocalFile(soundFile))
-                self.sounds.append(soundEffect)
-            else:
-                self.sounds.append(None)
+#    def openSerial(self):
+#        '''openSerial is called when the form is initialized.  It queries
+#        the device configuration and measurement setup tables to determine
+#        which measurement and de vice combinations are associated with
+#        the current workstation and Length module.  The sound file name
+#        for each device is also queried and saved.
+#        '''
+#
+#        # initialize the lists that will be populated with measurements, devices and sounds
+#        self.measurements = []
+#        self.devices = []
+#        self.sounds = []
+#
+#        # query device_configuration and measurement_setup tables
+#        sql = ("SELECT measurement_setup.measurement_type, measurement_setup.device_id, device_configuration.parameter_value FROM " +
+#                                "device_configuration INNER JOIN measurement_setup ON device_configuration.device_id " +
+#                                "= measurement_setup.device_id WHERE measurement_setup.workstation_id=" +
+#                                self.workStation+" AND measurement_setup.gui_module='Length' AND " +
+#                                "device_configuration.device_parameter = 'SoundFile'")
+#        query = self.db.dbQuery(sql)
+#
+#        # loop through results and store them in the lists for measurements, devices and sounds
+#        for type,  device_id, sound_file in query:
+#            self.measurements.append(type)
+#            self.devices.append(device_id)
+#            if sound_file:
+#                hasExt = sound_file.split('.')
+#                if len(hasExt) > 1:
+#                    soundFile = (self.settings['SoundsDir'] + sound_file)
+#                else:
+#                    soundFile = (self.settings['SoundsDir'] + sound_file + '.wav')
+#                soundEffect = QSoundEffect()
+#                soundEffect.setSource(QUrl.fromLocalFile(soundFile))
+#                self.sounds.append(soundEffect)
+#            else:
+#                self.sounds.append(None)
 
 
     def getComment(self):

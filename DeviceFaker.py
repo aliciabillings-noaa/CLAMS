@@ -37,9 +37,10 @@
 |       Rick Towler   <rick.towler@noaa.gov>
 """
 
-
+import os
 import sys
 import string
+import functools
 import yaml
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
@@ -102,6 +103,15 @@ class DeviceFaker(QMainWindow, ui_DeviceFaker.Ui_DeviceFaker):
         self.pbSendValue_Specimen.clicked.connect(self.sendData)
         self.pbSendValue_Barcode.clicked.connect(self.sendData)
 
+        #  set the base directory path - this is the full path to this application
+        self.baseDir = functools.reduce(lambda l,r: l + os.path.sep + r,
+                os.path.dirname(os.path.realpath(__file__)).split(os.path.sep))
+        #  set the window icon
+        try:
+            self.setWindowIcon(QIcon(self.baseDir + os.sep + 'icons/scale.png'))
+        except:
+            pass
+
         #  complete startup in the applicationInit method
         timer =  QTimer(self)
         timer.setSingleShot(True)
@@ -152,7 +162,11 @@ class DeviceFaker(QMainWindow, ui_DeviceFaker.Ui_DeviceFaker):
                 #  add default pre and post data strings if they are missing
                 if 'pre' not in config:
                     config['pre'] = ''
+                elif config['pre'] is None:
+                    config['pre'] = ''
                 if 'post' not in config:
+                    config['post'] = ''
+                elif config['post'] is None:
                     config['post'] = ''
                 sensor['pre'] = config['pre']
                 sensor['post'] = config['post']

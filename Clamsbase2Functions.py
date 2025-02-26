@@ -125,7 +125,10 @@ class Clamsbase2Functions(object):
                         mixsubwt=float(query5.first()[0])
                     query5 = self.db.dbQuery("SELECT sum(weight) FROM "+self.db.bioSchema+".baskets WHERE ship="+self.ship+" AND survey="+self.survey+
                     " AND event_id="+haul+" AND sample_id="+mix1_id)
-                    mixtotwt=float(query5.first()[0])
+
+                    # query5.first() can be None - what does that mean?
+
+                    mixtotwt = float(query5.first()[0])
                     if mixsubwt>0:
                         mix1_exp=mixtotwt/mixsubwt
                     else:

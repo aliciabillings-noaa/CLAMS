@@ -125,7 +125,7 @@
               </font>
              </property>
              <property name="text">
-              <string>Kg</string>
+              <string>kg</string>
              </property>
             </widget>
            </item>
@@ -257,7 +257,7 @@
               </font>
              </property>
              <property name="text">
-              <string>g</string>
+              <string>kg</string>
              </property>
             </widget>
            </item>

@@ -427,10 +427,25 @@
         <string/>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_7">
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <property name="leftMargin">
+         <number>4</number>
+        </property>
+        <property name="topMargin">
+         <number>4</number>
+        </property>
+        <property name="rightMargin">
+         <number>4</number>
+        </property>
+        <property name="bottomMargin">
+         <number>4</number>
+        </property>
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <property name="spacing">
-           <number>6</number>
+           <number>4</number>
           </property>
           <property name="sizeConstraint">
            <enum>QLayout::SetFixedSize</enum>
@@ -439,32 +454,14 @@
            <number>0</number>
           </property>
           <property name="topMargin">
-           <number>0</number>
+           <number>26</number>
           </property>
           <property name="rightMargin">
-           <number>8</number>
+           <number>4</number>
           </property>
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>16</pointsize>
-             </font>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-            </property>
-           </widget>
-          </item>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item>
            <widget class="QPushButton" name="btn1">
             <property name="minimumSize">
@@ -759,8 +756,11 @@
        <attribute name="verticalHeaderVisible">
         <bool>false</bool>
        </attribute>
+       <attribute name="verticalHeaderMinimumSectionSize">
+        <number>46</number>
+       </attribute>
        <attribute name="verticalHeaderDefaultSectionSize">
-        <number>40</number>
+        <number>46</number>
        </attribute>
        <row>
         <property name="text">

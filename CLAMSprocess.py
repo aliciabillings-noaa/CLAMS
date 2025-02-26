@@ -40,6 +40,7 @@
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
+from PyQt6.QtMultimedia import QSoundEffect
 import Clamsbase2Functions
 from ui import ui_CLAMSProcess
 import devices
@@ -192,7 +193,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
                 self.specBtn.setEnabled(True)
 
         #  set up the serial devices attached to this workstation
-        self.setupSerialDevices()
+        self.setupDevices()
 
         # enable entry of non-codend partition data before trawl codend is on deck
         self.catchBtn.setEnabled(True)
@@ -267,16 +268,15 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
             self.db.dbExec(sql)
 
 
-    def setupSerialDevices(self):
+    def setupDevices(self):
         '''
-        setupSerialDevices creates an instance of SensorMonitor and configures it accordingly.
+        setupDevices creates an instance of SensorMonitor and configures it accordingly.
         SensorMonitor is the CLAMS sensor data acquisition class which oversees all sensor
         acquisition. It creates threads for each configured device and handles the polling
         and parsing of data received from the devices.
 
 
         '''
-
         #  Set up sensors - first create an instance of SensorMonitor
         #  which will handle all the details of receiving and parsing
         #  data from our devices/sensors.
@@ -292,27 +292,46 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.sensorMonitor.SensorError.connect(self.sensorError)
 
         #  get the devices attached to this workstation
-        deviceData = devices.getDevices(self.db, self.workStation)
+        self.deviceData = devices.getDevices(self.db, self.workStation)
 
         #  set up each device
-        for deviceName in deviceData:
-            #  first try to get the configuration parameters for this device
+        for deviceName in self.deviceData:
+
+            #  try to get the configuration parameters for this device
             #  this will fail if a required parameter is missing.
             try:
                 deviceParams = devices.getDeviceParameters(self.db, deviceName,
-                        deviceData[deviceName]['id'], deviceData[deviceName]['interface'])
+                        self.deviceData[deviceName]['id'],
+                        self.deviceData[deviceName]['interface'])
             except Exception as e:
                 messageText = ("Error initializing device ::: " + str(e) +
                         '. This device will be disabled.' )
                 QMessageBox.warning(self, "WARNING", "<font size = 13>" + messageText)
                 continue
 
-            #if deviceData[deviceName]['interface'] == 'scs':
-            #    continue
-            #print(deviceData[deviceName]['interface'])
+            #  only set up network and serial devices
+            if self.deviceData[deviceName]['interface'] in ['network', 'serial']:
+                #  then add this device to the sensor monitor
+                self.sensorMonitor.addDevice(deviceName, deviceParams['port'], deviceParams['baud'],
+                        deviceParams['parseType'], deviceParams['parseExp'], deviceParams['parseIndex'],
+                        deviceParams['commandPrompt'])
 
-            #  add this device to the sensor monitor
-            self.sensorMonitor.addDevice(*deviceParams)
+            #  store the sound effect object for each device with an associated sound
+            if 'soundFile' in deviceParams['soundFile']:
+                if deviceParams['soundFile']:
+                    #  see if the file has an extension
+                    hasExt = deviceParams['soundFile'].split('.')
+                    if len(hasExt) > 1:
+                        soundFile = self.settings['SoundsDir'] + deviceParams['soundFile']
+                    else:
+                        soundFile = self.settings['SoundsDir'] + deviceParams['soundFile'] + '.wav'
+                    soundEffect = QSoundEffect()
+                    soundEffect.setSource(QUrl.fromLocalFile(soundFile))
+                    self.deviceData[deviceName]['soundeffect'] = soundEffect
+                else:
+                    self.deviceData[deviceName]['soundeffect'] = None
+            else:
+                self.deviceData[deviceName]['soundeffect'] = None
 
         #  now that all devices are added - start monitoring them. This will cause
         #  SensorMonitor to open serial or network ports and in the case of serial
@@ -517,7 +536,8 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
 
             #  and accept to close
             event.accept()
-        else:
+
+        elif self.sensorsStopping == False:
 
             #  set the status for this workstation to closed
             sql = ("UPDATE workstations SET status='closed', " +

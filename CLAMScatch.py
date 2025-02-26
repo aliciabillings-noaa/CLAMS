@@ -17,7 +17,7 @@
 .. module:: CLAMScatch
 
     :synopsis: CLAMScatch presents the CLAMS catch form. The catch form
-               is used to specify what was caught in the catch, as well
+               is used  to specify what was caught in the catch, as well
                as if/how it will be further processed. The catch module
                is used when the catch is sorted and weighed.
 
@@ -76,6 +76,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.errorSounds = parent.errorSounds
         self.errorIcons = parent.errorIcons
         self.scientist = parent.scientist
+        self.deviceData = parent.deviceData
 
         # initialize variables
         self.addspec_flag = True
@@ -87,7 +88,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.validList = [1, 1, 1]# sets valid sample type choices
         self.freeze = False
         self.whHaulFlag = False
-        self.devices = []
+        self.devices = {}
         self.sounds = {}
         self.basketTypes = []
         self.manualDevice ='0'
@@ -96,7 +97,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2'}
         self.wholeHaulKey = None
         self.headerFont = QFont("Arial Black", 11, -1, False)
-
 
         #  do some UI setup
         self.sciLabel.setText(self.scientist)
@@ -107,7 +107,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.basketTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.basketTable.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
-
 
         # set up recurring dialogs
         self.message = messagedlg.MessageDlg(self)
@@ -197,7 +196,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         gearType, = query.first()
         if gearType == 'PlanktonNet':
             self.planktonFlag = True
-
 
         #  Check if we have a label printer attached at this workstation. If so,
         #  create the printer object and if not, disable the print button
@@ -316,7 +314,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.whHaulFlag=False
 
         # set up device sounds
-        self.loadDeviceSounds()
+        #self.loadDeviceSounds()
 
         #  reload the species list - this populates the species list
         self.reloadSpeciesList()
@@ -449,6 +447,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  get the sample type for this sample
         sampleId = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
+        parentSample = self.speciesList.item(self.speciesList.currentRow(), 1).text()
+
         sql = ("SELECT sample_type from samples WHERE ship=" + self.ship +
                 " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
                 " AND sample_id=" + sampleId)
@@ -470,7 +470,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.loadSppImage()
 
         #  check if user has selected a mix
-        if 'mix' in self.activeSampleType.lower():
+        if 'mix' in parentSample:
             self.inMixFlag = True
         else:
             self.inMixFlag = False
@@ -565,6 +565,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  get the species name
         speciesName = self.speciesList.item(self.speciesList.currentRow(), 0).text()
+        parentSample = self.speciesList.item(self.speciesList.currentRow(), 1).text()
 
         #  display the dialog for confirming active species - this was introduced
         #  after it was discovered that if you select one item, then roll your
@@ -601,7 +602,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.loadSppImage()
 
         #  check if we're working with a Mix
-        if 'mix' in self.activeSampleType.lower():
+        if 'mix' in parentSample:
             self.inMixFlag = True
         else:
             self.inMixFlag = False
@@ -645,25 +646,30 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  note that this is a manual entry
         self.manualFlag = True
-        self.device = self.manualDevice
+        self.activeDeviceId = self.manualDevice
 
         #  do some basic checks, get the basket type, then insert into the database
         self.updateBasket()
 
 
-    def getAuto(self, device, val):
+    @pyqtSlot(str, str, object)
+    def getAuto(self, device_name, val, err):
         '''getAuto is called when a device sends data
 
         '''
         #  check if we're "frozen" which means either adding spp or in the middle of
-        #  weighing another basket
+        #  weighing another basket. When frozen we ignore device input
         if self.freeze:
             return
 
-        #  check if this is a device we're interested in, if not, ignore this data. For
-        #  example, this station could have a lengtboard, but the catch module only cares
-        #  about scales so we ignore data from the lengthboard.
-        if not device in self.devices:
+        #  check if this is a device we're interested in, if not, ignore this data.
+        #  first check if there are any catch measurements
+        if 'catch' not in self.deviceData[device_name]['measurements']:
+            return
+
+        #  then make sure this is a basket_weight measurement which is the only
+        #  measurement that Catch cares about
+        if 'basket_weight' not in self.deviceData[device_name]['measurements']['catch']:
             return
 
         # check if a species is selected
@@ -697,10 +703,11 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  note that this is an "auto" (non manual) entry
         self.manualFlag = False
-        self.device = device
+        self.activeDeviceId = self.deviceData[device_name]['id']
 
-        #  play the scale sound
-        self.sounds[self.devices.index(self.device)].play()
+        #  play the sound associated with this device if provided
+        if self.deviceData[device_name]['soundeffect']:
+            self.deviceData[device_name]['soundeffect'].play()
 
         #  do some basic checks, get the basket type, then insert into the database
         self.updateBasket()
@@ -723,7 +730,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  if this is a mix, check for mix subsample weight and stuff
         if self.inMixFlag:
             #  yes, this is a mix
-            (mixSubWeight, mixSpeciesWeight) = self.mixValidation()
+
+            (mixSubWeight, mixSpeciesWeight) = self.mixValidation(self.activeSampleKey, self.activeSpcCode)
 
             # validation for mix sub weight - can't have more weight in sub part of mix than in mix subsample
             if (mixSubWeight * (1 + float(self.settings['MaxMixDev']) / 100) <
@@ -739,7 +747,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  weight passes basic validation
         return True
-
 
 
     def getBasketType(self):
@@ -796,12 +803,12 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             sql = ("INSERT INTO baskets (ship,survey,event_id,sample_id,basket_type," +
                     "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+
                     self.activeHaul+","+self.activeSampleKey+",'"+self.basketType+"',"
-                    +self.currentBasketWt+","+self.device+")")
+                    +str(self.currentBasketWt)+","+self.activeDeviceId+")")
         else:
             sql = ("INSERT INTO baskets (ship,survey,event_id,sample_id,basket_type,count," +
                     "weight,device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul +
                     ","+self.activeSampleKey+",'"+self.basketType+"',"+self.count+"," +
-                    self.currentBasketWt+","+self.device+")")
+                    str(self.currentBasketWt)+","+self.activeDeviceId+")")
         self.db.dbExec(sql)
 
         # update the GUI
@@ -1286,7 +1293,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         for sampleId, sampleType, speciesCode in query:
 
             #  mix validation
-            (mixSubWeight, mixSpeciesWeight) = self.mixValidation(sampleId, speciesCode)
+            (mixSubWeight, mixSpeciesWeight) = self.mixValidation(sampleId, self.activeSpcCode)
             if mixSubWeight == 0:
                 self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
                         self.firstName+ ", there's no mix basket subsample weight for "+
@@ -1487,33 +1494,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  reconnect the selection changed signal now that we're done changing the list
         self.speciesList.itemSelectionChanged.connect(self.getActiveSpc)
         self.speciesList.scrollToBottom()
-
-
-    def loadDeviceSounds(self):
-        '''loadDeviceSounds queries the db for the device sound files used for
-        this module. It also populates a list of devices configured for this station.
-        '''
-
-        self.devices = []
-        self.sounds = {}
-
-        #  query the device ID and sound file for each device
-        sql = ("SELECT measurement_setup.device_id, device_configuration.parameter_value FROM " +
-                "device_configuration INNER JOIN measurement_setup ON device_configuration.device_id " +
-                "= measurement_setup.device_id WHERE measurement_setup.workstation_id=" +
-                self.workStation + " AND measurement_setup.gui_module='Catch' AND " +
-                "device_configuration.device_parameter='SoundFile'")
-        query = self.db.dbQuery(sql)
-        for device_id, parameter_value in query:
-            self.devices.append(device_id)
-            hasExt = parameter_value.split('.')
-            if len(hasExt) > 1:
-                soundFile = self.settings['SoundsDir'] + parameter_value
-            else:
-                soundFile = self.settings['SoundsDir'] + parameter_value + '.wav'
-            soundEffect = QSoundEffect()
-            soundEffect.setSource(QUrl.fromLocalFile(soundFile))
-            self.sounds[device_id] = soundEffect
 
 
     def printLabel(self):

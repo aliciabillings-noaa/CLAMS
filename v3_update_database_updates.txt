@@ -9,16 +9,53 @@ THESE CHANGES NEED TO BE EXECUTED ON PRODUCTION:
 ALTER TABLE WORKSTATIONS
    ADD CURRENT_EVENT NUMBER(6,2);
    
-INSERT INTO "CLAMSBASE2"."SAMPLE_PARAMETERS" (SAMPLE_PARAMETER, PARAMETER_TYPE, PARAMETER_UNIT, DESCRIPTION) VALUES ('sample_display_name', 'string', 'none', 'sample_display_name informs CLAMS of which name (scientific or common) to display in the UI for a specific sample.')
+INSERT INTO "SAMPLE_PARAMETERS" (SAMPLE_PARAMETER, PARAMETER_TYPE, PARAMETER_UNIT, DESCRIPTION) VALUES ('sample_display_name', 'string', 'none', 'sample_display_name informs CLAMS of which name (scientific or common) to display in the UI for a specific sample.');
+
+INSERT INTO "DEVICE_INTERFACES" (DEVICE_INTERFACE, DESCRIPTION) VALUES ('Network', 'A UDP or TCP based network device.');
+
+INSERT INTO "SAMPLE_TYPES" (SAMPLE_TYPE, DESCRIPTION) VALUES ('Present', 'Sample identified as present in the catch but not processed in any way. This type will never have baskets or specimen associated with it.');
+
+INSERT INTO "APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('OrganizationName', 'NOAA/AFSC/RACE/MACE', 'Set this to your organizations name or other string that will be used as a title on all labels');
+
+INSERT INTO "SPECIES_PARAMETERS" (SPECIES_PARAMETER, DESCRIPTION) VALUES ('Image_File', 'The path to the image file relative to the configured "images" directory. Includes any path elements, file name and extension. E.g. "fishpics/AFSC/pollock.jpg"');
+
+INSERT INTO "APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('CheckForPreviousOccurrence', 'True', 'If True, CLAMS will check for the "Previous_Occurrence" species_data attribute when adding species to the catch and alert the user if a new species is encountered. It will add/update this attribute if the user adds the species. If False, CLAMS does not check if you have seen this species before or not.');
+
+INSERT INTO "APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('AllowEventChangeWhileProcessing', 'False', 'If True, the MasterStation can change the active event ID when other workstations are open. If false, all workstations must be closed before the active event is changed.');
 
 
-INSERT INTO "CLAMSBASE2"."SAMPLE_TYPES" (SAMPLE_TYPE, DESCRIPTION) VALUES ('Present', 'Sample identified as present in the catch but not processed in any way. This type will never have baskets or specimen associated with it.')
 
-INSERT INTO "CLAMSBASE2"."APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('OrganizationName', 'NOAA/AFSC/RACE/MACE', 'Set this to your organizations name or other string that will be used as a title on all labels')
+UPDATE APPLICATION_EVENTS SET EVENT_MODULE = 'MACETrawlEvent' WHERE EVENT_MODULE='startMACETrawlEvent';
 
-INSERT INTO "CLAMSBASE2"."SPECIES_PARAMETERS" (SPECIES_PARAMETER, DESCRIPTION) VALUES ('Image_File', 'The path to the image file relative to the configured "images" directory. Includes any path elements, file name and extension. E.g. "fishpics/AFSC/pollock.jpg"')
 
-INSERT INTO "CLAMSBASE2"."APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('CheckForPreviousOccurrence', 'True', 'If True, CLAMS will check for the "Previous_Occurrence" species_data attribute when adding species to the catch and alert the user if a new species is encountered. It will add/update this attribute if the user adds the species. If False, CLAMS does not check if you have seen this species before or not.')
 
-UPDATE APPLICATION_EVENTS SET EVENT_MODULE = 'MACETrawlEvent' WHERE EVENT_MODULE='StartMACETrawlEvent'
+--add Network device interface and change SCS to Network
 
+UPDATE measurement_setup SET device_interface='Network' WHERE device_interface='SCS';
+
+
+--move device_interface from measurement_setup to devices. Populate it.
+
+ALTER TABLE DEVICES
+   ADD DEVICE_INTERFACE VARCHAR2(30);
+
+ALTER TABLE DEVICES ADD CONSTRAINT DEV_INT_DEVICES_FK FOREIGN KEY (DEVICE_INTERFACE) REFERENCES clamsbase2.DEVICE_INTERFACES (DEVICE_INTERFACE)
+/
+
+UPDATE measurement_setup SET device_id=0 where device_interface='Software' and workstation_id=20;
+UPDATE devices SET device_interface='Software' where device_id < 15;
+UPDATE devices SET device_interface='Serial' where device_id > 15 and device_id < 100;
+UPDATE devices SET device_interface='Network' where device_id > 99 and device_id < 120;
+UPDATE devices SET device_interface='Serial' where device_id > 299 and device_id < 305;
+UPDATE devices SET device_interface='Software' where device_id=505;
+UPDATE devices SET device_interface='Network' where device_id > 799 and device_id < 810;
+
+ALTER TABLE devices MODIFY (device_interface NOT NULL);
+ALTER TABLE devices MODIFY (active NOT NULL);
+
+
+
+
+AKCSL1170A-NL22
+
+AKCSL2051-LN20

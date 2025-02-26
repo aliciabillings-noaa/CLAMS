@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\noaa-afsc-mace\CLAMS\tools\DeviceFaker\DeviceFaker.ui'
+# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\noaa-afsc-mace\CLAMS\ui\DeviceFaker.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -207,13 +207,13 @@ class Ui_DeviceFaker(object):
         self.gbBarcode.setTitle(_translate("DeviceFaker", "Barcode Scanner"))
         self.pbSendValue_Barcode.setText(_translate("DeviceFaker", "Send"))
         self.gbBasket.setTitle(_translate("DeviceFaker", "Basket Scale"))
-        self.label_7.setText(_translate("DeviceFaker", "Kg"))
+        self.label_7.setText(_translate("DeviceFaker", "kg"))
         self.pbSendValue_Basket.setText(_translate("DeviceFaker", "Send"))
         self.gbLengthboard.setTitle(_translate("DeviceFaker", "Lengthboard"))
         self.label_8.setText(_translate("DeviceFaker", "cm"))
         self.pbSendValue_Lengthboard.setText(_translate("DeviceFaker", "Send"))
         self.gbSpecimen.setTitle(_translate("DeviceFaker", "Specimen Scale"))
-        self.label_15.setText(_translate("DeviceFaker", "g"))
+        self.label_15.setText(_translate("DeviceFaker", "kg"))
         self.pbSendValue_Specimen.setText(_translate("DeviceFaker", "Send"))
         self.actionExit.setText(_translate("DeviceFaker", "Exit"))
         self.actionConfigure_Network.setText(_translate("DeviceFaker", "Configure Network..."))

@@ -62,6 +62,7 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         self.sounds = parent.sounds
         self.errorIcons = parent.errorIcons
         self.errorSounds = parent.errorSounds
+        self.deviceData = parent.deviceData
         self.headerFont = QFont("Arial Black", 14, -1, False)
 
         # set up edit basket table
@@ -201,6 +202,17 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         :param val: value that is sent
         :return: none
         """
+
+
+        #  check if this is a device we're interested in, if not, ignore this data.
+        #  first check if there are any catch measurements
+        if 'catch' not in self.deviceData[device_name]['measurements']:
+            return
+
+        #  then make sure this is a basket_weight measurement which is the only
+        #  measurement that Catch cares about
+        if 'basket_weight' not in self.deviceData[device_name]['measurements']['catch']:
+            return
 
         self.weight = val
         self.setColumnValue(1, self.weight)
