@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>273</width>
-    <height>426</height>
+    <width>472</width>
+    <height>474</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,24 +20,30 @@
       <widget class="QGroupBox" name="groupBox">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="title">
-        <string>Sample Parent</string>
+        <string>Parent Sample </string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
          <widget class="QPushButton" name="wholeHaulBtn">
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>51</height>
+            <width>200</width>
+            <height>60</height>
            </size>
           </property>
           <property name="font">
            <font>
+            <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="text">
@@ -55,13 +61,16 @@
          <widget class="QPushButton" name="sortTableBtn">
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>51</height>
+            <width>200</width>
+            <height>60</height>
            </size>
           </property>
           <property name="font">
            <font>
+            <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="text">
@@ -79,13 +88,16 @@
          <widget class="QPushButton" name="mix1Btn">
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>51</height>
+            <width>200</width>
+            <height>60</height>
            </size>
           </property>
           <property name="font">
            <font>
+            <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="text">
@@ -103,13 +115,16 @@
          <widget class="QPushButton" name="subMix1Btn">
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>51</height>
+            <width>200</width>
+            <height>60</height>
            </size>
           </property>
           <property name="font">
            <font>
+            <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="text">
@@ -127,13 +142,16 @@
          <widget class="QPushButton" name="mix2Btn">
           <property name="minimumSize">
            <size>
-            <width>0</width>
-            <height>51</height>
+            <width>200</width>
+            <height>60</height>
            </size>
           </property>
           <property name="font">
            <font>
+            <family>Arial Black</family>
             <pointsize>14</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
           <property name="text">
@@ -169,20 +187,23 @@
         <number>10</number>
        </property>
        <item>
-        <widget class="QPushButton" name="okBtn">
+        <widget class="QPushButton" name="cancelBtn">
          <property name="minimumSize">
           <size>
-           <width>101</width>
-           <height>51</height>
+           <width>200</width>
+           <height>60</height>
           </size>
          </property>
          <property name="font">
           <font>
+           <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
           </font>
          </property>
          <property name="text">
-          <string>OK</string>
+          <string>Cancel</string>
          </property>
         </widget>
        </item>
@@ -200,20 +221,23 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="cancelBtn">
+        <widget class="QPushButton" name="okBtn">
          <property name="minimumSize">
           <size>
-           <width>101</width>
-           <height>51</height>
+           <width>200</width>
+           <height>60</height>
           </size>
          </property>
          <property name="font">
           <font>
+           <family>Arial Black</family>
            <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
           </font>
          </property>
          <property name="text">
-          <string>Cancel</string>
+          <string>OK</string>
          </property>
         </widget>
        </item>

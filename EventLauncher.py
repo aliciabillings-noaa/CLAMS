@@ -107,11 +107,11 @@ class EventLauncher(QDialog, ui_EventLauncher.Ui_EventLauncher):
             eventSelectDialog = eventseldlg.EventSelDlg(self)
 
         #  display the event select dialog
-        if eventSelectDialog.exec():
+        eventSelectDialog.exec()
 
-            #  check if a event number was selected - exit if not
-            if eventSelectDialog.activeEvent == None:
-                return
+        #  check if a event number was selected - exit if not
+        if eventSelectDialog.activeEvent == None:
+            return
 
         #  import the selected event form module
         moduleName = 'events.' + eventDetails[0] + '.' + eventDetails[1]
