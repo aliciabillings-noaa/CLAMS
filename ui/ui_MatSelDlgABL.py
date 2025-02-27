@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS\ui\MatSelDlgABL.ui'
+# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260\CLAMS\ui\MatSelDlgABL.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -12,29 +12,32 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_matselDlgABL(object):
     def setupUi(self, matselDlgABL):
         matselDlgABL.setObjectName("matselDlgABL")
-        matselDlgABL.resize(271, 148)
+        matselDlgABL.resize(439, 174)
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(matselDlgABL)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(parent=matselDlgABL)
         font = QtGui.QFont()
-        font.setPointSize(12)
+        font.setFamily("Arial Black")
+        font.setPointSize(14)
         font.setBold(True)
         font.setWeight(75)
         self.label.setFont(font)
         self.label.setObjectName("label")
         self.verticalLayout.addWidget(self.label)
         self.immatureBtn = QtWidgets.QPushButton(parent=matselDlgABL)
-        self.immatureBtn.setMinimumSize(QtCore.QSize(165, 35))
+        self.immatureBtn.setMinimumSize(QtCore.QSize(165, 50))
         font = QtGui.QFont()
+        font.setFamily("Arial Black")
         font.setPointSize(14)
         self.immatureBtn.setFont(font)
         self.immatureBtn.setObjectName("immatureBtn")
         self.verticalLayout.addWidget(self.immatureBtn)
         self.maturingBtn = QtWidgets.QPushButton(parent=matselDlgABL)
-        self.maturingBtn.setMinimumSize(QtCore.QSize(165, 35))
+        self.maturingBtn.setMinimumSize(QtCore.QSize(165, 50))
         font = QtGui.QFont()
+        font.setFamily("Arial Black")
         font.setPointSize(14)
         self.maturingBtn.setFont(font)
         self.maturingBtn.setObjectName("maturingBtn")

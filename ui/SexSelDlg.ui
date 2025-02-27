@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>282</width>
+    <width>378</width>
     <height>248</height>
    </rect>
   </property>
@@ -20,7 +20,9 @@
       <widget class="QLabel" name="label">
        <property name="font">
         <font>
-         <pointsize>12</pointsize>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -45,6 +47,7 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
         </font>
        </property>
@@ -69,6 +72,7 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
         </font>
        </property>
@@ -93,6 +97,7 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
         </font>
        </property>

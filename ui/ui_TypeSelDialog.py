@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\noaa-afsc-mace\CLAMS\ui\TypeSelDialog.ui'
+# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260\CLAMS\ui\TypeSelDialog.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_typeselDialog(object):
     def setupUi(self, typeselDialog):
         typeselDialog.setObjectName("typeselDialog")
-        typeselDialog.resize(303, 392)
+        typeselDialog.resize(392, 385)
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(typeselDialog)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.verticalLayout = QtWidgets.QVBoxLayout()

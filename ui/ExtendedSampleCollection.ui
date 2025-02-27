@@ -6,20 +6,59 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>880</width>
-    <height>597</height>
+    <width>931</width>
+    <height>593</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Special Studies</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
-   <item row="1" column="0">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="label_3">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>50</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Arial Black</family>
+       <pointsize>18</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Optional Special Studies - Check all that apply</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
       <string/>
      </property>
      <layout class="QGridLayout" name="gridLayout">
+      <property name="leftMargin">
+       <number>4</number>
+      </property>
+      <property name="topMargin">
+       <number>4</number>
+      </property>
+      <property name="rightMargin">
+       <number>4</number>
+      </property>
+      <property name="bottomMargin">
+       <number>4</number>
+      </property>
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item row="3" column="0">
        <widget class="QPushButton" name="Btn5">
         <property name="minimumSize">
@@ -30,12 +69,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -57,12 +97,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -90,12 +131,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -117,12 +159,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -144,12 +187,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -171,12 +215,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -198,12 +243,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -225,12 +271,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -252,12 +299,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -266,30 +314,6 @@
         </property>
         <property name="checkable">
          <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="3">
-       <widget class="QPushButton" name="doneBtn">
-        <property name="minimumSize">
-         <size>
-          <width>200</width>
-          <height>100</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>200</width>
-          <height>100</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Done</string>
         </property>
        </widget>
       </item>
@@ -303,12 +327,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -317,36 +342,6 @@
         </property>
         <property name="checkable">
          <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="2">
-       <widget class="QPushButton" name="clearBtn">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>200</width>
-          <height>100</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>200</width>
-          <height>100</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Clear</string>
         </property>
        </widget>
       </item>
@@ -360,12 +355,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -387,12 +383,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -414,12 +411,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -441,12 +439,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
-          <height>100</height>
+          <width>5000</width>
+          <height>5000</height>
          </size>
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
          </font>
         </property>
@@ -461,28 +460,91 @@
      </layout>
     </widget>
    </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="label_3">
-     <property name="maximumSize">
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
       <size>
-       <width>16777215</width>
-       <height>50</height>
+       <width>20</width>
+       <height>40</height>
       </size>
      </property>
-     <property name="font">
-      <font>
-       <pointsize>18</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>Optional Special Studies</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
+    </spacer>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="clearBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>100</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>100</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Clear</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="doneBtn">
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>100</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>100</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Done</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

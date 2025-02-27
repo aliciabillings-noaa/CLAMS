@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>354</width>
-    <height>180</height>
+    <width>596</width>
+    <height>222</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -32,7 +32,9 @@
       <widget class="QLabel" name="msgLabel">
        <property name="font">
         <font>
-         <pointsize>12</pointsize>
+         <family>Arial Black</family>
+         <pointsize>16</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -60,7 +62,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -84,7 +89,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">

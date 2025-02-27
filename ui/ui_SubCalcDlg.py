@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS\ui\SubCalcDlg.ui'
+# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260\CLAMS\ui\SubCalcDlg.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_subcalcDlg(object):
     def setupUi(self, subcalcDlg):
         subcalcDlg.setObjectName("subcalcDlg")
-        subcalcDlg.resize(495, 670)
+        subcalcDlg.resize(495, 611)
         self.verticalLayout = QtWidgets.QVBoxLayout(subcalcDlg)
         self.verticalLayout.setObjectName("verticalLayout")
         self.label_3 = QtWidgets.QLabel(parent=subcalcDlg)

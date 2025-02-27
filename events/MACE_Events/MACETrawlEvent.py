@@ -143,6 +143,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
         #  this should make the columns resize based on the widget width
         self.dataTable.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.dataTable.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+
 #        for i in range(4):
 #            self.dataTable.setColumnWidth(i, self.dataTable.width()/4)
 
@@ -181,14 +183,20 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         query = self.db.dbQuery(sql)
         val, = query.first()
         if val:
-            self.streamEQHBLogInterval = val
+            try:
+                self.streamEQHBLogInterval = float(val)
+            except:
+                pass
 
         sql = ("SELECT parameter_value FROM " + self.schema + ".application_configuration " +
                 "WHERE parameter='EventStreamPreEQLogInt'")
         query = self.db.dbQuery(sql)
         val, = query.first()
         if val:
-            self.streamSlowLogInterval = val
+            try:
+                self.streamSlowLogInterval = float(val)
+            except:
+                pass
 
         #  populate the gear combobox
         self.gearBox.setEnabled(True)
@@ -246,23 +254,29 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.sensorMonitor.SensorError.connect(self.deviceError)
 
         #  get the devices attached to this workstation
-        deviceData = devices.getDevices(self.db, self.workStation)
+        self.deviceData = devices.getDevices(self.db, self.workStation)
 
         #  set up each device
-        for deviceName in deviceData:
-            #  first try to get the configuration parameters for this device
+        for deviceName in self.deviceData:
+            #  try to get the configuration parameters for this device
             #  this will fail if a required parameter is missing.
             try:
                 deviceParams = devices.getDeviceParameters(self.db, deviceName,
-                        deviceData[deviceName]['id'], deviceData[deviceName]['interface'])
+                        self.deviceData[deviceName]['id'],
+                        self.deviceData[deviceName]['interface'])
             except Exception as e:
                 messageText = ("Error initializing device ::: " + str(e) +
                         '. This device will be disabled.' )
                 QMessageBox.warning(self, "WARNING", "<font size = 13>" + messageText)
                 continue
 
-            #  add this device to the sensor monitor
-            self.sensorMonitor.addDevice(*deviceParams)
+            #  only set up network and serial devices
+            if self.deviceData[deviceName]['interface'] in ['network', 'serial']:
+                print(deviceName)
+                #  then add this device to the sensor monitor
+                self.sensorMonitor.addDevice(deviceName, deviceParams['port'], deviceParams['baud'],
+                        deviceParams['parseType'], deviceParams['parseExp'], deviceParams['parseIndex'],
+                        deviceParams['commandPrompt'])
 
             #  set the initial "last write" time for this device
             self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
@@ -440,6 +454,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 self.buttons[row].setPalette(self.green)
             row += 1
 
+        self.dataTable.resizeColumnsToContents()
+
         #  The event has been started to we disable the gear box and enable comment button
         self.gearBox.setEnabled(False)
         self.recording=True
@@ -494,9 +510,10 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
         self.gear = self.gearBox.currentText()
 
-        # ENABLE BOXES
+        #  enable GUI elements
         self.optionsGroup.setEnabled(True)
-        self.buttonsGroup.setEnabled(True)
+        for button in self.buttons:
+            button.setEnabled(True)
 
         #  populate haul type combo box
         self.typeBox.setEnabled(True)
@@ -622,12 +639,13 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
             cnt += 1
         self.endbutton = cnt-1
         self.dataTable.setRowCount(maxButtons)
+        self.dataTable.resizeColumnsToContents()
 
 #TODO: See how row height works with new form that contains layouts and can
 #      be resized and adjust this as needed. Make sure to test on screens with
 #      different dpi and text scaling settings.
-        for i in range (maxButtons):
-            self.dataTable.setRowHeight(i, 42)
+#        for i in range (maxButtons):
+#            self.dataTable.setRowHeight(i, 42)
 
         self.typeBoxFlag=False
         self.perfBoxFlag=False
@@ -1074,6 +1092,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         #  clear the display values
         self.dispVector=['', '','']
 
+        self.dataTable.resizeColumnsToContents()
+
 
     def getTransect(self):
         self.numpad.msgLabel.setText("Enter transect")
@@ -1117,47 +1137,9 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.timer.stop()
 
 
-    def setupDevices(self):
-        """setupDevices sets up any serial or network devices attached to this workstation.
-        Devices provide data to CLAMS and are things like GPS units, Gyros, scales, length boards,
-        and barcode readers. In the Event context, devices are usually GPS, wind and vessel
-        speed and heading indicators, air and water temp, etc.
-
+    def writeStream(self, device_name, data, err):
         """
-
-#        self.deviceIDs = []
-#        self.devicePorts = []
-#        self.sensorList=[]
-#        self.devices=[]
-#        self.deviceNames=[]
-#        self.measureTypes=[]
-
-        #  get the devices attached to this workstation
-        deviceData = devices.getDevices(self.db, self.workStation)
-
-        #  set up each device
-        for deviceName in deviceData:
-            #  first try to get the configuration parameters for this device
-            #  this will fail if a required parameter is missing.
-            try:
-                deviceParams = devices.getDeviceParameters(self.db, deviceName,
-                        deviceData[deviceName]['id'], deviceData[deviceName]['interface'])
-            except Exception as e:
-                messageText = ("Error initializing device ::: " + str(e) +
-                        '. This device will be disabled.' )
-                QMessageBox.warning(self, "WARNING", "<font size = 13>" + messageText)
-                continue
-
-            #  add this device to the sensor monitor
-            self.sensorMonitor.addDevice(deviceParams)
-
-            #  set the initial "last write" time for this device
-            self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
-
-
-    def writeStream(self, data):
-        """
-        writeStream is called when we receive data from the SCS client.
+        writeStream is called when we receive sensor data
         """
 
         #  update the status bar that SCS is alive
@@ -1168,7 +1150,12 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.scsRetries = 0
 
         #  check if we're recording data and return if not
-        if not self.recordStream:
+        if not self.recordStream or not self.recording:
+            return
+
+        #  check if this sensor provides trawl event data
+        if 'trawlevent' not in  self.deviceData[device_name]['measurements']:
+            #  it doesn't - ignore this data
             return
 
         #  get the current time
@@ -1180,65 +1167,42 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
             self.dispVector=['testlat', 'testlon', 'testdepth']
         else:
             wroteToDb = False
-            for sensor, value in data.iteritems():
-                try:
-                    #  get the index into the sensor list
-                    idx = self.deviceNames.index(sensor)
 
-                    # get the measurement type
-                    measurement = self.measureTypes[idx]
+            #  get the measurement type - while devices can be associated with multiple
+            #  measurements, in this context this doesn't make sense so we will assume
+            #  the first measuremement assigned to this de
+            measurement = self.deviceData[device_name]['measurements']['trawlevent'][0]
 
-                    #  get the value
-                    val = value['data_value']
+            #  check that we have data for this sensor
+            if data is None or data.strip() == '':
+                return
 
-                    #  check that we have data for this sensor
-                    if val is None or val.strip() == '':
-                        continue
+            #  convert Lat/Lon to decimal degrees
+            if measurement.lower() == 'latitude':
+                data = self.convertDegToDecimalLat(data)
+            if measurement.lower() == 'longitude':
+                data = self.convertDegToDecimalLon(data)
 
-                    #  convert Lat/Lon to decimal degrees
-                    if measurement in ['Latitude']:
-                        val = self.convertDegToDecimalLat(val)
-                    if measurement in ['Longitude']:
-                        val = self.convertDegToDecimalLon(val)
+            #  Check if we need to write a fresh value in the database
+            elapsedSecs = self.lastSCSWriteTime[device_name].secsTo(datetime)
+            if (elapsedSecs >= self.SCSLogInterval):
+                #  insert into the database
+                sql = ("INSERT INTO " + self.schema + ".event_stream_data (ship, survey, " +
+                        "event_id, device_id, time_stamp, measurement_type, measurement_value) " +
+                        "VALUES (" + self.ship + "," + self.survey + "," + self.activeEvent + "," +
+                        self.deviceData[device_name]['id']+",'"+time+"','"+measurement+
+                        "','" + data + "')")
+                self.db.dbExec(sql)
+                wroteToDb = True
 
-                    #  check if we need to write this to the database
-                    if self.scsVersion == 4:
-                        elapsedSecs = self.lastSCSWriteTime.secsTo(datetime)
-                        if (elapsedSecs >= self.SCSLogInterval):
-                            #  insert into the database
-                            sql = ("INSERT INTO " + self.schema + ".event_stream_data (ship, survey, " +
-                                    "event_id, device_id, time_stamp, measurement_type, measurement_value) "+
-                                    "VALUES ("+self.ship+","+self.survey+","+self.activeEvent+"," +
-                                    self.devices[idx]+",'"+time+"','"+measurement+"','"+val+"')")
-                            self.db.dbExec(sql)
-                            wroteToDb = True
-                    else:
-                        # For SCS 5, the timer has to be by sensor instead of a blanket timer
-                        elapsedSecs = self.lastSCSWriteTime[sensor].secsTo(datetime)
-                        if (elapsedSecs >= self.SCSLogInterval):
-                            #  insert into the database
-                            sql = ("INSERT INTO " + self.schema + ".event_stream_data (ship, survey, " +
-                                    "event_id, device_id, time_stamp, measurement_type, measurement_value) "+
-                                    "VALUES ("+self.ship+","+self.survey+","+self.activeEvent+"," +
-                                    self.devices[idx]+",'"+time+"','"+measurement+"','"+val+"')")
-                            self.db.dbExec(sql)
-                            wroteToDb = True
-                    # copy  measurements we use for display in the GUI
-                    if measurement in self.displayMeasurements:
-                        ind = self.displayMeasurements.index(measurement)
-                        self.dispVector[ind] = val
-
-                except:
-                    #  this sensor is not in our sensor list so just ignore it.
-                    #  This shouldn't ever happen though...
-                    pass
+            # copy  measurements we use for display in the GUI
+            if measurement in self.displayMeasurements:
+                ind = self.displayMeasurements.index(measurement)
+                self.dispVector[ind] = data
 
             #  update the write time if we wrote to the db
             if wroteToDb:
-                if self.scsVersion == 4:
-                    self.lastSCSWriteTime = datetime
-                else:
-                    self.lastSCSWriteTime[sensor] = datetime
+                self.lastSCSWriteTime[device_name] = datetime
 
 
     def getFullPerfList(self):
