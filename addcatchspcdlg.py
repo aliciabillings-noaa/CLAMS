@@ -399,25 +399,27 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         if self.listOrigin == None:
             return
 
-        if self.previous <= 0:
-            #  ask if we want to add this exotic species we've never encountered
-            self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "We've never seen a "+
-                    self.listOrigin.currentItem().text() + ". Are you sure that's right? ", 'choice')
-            if not self.message.exec():
-                return
+        # Only need to update the species data table with previous occurrence if it is not a mix
+        if int(self.activeSpcCode) < 99999:
+            if self.previous <= 0:
+                #  ask if we want to add this exotic species we've never encountered
+                self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "We've never seen a "+
+                        self.listOrigin.currentItem().text() + ". Are you sure that's right? ", 'choice')
+                if not self.message.exec():
+                    return
 
-            #  we do, update the Previous_Occurrence parameter in the species_data table for this species
-            if self.previous < 0:
-                #  no Previous_Occurrence parameter in the database for this species, add it
-                sql = ("INSERT INTO species_data (species_code,subcategory,species_parameter," +
-                        "parameter_value) VALUES (" + self.activeSpcCode + "," + self.activeSpcSubcat +
-                        ",'Previous_Occurrence','1')")
-            else:
-                #  Previous_Occurrence parameter is in the database. Update it.
-                sql = ("UPDATE species_data SET parameter_value='1' WHERE " +
-                        "species_code=" + self.activeSpcCode + " AND subcategory=" +
-                        self.activeSpcSubcat+" AND species_parameter='Previous_Occurrence'")
-            self.db.dbExec(sql)
+                #  we do, update the Previous_Occurrence parameter in the species_data table for this species
+                if self.previous < 0:
+                    #  no Previous_Occurrence parameter in the database for this species, add it
+                    sql = ("INSERT INTO species_data (species_code,subcategory,species_parameter," +
+                            "parameter_value) VALUES (" + self.activeSpcCode + ",'" + self.activeSpcSubcat +
+                            "','Previous_Occurrence','1')")
+                else:
+                    #  Previous_Occurrence parameter is in the database. Update it.
+                    sql = ("UPDATE species_data SET parameter_value='1' WHERE " +
+                            "species_code=" + self.activeSpcCode + " AND subcategory='" +
+                            self.activeSpcSubcat+"' AND species_parameter='Previous_Occurrence'")
+                self.db.dbExec(sql)
 
         #  emit the changed signal to update parent
         self.changed.emit()

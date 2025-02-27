@@ -1301,6 +1301,16 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.comment = data[1]
         self.editStateFlag = True
         self.resetColors()
+        
+        # get any comments
+        self.comment = ''
+        sql = ("SELECT comments FROM specimen WHERE specimen_id = "+self.specimenKey+" AND ship="+self.ship+
+        " AND survey="+self.survey+" AND event_id="+self.activeHaul)
+        query = self.db.dbQuery(sql)
+        val, = query.first()
+
+        if val:
+            self.comment = val
 
 
     def checkOrder(self, i):
@@ -1477,24 +1487,29 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         it into the database.
         '''
 
-        keyDialog = keypad.KeyPad(self.comment, self)
-        keyDialog.exec()
-        if keyDialog.okFlag:
-            #  get the comment string
-            commentString = keyDialog.dispEdit.toPlainText()
-            self.comment = commentString
+        if self.specimenKey:
+            
+            keyDialog = keypad.KeyPad(self.comment, self)
+            keyDialog.exec()
+            if keyDialog.okFlag:
+                #  get the comment string
+                commentString = keyDialog.dispEdit.toPlainText()
+                self.comment = commentString
 
-            #  clean string by removing newline chars and replacing with a space
-            commentString = commentString.split('\n')
-            newString = ''
-            for c in commentString:
-                newString = newString + c + ' '
+                #  clean string by removing newline chars and replacing with a space
+                commentString = commentString.split('\n')
+                newString = ''
+                for c in commentString:
+                    newString = newString + c + ' '
 
-            # insert comment into sample
-            sql =("UPDATE specimen SET comments='" + newString +
-                    "' WHERE ship="+self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                    " AND specimen_id = " + self.specimenKey)
-            self.db.dbExec(sql)
+                # insert comment into sample
+                sql =("UPDATE specimen SET comments='" + newString +
+                        "' WHERE ship="+self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+
+                        " AND specimen_id = " + self.specimenKey)
+                self.db.dbExec(sql)
+        else:
+            QMessageBox.information(self, "Huh...", "<font size = 12>No specimen has been selected. " +
+                    "Please choose a specimen before you try to add a comment.")
 
 
     def editSamplingMethod(self):
