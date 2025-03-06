@@ -16,9 +16,9 @@
 """
 .. module:: CLAMSspecimen
 
-    :synopsis: CLAMSspecimen presents the CLAMS specimen form. 
+    :synopsis: CLAMSspecimen presents the CLAMS specimen form.
                 The specimen form is used to make measurements on individual specimens.
-                Once a species is weighed into a partition, the specimen module can be 
+                Once a species is weighed into a partition, the specimen module can be
                 used to select the species and make specific measurements on each specimen
                 based species-specific protocols.
 
@@ -59,7 +59,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
     '''CLAMSSpecimen presents the CLAMS specimen form.  The specimen form is used
     to collect and store measurements on specimens, structured based on established protocols.
     The species that can be measured for the haul that have been added using the catch
-    form are displayed. 
+    form are displayed.
     '''
 
     def __init__(self, parent=None):
@@ -139,12 +139,12 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                              " GROUP BY MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME")
         query = self.db.dbQuery(sql)
         device = query.first()
-        
+
         # if there is a printer set up, initialize the printer and add the sound
         if device:
             #  initialize the Label Printer
             self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, device[0])
-            
+
             # if there is a printer connected, find the sound
             sql = ("select a.parameter_value " +
                                 "from device_configuration a, devices b " +
@@ -257,7 +257,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         It queries all species info and allows the user to select the species/subcat for sampling.
         Then finds length types (sets the default), and determined the maturity tables
         and picture associated with the species.
-        
+
         '''
 
         #  check if we've been collecting data - if so, make sure we're done with this specimen
@@ -283,12 +283,12 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                               " samples.species_code, species.scientific_name, samples.sample_id, samples.subcategory")
         query = self.db.dbQuery(sql)
         for common_name, scientific_name, species_code, sample_id, subcategory in query:
-            
+
             # check to see if the sample has a specified scientific or common name
             sql0 = ("SELECT PARAMETER_VALUE FROM sample_data WHERE sample_parameter='sample_name' AND ship="+
                     self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+ " AND sample_id="+sample_id)
             query0 = self.db.dbQuery(sql0)
-            
+
             # if there is a name category specified in the sample_data table,
             # use that for the assignment
             sample_name, = query0.first()
@@ -299,14 +299,14 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     spc = common_name
             else:
                 spc = common_name
-            
+
             # append the name of the subcategory to the name
             subcat = subcategory
             if subcat != 'None':
                 name = spc+'-'+subcat
             else:
                 name = spc
-            
+
             # populate the lists the species information
             species.append(name)
             samples.append(sample_id)
@@ -764,7 +764,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
 
     def moveOn(self, i):
-        '''moveOn checks to make sure last measurement has been collected and then 
+        '''moveOn checks to make sure last measurement has been collected and then
         moves to the next specimen.
         '''
         #  check if this is the last measurement
@@ -793,14 +793,14 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
     def checkConditionals(self):
             self.buttonEnable = []
-            
+
             for i in self.iterator:
                 self.buttonEnable.append(True)
-            
+
             for condObj in self.conditionals:
                 condObj = condObj(self.db)
                 self.buttonEnable = condObj.evaluate(self.measureType,  self.values, self.buttonEnable)
-            
+
             for i in self.iterator:
                 btn = self.buttons[i]
                 btn.setEnabled(self.buttonEnable[i])
@@ -815,35 +815,54 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         if (not skipChecks) and (not self.specimenKey == None):
             # check specimen and make sure all required measurements have been collected
+            missing_measurements = []
             for i in self.iterator:
                 self.incomplete = False
                 btn = self.buttons[i]
                 if (self.values[i] == None) and (self.forcing[i] == '1') and (btn.isEnabled()):
                     #  a measurement is missing - ask the user what they want to do
-                    self.message.setMessage(self.errorIcons[0], self.errorSounds[0], "You still need a " +
-                                            self.measureType[i] + " measurement. Does this bother you, " +
-                                            self.firstName + "?", 'choice')
+                    self.message.setMessage(self.errorIcons[0], self.errorSounds[0],
+                            "You still need a " + self.measureType[i] +
+                            " measurement. Does this bother you, " +
+                            self.firstName + "?", 'choice')
                     if self.message.exec():
                         #  user doesn't want to skip the measurement - return to sampling
                         self.incomplete = True
                         return
                     else:
-                        #  user wants to skip this measurement - log it
-                        self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                                                "You're in big trouble, " + self.firstName, 'info')
-                        self.message.exec()
-                        #  insert event into overrides table
-                        sql = ("INSERT INTO overrides (ship,survey,event_id,record_id,table_name," +
-                                "scientist,description) VALUES (" + self.ship + ", " + self.survey +
-                                "," + self.activeHaul + "," + self.specimenKey + ",'measurements','" +
-                                self.scientist + "','User skipped required protocol measurement.'")
-                        self.db.dbExec(sql)
+                        #  user has chosen to skip this required measurement. Add it
+                        #  to our list of missing measurements.
+                        missing_measurements.append(self.measureType[i])
+
+            #  if there are any missing required measurements, scold the user and
+            #  insert something in the overrides table
+            if missing_measurements:
+                #  user wants to skip this measurement - log it
+                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                                        "You're in big trouble, " + self.firstName, 'info')
+                self.message.exec()
+
+                if len(missing_measurements) == 1:
+                    #  user skipped a single measurement
+                    missing_measurements_text = ('User skipped ' + missing_measurements[0] +
+                            ' measurement.')
+                else:
+                    #  user skipped multiple measurements
+                    missing_measurements_text = ('User skipped ' + ','.join(missing_measurements) +
+                            ' measurements.')
+
+                #  insert event into overrides table
+                sql = ("INSERT INTO overrides (ship,survey,event_id,record_id,table_name," +
+                        "scientist,description) VALUES (" + self.ship + ", " + self.survey +
+                        "," + self.activeHaul + "," + self.specimenKey + ",'measurements','" +
+                        self.scientist + "','" + missing_measurements_text + "')")
+                self.db.dbExec(sql)
 
         # make the 'next' sound effect
         soundEffect = QSoundEffect()
         soundEffect.setSource(QUrl.fromLocalFile(self.settings['SoundsDir']+'\\snapjaw.wav'))
         soundEffect.play()
-        
+
         # re-show all the buttons
         for i in self.iterator:
             self.values[i] = None
@@ -880,13 +899,15 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         #  insert the initial data into specimen
         sql = ("INSERT INTO specimen (ship, survey, event_id, sample_id, workstation_id, scientist, " +
-                                " sampling_method, protocol_name, comments) VALUES (" +self.ship+","+self.survey+","+self.activeHaul+ ","+self.activeSample+","+
-                                self.workStation + ",'" + self.scientist + "','" + samplingMethod + "','" + self.protocol + "','" + self.comment + "')")
+                " sampling_method, protocol_name, comments) VALUES (" +self.ship+","+self.survey+","+
+                self.activeHaul+ ","+self.activeSample+","+ self.workStation + ",'" + self.scientist +
+                "','" + samplingMethod + "','" + self.protocol + "','" + self.comment + "')")
         self.db.dbExec(sql)
 
         # get the newly created specimen key
-        sql = ("SELECT max(specimen_id) FROM specimen WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                                   " AND sample_id="+self.activeSample+" AND workstation_id=" + self.workStation)
+        sql = ("SELECT max(specimen_id) FROM specimen WHERE ship="+self.ship+" AND survey="+self.survey+
+                " AND event_id="+self.activeHaul+ " AND sample_id="+self.activeSample+
+                " AND workstation_id=" + self.workStation)
         query = self.db.dbQuery(sql)
         max_specimen, = query.first()
         self.specimenKey = max_specimen
@@ -971,7 +992,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         #  Initialize length type combo box to disabled until you encounter a 'length' in the protocol
         self.lengthTypeBox.setEnabled(False)
-        
+
         #  loop through the measurements we have found and extract the deets
         for type,  device,  interface,  force_measurement, force_order, label in query:
             self.measureType.append(type)
@@ -988,19 +1009,19 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             query1 = self.db.dbQuery(sql)
             sound_file, = query1.first()
             soundEffect = QSoundEffect()
-            
+
             if sound_file:
                 hasExt = sound_file.split('.')
                 if len(hasExt) > 1:
                     soundFile = (self.settings['SoundsDir'] + sound_file)
                 else:
                     soundFile = (self.settings['SoundsDir'] + sound_file + '.wav')
-                
+
             else:
                 soundFile = (self.settings['SoundsDir']+'softwareSound.wav')
             soundEffect.setSource(QUrl.fromLocalFile(soundFile))
             self.sounds.append(soundEffect)
-                
+
            # for software inputs, get the dialog to be used
             if interface.lower() == 'software':
                 sql1=("SELECT device_configuration.PARAMETER_VALUE FROM device_configuration WHERE " +
@@ -1062,7 +1083,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 valObj = importlib.import_module(valModule)
                 valObj = getattr(valObj, validations)
                 vals.append(valObj)
-                
+
             self.validations.append(vals)
 
             #  build the measureView SQL list - this is a list of the measurements that
@@ -1114,7 +1135,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                                             "CONDITIONALS.PROTOCOL_NAME = '"+self.protocol+"')")
         query = self.db.dbQuery(sql)
         self.conditionals = []
-        
+
         for conditional, in query:
             upcond = conditional
             condModule = ('conditionals.'+conditional.lower())
@@ -1264,7 +1285,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND specimen_id = " +
                 self.specimenKey)
         query = self.db.dbQuery(sql)
-        
+
         for type, value in query:
             #  now try to get the index into our measurements array for this
             #  measurement type. This will work for every measurement *except*
@@ -1301,7 +1322,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.comment = data[1]
         self.editStateFlag = True
         self.resetColors()
-        
+
         # get any comments
         self.comment = ''
         sql = ("SELECT comments FROM specimen WHERE specimen_id = "+self.specimenKey+" AND ship="+self.ship+
@@ -1417,14 +1438,14 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  selected is the one currently active in the combo box- query using that type
         if self.lengthTypeBox.isEnabled():
             lengthType = str(self.lengthTypeBox.currentText())
-            
+
             sql = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
                 "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
                 " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
             query = self.db.dbQuery(sql)
             data  = query.first()
             length=data[1]
-            
+
             #  now build the length string to print
             if lengthType in len_list:
                 ind=lengthType.find('_')+1
@@ -1488,7 +1509,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         '''
 
         if self.specimenKey:
-            
+
             keyDialog = keypad.KeyPad(self.comment, self)
             keyDialog.exec()
             if keyDialog.okFlag:
@@ -1529,8 +1550,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 return
 
         event.accept()
-        
-        
+
+
     def checkWindowLocation(self, position, size, padding=[5, 25]):
         '''checkWindowLocation accepts a window position (QPoint) and size (QSize)
         and returns a potentially new position and size if the window is currently
