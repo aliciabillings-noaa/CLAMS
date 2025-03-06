@@ -1,7 +1,8 @@
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from ui.xga import ui_SalmonCollection
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
+from ui import ui_SalmonCollection
 
 class SalmonCollectionDlg(QDialog, ui_SalmonCollection.Ui_salmoncollectionDlg):
     def __init__(self,  parent=None):
@@ -13,10 +14,10 @@ class SalmonCollectionDlg(QDialog, ui_SalmonCollection.Ui_salmoncollectionDlg):
         btn_text = ['None',  'Adipose',  'Pectoral',  'Pelvic',  'Anal',  'Dorsal',  'Caudal']
         for i in range(len(self.buttons)):
             self.buttons[i].setText(btn_text[i])
-            #self.connect(self.buttons[i], SIGNAL("clicked()"), self.select)
+            self.buttons[i].clicked.connect(self.select)
             self.buttons[i].setEnabled(True)            
-        self.connect(self.doneBtn, SIGNAL("clicked()"), self.Enter)
-        self.connect(self.clearBtn, SIGNAL("clicked()"), self.Clear)
+        self.doneBtn.clicked.connect(self.Enter)
+        self.clearBtn.clicked.connect(self.Clear)
 
     def setup(self, parent):        
         pass        
