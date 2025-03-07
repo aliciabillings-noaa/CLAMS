@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>925</width>
-    <height>742</height>
+    <width>955</width>
+    <height>832</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -265,7 +265,7 @@
          </layout>
         </item>
         <item>
-         <layout class="QGridLayout" name="gridLayout">
+         <layout class="QGridLayout" name="gridLayout" columnstretch="40,30,15,15" columnminimumwidth="0,0,0,0">
           <item row="0" column="0">
            <widget class="QLabel" name="accessLabel1">
             <property name="font">
@@ -441,13 +441,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -468,13 +468,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -495,13 +495,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -522,13 +522,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -549,13 +549,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -576,13 +576,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -603,13 +603,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -630,13 +630,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -657,13 +657,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>0</height>
+           <height>55</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>5000</width>
-           <height>5000</height>
+           <height>55</height>
           </size>
          </property>
          <property name="font">
@@ -712,6 +712,9 @@
        <property name="editTriggers">
         <set>QAbstractItemView::NoEditTriggers</set>
        </property>
+       <property name="rowCount">
+        <number>9</number>
+       </property>
        <attribute name="horizontalHeaderCascadingSectionResizes">
         <bool>true</bool>
        </attribute>
@@ -719,25 +722,20 @@
         <number>100</number>
        </attribute>
        <attribute name="horizontalHeaderDefaultSectionSize">
-        <number>150</number>
+        <number>160</number>
        </attribute>
        <attribute name="horizontalHeaderStretchLastSection">
-        <bool>false</bool>
+        <bool>true</bool>
        </attribute>
        <attribute name="verticalHeaderVisible">
         <bool>false</bool>
        </attribute>
        <attribute name="verticalHeaderMinimumSectionSize">
-        <number>46</number>
+        <number>60</number>
        </attribute>
        <attribute name="verticalHeaderDefaultSectionSize">
-        <number>46</number>
+        <number>61</number>
        </attribute>
-       <row>
-        <property name="text">
-         <string>New Row</string>
-        </property>
-       </row>
        <row>
         <property name="text">
          <string>New Row</string>

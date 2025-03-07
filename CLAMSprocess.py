@@ -605,7 +605,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         #  the form. This method will also be called if every sensor
         #  fails to start when the form is initializing and we *don't*
         #  want to close the form in that case.
-        if  self.sensorsStopping:
+        if self.sensorsStopping:
             #  set sensorsClosed to True and call close() again
             self.sensorsClosed = True
             self.close()

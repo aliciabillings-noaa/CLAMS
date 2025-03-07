@@ -104,6 +104,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.scsVersion = 5
         self.psoStarted = False
         self.oathTaken = False
+        self.sensorsClosed = True
+        self.sensorsStopping = False
         self.lastSCSWriteTime = {}
 
         #  max number of seconds data extracted from haul_stream_data during event button edits
@@ -134,9 +136,16 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.commentBtn.clicked.connect(self.getComment)
         self.doneBtn.clicked.connect(self.close)
 
-        #  now connect the event action button signals
+        #  now connect the event action button signals and hide buttons until
+        #  gear is selected.
         for btn in self.buttons:
             btn.clicked.connect(self.getEventData)
+            btn.hide()
+
+        self.typeBox.setEnabled(False)
+        self.optionsGroup.setEnabled(False)
+        self.perfBox.setEnabled(False)
+        self.netDimBtn.setEnabled(False)
 
         # setup table
         self.dataTable.verticalHeader().setVisible(False)
@@ -159,7 +168,32 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.displayTime)
 
-        self.show()
+        #  restore the application state
+        self.appSettings = QSettings('CLAMS', 'MACETrawlForm')
+        size = self.appSettings.value('winsize', QSize(955,832))
+        position = self.appSettings.value('winposition', QPoint(10,10))
+
+        #  check the current position and size to make sure the app is on the screen
+        position, size = self.checkWindowLocation(position, size)
+
+        #  now move and resize the window
+        self.move(position)
+        self.resize(size)
+
+        #  set up the
+        self.headerFont = QFont("Arial Black", 14, -1, False)
+        headerItem = QTableWidgetItem(" Time ")
+        headerItem.setFont(self.headerFont)
+        self.dataTable.setHorizontalHeaderItem(0, headerItem)
+        headerItem = QTableWidgetItem(" Latitude ")
+        headerItem.setFont(self.headerFont)
+        self.dataTable.setHorizontalHeaderItem(1, headerItem)
+        headerItem = QTableWidgetItem(" Longitude ")
+        headerItem.setFont(self.headerFont)
+        self.dataTable.setHorizontalHeaderItem(2, headerItem)
+        headerItem = QTableWidgetItem(" Bottom Depth ")
+        headerItem.setFont(self.headerFont)
+        self.dataTable.setHorizontalHeaderItem(3, headerItem)
 
         #  set up the initialization timer
         initTimer = QTimer(self)
@@ -272,7 +306,6 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
             #  only set up network and serial devices
             if self.deviceData[deviceName]['interface'] in ['network', 'serial']:
-                print(deviceName)
                 #  then add this device to the sensor monitor
                 self.sensorMonitor.addDevice(deviceName, deviceParams['port'], deviceParams['baud'],
                         deviceParams['parseType'], deviceParams['parseExp'], deviceParams['parseIndex'],
@@ -289,9 +322,13 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         #  are received. Those messages are optionally parsed and then SensorMonitor
         #  emits a signal with the parsed data.
         self.sensorMonitor.startMonitoring()
+        self.sensorsClosed = False
 
         #  If there are any errors opening ports, SensorMonitor will emit the
         #  SensorError signal for each device with an issue.
+
+        #  show the window
+        self.show()
 
 
     def getScientistName(self, dialogMessage):
@@ -404,25 +441,25 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 #TODO: FIGURE OUT HOW THESE WILL CHANGE WITH NEW OBSERVATION PROTOCOL. These checkboxes
 #      will probably be removed and replaced with a dialog displayed when an event is
 #      scrubbed capturing the reason it was scrubbed.
-        # reload mammal and bird checkboxes
-        sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship="+
-                self.ship + " AND survey=" + self.survey + " AND event_id=" +
-                self.activeEvent + " AND event_parameter='MarineMammalPresent'")
-        query = self.db.dbQuery(sql)
-        val, = query.first()
-        if val == 'Y':
-            self.marMammalBox.setChecked(True)
-        else:
-            self.marMammalBox.setChecked(False)
-        sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship="+
-                self.ship + " AND survey=" + self.survey + " AND event_id=" +
-                self.activeEvent + " AND event_parameter='EndangeredSeabirdPresent'")
-        query = self.db.dbQuery(sql)
-        val, = query.first()
-        if val == 'Y':
-            self.seaBirdBox.setChecked(True)
-        else:
-            self.seaBirdBox.setChecked(False)
+#        # reload mammal and bird checkboxes
+#        sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship="+
+#                self.ship + " AND survey=" + self.survey + " AND event_id=" +
+#                self.activeEvent + " AND event_parameter='MarineMammalPresent'")
+#        query = self.db.dbQuery(sql)
+#        val, = query.first()
+#        if val == 'Y':
+#            self.marMammalBox.setChecked(True)
+#        else:
+#            self.marMammalBox.setChecked(False)
+#        sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship="+
+#                self.ship + " AND survey=" + self.survey + " AND event_id=" +
+#                self.activeEvent + " AND event_parameter='EndangeredSeabirdPresent'")
+#        query = self.db.dbQuery(sql)
+#        val, = query.first()
+#        if val == 'Y':
+#            self.seaBirdBox.setChecked(True)
+#        else:
+#            self.seaBirdBox.setChecked(False)
 
         # reload button times
         row=0
@@ -641,6 +678,9 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.dataTable.setRowCount(maxButtons)
         self.dataTable.resizeColumnsToContents()
 
+
+        self.netDimBtn.setEnabled(True)
+
 #TODO: See how row height works with new form that contains layouts and can
 #      be resized and adjust this as needed. Make sure to test on screens with
 #      different dpi and text scaling settings.
@@ -655,8 +695,11 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
 
     def displayTime(self):
-        self.eventTimer=self.eventTimer.addSecs(1)
-        self.elapseLabel.setText(self.eventTimer.toString('mm:ss'))
+        self.eventTimer = self.eventTimer.addSecs(1)
+        if self.eventTimer.hour() > 0:
+            self.elapseLabel.setText(self.eventTimer.toString('h:mm:ss'))
+        else:
+            self.elapseLabel.setText(self.eventTimer.toString('mm:ss'))
 
 
     def getEventStreamValues(self, time, parameters):
@@ -710,6 +753,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         '''
         getEventData is called when an event button is pressed
         '''
+        print("GET EVENT DATA")
 
         #  if this is the first button pressed, we lock the gear type, write the
         #  initial event record, and set the "recording" state (meaning we've locked
@@ -974,7 +1018,6 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                         sql = ("UPDATE " + self.schema + ".event_data SET parameter_value='"+lat+
                                 "' WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id="+
                                 self.activeEvent+" AND partition='"+partition+ "' AND event_parameter='"+
-                                self.activeEvent+" AND partition='"+partition+ "' AND event_parameter='"+
                                 parameter[1]+"'")
                         self.db.dbExec(sql)
                         sql = ("UPDATE " + self.schema + ".event_data SET parameter_value='"+lon+
@@ -1124,17 +1167,13 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 ",'MainTrawl','TrawlScientist','"+self.scientist+"')")
         self.db.dbExec(sql)
 
-
-    def scsTimeout(self, timeInt):
-        if self.SCSisActive:
-            QMessageBox.warning(self,'SCS warning!', "SCS data has not been updated for "+
-                    str(timeInt)+" seconds. Entries into each event will be old.  Be careful!")
-        self.statusBar.showMessage('SCS Disconnected', timeInt*1000)
-        self.SCSisActive = False
-
-
-    def stopStream(self):
-        self.timer.stop()
+#
+#    def scsTimeout(self, timeInt):
+#        if self.SCSisActive:
+#            QMessageBox.warning(self,'SCS warning!', "SCS data has not been updated for "+
+#                    str(timeInt)+" seconds. Entries into each event will be old.  Be careful!")
+#        self.statusBar.showMessage('SCS Disconnected', timeInt*1000)
+#        self.SCSisActive = False
 
 
     def writeStream(self, device_name, data, err):
@@ -1510,127 +1549,137 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         closeEvent is called when the window is closed or the "Done" button is pressed.
         '''
 
-        #  check if gear has been selected - this check is different from the others
-        #  since if gear has not been selected, there isn't an entry in the database
-        #  for this event.
-        if not self.recording:
-            messageText = ('You have not started your event. If you exit now, no event will be created. ' +
-                    '\n\nAre you sure you want to exit?')
-            self.message.setMessage(self.errorIcons[0],self.errorSounds[0],messageText,'choice')
-            ok = self.message.exec()
-            if (ok):
-                #  user has chosen to exit
-                self.abort = True
+        #  only exit when all sensors have closed
+        if self.sensorsClosed:
+            #  all sensors closed. store the application size and position
+            self.appSettings.setValue('winposition', self.pos())
+            self.appSettings.setValue('winsize', self.size())
 
-        if (not self.abort):
+            #  and accept to close
+            event.accept()
 
-            #  check the rest of the form for completeness
-            self.exitCheck()
+        elif self.sensorsStopping == False:
 
-            #  if the user agrees it is incomplete - go back to the form
-            if self.incomplete:
-                event.ignore()
-                return
 
-            #  stop recording stream data
-            if not self.reloaded:
-                self.stopStream()
+            #  check if gear has been selected - this check is different from the others
+            #  since if gear has not been selected, there isn't an entry in the database
+            #  for this event.
+            if not self.recording:
+                messageText = ('You have not started your event. If you exit now, no event will be created. ' +
+                        '\n\nAre you sure you want to exit?')
+                self.message.setMessage(self.errorIcons[0],self.errorSounds[0],messageText,'choice')
+                ok = self.message.exec()
+                if (ok):
+                    #  user has chosen to exit, tell SensorMonitor to shut down. Set the sensorsStopping
+                    #  param to indicate we're shutting down.
+                    self.sensorsStopping = True
+                    self.sensorMonitor.stopMonitoring()
 
-            # update haul type
-            sql = ("UPDATE events SET event_type = "+self.typeCode[self.typeBox.currentIndex()]+
-                    " WHERE ship="+self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeEvent)
-            self.db.dbExec(sql)
+                    #  Ignore this close event. SensorMonitor will signal after all threads
+                    #  are stopped and will close the application then.
+                    event.ignore()
+                    return
+                else:
+                    #  user chose to continue working on form
+                    event.ignore()
+                    return
 
-            # update performance
-            if  self.perfBox.currentIndex() != -1:
-                sql = ("UPDATE events SET performance_code = " +
-                        self.perfCode[self.perfBox.currentIndex()]+" WHERE ship="+self.ship+
-                        " AND survey="+self.survey+" AND event_id="+self.activeEvent)
+            if (not self.abort):
+
+                #  check the rest of the form for completeness
+                self.exitCheck()
+
+                #  if the user agrees it is incomplete - go back to the form
+                if self.incomplete:
+                    event.ignore()
+                    return
+
+                #  tell SensorMonitor to shut down. Set the sensorsStopping
+                #  param to indicate the application is shutting down.
+                self.sensorsStopping = True
+                self.sensorMonitor.stopMonitoring()
+
+                # update haul type
+                sql = ("UPDATE events SET event_type = "+self.typeCode[self.typeBox.currentIndex()]+
+                        " WHERE ship="+self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeEvent)
                 self.db.dbExec(sql)
 
-            # update comment
-            if self.comment != '':
-                sql = ("UPDATE " + self.schema + ".events SET comments = '"+self.comment+
-                        "' WHERE ship="+self.ship+
-                        " AND survey="+self.survey+" AND event_id="+self.activeEvent)
-                self.db.dbExec(sql)
-
-            #delete current records if they exist
-            sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+
-                    " AND survey="+self.survey+" AND event_id="+self.activeEvent+
-                    " AND event_parameter='Transect'")
-            self.db.dbExec(sql)
-            sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+
-                    " AND survey="+self.survey+" AND event_id="+self.activeEvent+
-                    " AND event_parameter='Stratum'")
-            self.db.dbExec(sql)
-            sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+
-                    " AND survey="+self.survey+" AND event_id="+self.activeEvent+
-                    " AND event_parameter='MarineMammalPresent'")
-            self.db.dbExec(sql)
-            sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+
-                    " AND survey="+self.survey+" AND event_id="+self.activeEvent+
-                    " AND event_parameter='EndangeredSeabirdPresent'")
-            self.db.dbExec(sql)
-            sql = ("DELETE FROM " + self.schema + ".gear_accessory WHERE ship="+self.ship+
-                    " AND survey="+self.survey+" AND event_id="+self.activeEvent)
-            self.db.dbExec(sql)
-
-            # write transect number
-            if str(self.transBtn.text()) != '':
-                sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, event_id,partition,  event_parameter,  parameter_value) VALUES "+
-                        " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'Transect', '"+self.transBtn.text()+"')")
-                self.db.dbExec(sql)
-
-            # write stratum
-            if str(self.stratumBtn.text()) != '':
-                sql = ("INSERT INTO " + self.schema + ".event_data (ship,survey,event_id,partition,event_parameter,parameter_value) VALUES "+
-                        " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'Stratum', '"+self.stratumBtn.text()+"')")
-                self.db.dbExec(sql)
-
-#            # write checkboxes
-#            if self.marMammalBox.isChecked():
-#                status='Y'
-#            else:
-#                status='N'
-#            sql = ("INSERT INTO " + self.schema + ".event_data (ship,survey,event_id,partition,event_parameter,parameter_value) VALUES "+
-#                                    " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'MarineMammalPresent','"+status+"')")
-#            self.db.dbExec(sql)
-#
-#            if self.seaBirdBox.isChecked():
-#                status='Y'
-#            else:
-#                status='N'
-#            sql = ("INSERT INTO " + self.schema + ".event_data (ship,survey,event_id,partition,event_parameter,parameter_value) VALUES "+
-#                    " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'EndangeredSeabirdPresent','"+status+"')")
-#            self.db.dbExec(sql)
-
-            # write accessories
-            for accessory in self.gaLabelList:
-                if (self.gaCBList[self.gaLabelList.index(accessory)].currentIndex() > -1):
-                    value = self.gaCBList[self.gaLabelList.index(accessory)].currentText()
-                    sql = ("INSERT INTO " + self.schema + ".gear_accessory (ship, survey, event_id," +
-                            "gear_accessory, gear_accessory_option) VALUES ("+self.ship+","+self.survey+","+
-                            self.activeEvent+",'"+accessory.text()+"','"+value+"')")
+                # update performance
+                if  self.perfBox.currentIndex() != -1:
+                    sql = ("UPDATE events SET performance_code = " +
+                            self.perfCode[self.perfBox.currentIndex()]+" WHERE ship="+self.ship+
+                            " AND survey="+self.survey+" AND event_id="+self.activeEvent)
                     self.db.dbExec(sql)
 
-            #  update the active event
-            #  As of 6/2023 we are no longer setting the ActiveEvent within the trawl event. This is only done
-            #  in CLAMSmain.py at stations that have the haul role. This was done because the fish lab staff
-            #  always start CLAMS prior to the event being fully completed and this resulted in an unintuitive
-            #  setup procedure in the fish lab where a user had to choose to edit a "past haul" then select the
-            #  current haul.
-            #sql = ("UPDATE " + self.schema + ".application_configuration SET parameter_value=" +
-            #                self.activeEvent + " WHERE parameter='ActiveEvent'")
-            #self.db.dbExec(sql)
+                # update comment
+                if self.comment != '':
+                    sql = ("UPDATE " + self.schema + ".events SET comments = '"+self.comment+
+                            "' WHERE ship="+self.ship+
+                            " AND survey="+self.survey+" AND event_id="+self.activeEvent)
+                    self.db.dbExec(sql)
 
-            self.computeMeans()
+                #delete current records if they exist
+                sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+
+                        " AND survey="+self.survey+" AND event_id="+self.activeEvent+
+                        " AND event_parameter='Transect'")
+                self.db.dbExec(sql)
+                sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+
+                        " AND survey="+self.survey+" AND event_id="+self.activeEvent+
+                        " AND event_parameter='Stratum'")
+                self.db.dbExec(sql)
+                sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+
+                        " AND survey="+self.survey+" AND event_id="+self.activeEvent+
+                        " AND event_parameter='MarineMammalPresent'")
+                self.db.dbExec(sql)
+                sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+
+                        " AND survey="+self.survey+" AND event_id="+self.activeEvent+
+                        " AND event_parameter='EndangeredSeabirdPresent'")
+                self.db.dbExec(sql)
+                sql = ("DELETE FROM " + self.schema + ".gear_accessory WHERE ship="+self.ship+
+                        " AND survey="+self.survey+" AND event_id="+self.activeEvent)
+                self.db.dbExec(sql)
 
-        else:
-            #  we've aborted this trawl before it began - do nothing
-            pass
+                # write transect number
+                if str(self.transBtn.text()) != '':
+                    sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, event_id,partition,  event_parameter,  parameter_value) VALUES "+
+                            " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'Transect', '"+self.transBtn.text()+"')")
+                    self.db.dbExec(sql)
 
-        event.accept()
+                # write stratum
+                if str(self.stratumBtn.text()) != '':
+                    sql = ("INSERT INTO " + self.schema + ".event_data (ship,survey,event_id,partition,event_parameter,parameter_value) VALUES "+
+                            " ("+self.ship+","+self.survey+","+self.activeEvent+",'MainTrawl', 'Stratum', '"+self.stratumBtn.text()+"')")
+                    self.db.dbExec(sql)
+
+                # write accessories
+                for accessory in self.gaLabelList:
+                    if (self.gaCBList[self.gaLabelList.index(accessory)].currentIndex() > -1):
+                        value = self.gaCBList[self.gaLabelList.index(accessory)].currentText()
+                        sql = ("INSERT INTO " + self.schema + ".gear_accessory (ship, survey, event_id," +
+                                "gear_accessory, gear_accessory_option) VALUES ("+self.ship+","+self.survey+","+
+                                self.activeEvent+",'"+accessory.text()+"','"+value+"')")
+                        self.db.dbExec(sql)
+
+                #  update the active event
+                #  As of 6/2023 we are no longer setting the ActiveEvent within the trawl event. This is only done
+                #  in CLAMSmain.py at stations that have the haul role. This was done because the fish lab staff
+                #  always start CLAMS prior to the event being fully completed and this resulted in an unintuitive
+                #  setup procedure in the fish lab where a user had to choose to edit a "past haul" then select the
+                #  current haul.
+                #sql = ("UPDATE " + self.schema + ".application_configuration SET parameter_value=" +
+                #                self.activeEvent + " WHERE parameter='ActiveEvent'")
+                #self.db.dbExec(sql)
+
+                self.computeMeans()
+
+            else:
+                #  we've aborted this trawl before it began - do nothing
+                pass
+
+            #  For now, ignore this close event. After all sensors close, the close() method
+            #  will be called again with sensorsClosed == True and the window will be closed.
+            event.ignore()
+
 
     @pyqtSlot(str, object)
     def deviceError(self, deviceID, obj):
@@ -1642,12 +1691,87 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
     def devicesClosed(self):
         '''devicesClosed is called when the SensorMonitor emits the
-        SerialDevicesStopped signal which lets us know all acquisition
-        threads have stopped.
-
-        Since we have done all of the other shutdown tasks, we simply
-        call the close event's accept method.
-
+        SensorsStopped signal which lets us know all acquisition
+        threads have stopped. Once they are stopped we can close the
+        form without error. (Qt gets angry when threads are destroyed
+        while running.) Set sensorsClosed to True and call close()
+        again.
         '''
-        if self.clEventObj:
-            self.clEventObj.accept()
+
+        #  we check if this is an intentional shutdown and if so, close
+        #  the form. This method will also be called if every sensor
+        #  fails to start when the form is initializing and we *don't*
+        #  want to close the form in that case.
+        if  self.sensorsStopping:
+            #  set sensorsClosed to True and call close() again
+            self.sensorsClosed = True
+            self.close()
+
+
+    def checkWindowLocation(self, position, size, padding=[5, 25]):
+        '''
+        checkWindowLocation accepts a window position (QPoint) and size (QSize)
+        and returns a potentially new position and size if the window is currently
+        positioned off the screen.
+
+        This function uses QScreen.availableVirtualGeometry() which returns the full
+        available desktop space *not* including taskbar. For all single and "typical"
+        multi-monitor setups this should work reasonably well. But for multi-monitor
+        setups where the monitors may be different resolutions, have different
+        orientations or different scaling factors, the app may still fall partially
+        or totally offscreen. A more thorough check gets complicated, so hopefully
+        those cases are very rare.
+
+        If the user is holding the <shift> key while this method is run, the
+        application will be forced to the primary monitor.
+        '''
+
+        #  create a QRect that represents the app window
+        appRect = QRect(position, size)
+
+        #  check for the shift key which we use to force a move to the primary screem
+        resetPosition = QGuiApplication.queryKeyboardModifiers() == Qt.KeyboardModifier.ShiftModifier
+        if resetPosition:
+            position = QPoint(padding[0], padding[0])
+
+        #  get a reference to the primary system screen - If the app is off the screen, we
+        #  will restore it to the primary screen
+        primaryScreen = QGuiApplication.primaryScreen()
+
+        #  assume the new and old positions are the same
+        newPosition = position
+        newSize = size
+
+        #  Get the desktop geometry. We'll use availableVirtualGeometry to get the full
+        #  desktop rect but note that if the monitors are different resolutions or have
+        #  different scaling, some parts of this rect can still be offscreen.
+        screenGeometry = primaryScreen.availableVirtualGeometry()
+
+        #  if the app is partially or totally off screen or we're force resetting
+        if resetPosition or not screenGeometry.contains(appRect):
+
+            #  check if the upper left corner of the window is off the left side of the screen
+            if position.x() < screenGeometry.x():
+                newPosition.setX(screenGeometry.x() + padding[0])
+            #  check if the upper right is off the right side of the screen
+            if position.x() + size.width() >= screenGeometry.width():
+                p = screenGeometry.width() - size.width() - padding[0]
+                if p < padding[0]:
+                    p = padding[0]
+                newPosition.setX(p)
+            #  check if the top of the window is off the top/bottom of the screen
+            if position.y() < screenGeometry.y():
+                newPosition.setY(screenGeometry.y() + padding[0])
+            if position.y() + size.height() >= screenGeometry.height():
+                p = screenGeometry.height() - size.height() - padding[1]
+                if p < padding[0]:
+                    p = padding[0]
+                newPosition.setY(p)
+
+            #  now make sure the lower right (resize handle) is on the screen
+            if (newPosition.x() + newSize.width()) > screenGeometry.width():
+                newSize.setWidth(screenGeometry.width() - newPosition.x() - padding[0])
+            if (newPosition.y() + newSize.height()) > screenGeometry.height():
+                newSize.setHeight(screenGeometry.height() - newPosition.y() - padding[1])
+
+        return [newPosition, newSize]
