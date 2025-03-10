@@ -142,6 +142,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
             btn.clicked.connect(self.getEventData)
             btn.hide()
 
+        #  disable some other elements - these are enabled when gear is selected
         self.typeBox.setEnabled(False)
         self.optionsGroup.setEnabled(False)
         self.perfBox.setEnabled(False)
@@ -153,9 +154,6 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         #  this should make the columns resize based on the widget width
         self.dataTable.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.dataTable.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
-
-#        for i in range(4):
-#            self.dataTable.setColumnWidth(i, self.dataTable.width()/4)
 
         #  create a statusbar
         self.statusBar = QStatusBar(self)
@@ -180,8 +178,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.move(position)
         self.resize(size)
 
-        #  set up the
-        self.headerFont = QFont("Arial Black", 14, -1, False)
+        #  set up the table header
+        self.headerFont = QFont("Arial Black", 13, -1, False)
         headerItem = QTableWidgetItem(" Time ")
         headerItem.setFont(self.headerFont)
         self.dataTable.setHorizontalHeaderItem(0, headerItem)

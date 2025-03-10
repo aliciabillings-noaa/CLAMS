@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\noaa-afsc-mace\CLAMS\ui\CLAMSHaul.ui'
+# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260\CLAMS\ui\CLAMSHaul.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -13,7 +13,7 @@ class Ui_clamsHaul(object):
     def setupUi(self, clamsHaul):
         clamsHaul.setObjectName("clamsHaul")
         clamsHaul.setEnabled(True)
-        clamsHaul.resize(907, 665)
+        clamsHaul.resize(887, 730)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -23,9 +23,11 @@ class Ui_clamsHaul(object):
         font.setPointSize(18)
         clamsHaul.setFont(font)
         self.verticalLayout_10 = QtWidgets.QVBoxLayout(clamsHaul)
+        self.verticalLayout_10.setContentsMargins(4, 4, 4, 4)
+        self.verticalLayout_10.setSpacing(2)
         self.verticalLayout_10.setObjectName("verticalLayout_10")
-        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout()
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
@@ -40,6 +42,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(12)
         font.setBold(True)
+        font.setWeight(75)
         self.label_2.setFont(font)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_2.addWidget(self.label_2)
@@ -53,6 +56,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(20)
         font.setBold(True)
+        font.setWeight(75)
         self.gearLabel.setFont(font)
         self.gearLabel.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -61,6 +65,9 @@ class Ui_clamsHaul(object):
         self.gearLabel.setText("")
         self.gearLabel.setObjectName("gearLabel")
         self.horizontalLayout_2.addWidget(self.gearLabel)
+        self.verticalLayout_5.addLayout(self.horizontalLayout_2)
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.label_14 = QtWidgets.QLabel(parent=clamsHaul)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -71,9 +78,10 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(12)
         font.setBold(True)
+        font.setWeight(75)
         self.label_14.setFont(font)
         self.label_14.setObjectName("label_14")
-        self.horizontalLayout_2.addWidget(self.label_14)
+        self.horizontalLayout_5.addWidget(self.label_14)
         self.sciLabel = QtWidgets.QLabel(parent=clamsHaul)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Maximum)
         sizePolicy.setHorizontalStretch(0)
@@ -84,6 +92,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(20)
         font.setBold(True)
+        font.setWeight(75)
         self.sciLabel.setFont(font)
         self.sciLabel.setAutoFillBackground(False)
         self.sciLabel.setStyleSheet("QWidget {\n"
@@ -94,8 +103,8 @@ class Ui_clamsHaul(object):
         self.sciLabel.setLineWidth(1)
         self.sciLabel.setText("")
         self.sciLabel.setObjectName("sciLabel")
-        self.horizontalLayout_2.addWidget(self.sciLabel)
-        self.verticalLayout_5.addLayout(self.horizontalLayout_2)
+        self.horizontalLayout_5.addWidget(self.sciLabel)
+        self.verticalLayout_5.addLayout(self.horizontalLayout_5)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.verticalLayout_5.addItem(spacerItem)
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
@@ -105,6 +114,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(12)
         font.setBold(True)
+        font.setWeight(75)
         self.label_6.setFont(font)
         self.label_6.setObjectName("label_6")
         self.horizontalLayout_4.addWidget(self.label_6)
@@ -131,14 +141,14 @@ class Ui_clamsHaul(object):
         self.perfBox.setFont(font)
         self.perfBox.setObjectName("perfBox")
         self.verticalLayout_5.addWidget(self.perfBox)
-        self.horizontalLayout_5.addLayout(self.verticalLayout_5)
+        self.horizontalLayout_6.addLayout(self.verticalLayout_5)
         self.picLabel = QtWidgets.QLabel(parent=clamsHaul)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.picLabel.sizePolicy().hasHeightForWidth())
         self.picLabel.setSizePolicy(sizePolicy)
-        self.picLabel.setMinimumSize(QtCore.QSize(250, 0))
+        self.picLabel.setMinimumSize(QtCore.QSize(300, 300))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.picLabel.setFont(font)
@@ -146,8 +156,8 @@ class Ui_clamsHaul(object):
         self.picLabel.setFrameShadow(QtWidgets.QFrame.Shadow.Plain)
         self.picLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.picLabel.setObjectName("picLabel")
-        self.horizontalLayout_5.addWidget(self.picLabel)
-        self.verticalLayout_10.addLayout(self.horizontalLayout_5)
+        self.horizontalLayout_6.addWidget(self.picLabel)
+        self.verticalLayout_10.addLayout(self.horizontalLayout_6)
         self.groupBox_3 = QtWidgets.QGroupBox(parent=clamsHaul)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -158,6 +168,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(16)
         font.setBold(True)
+        font.setWeight(75)
         self.groupBox_3.setFont(font)
         self.groupBox_3.setObjectName("groupBox_3")
         self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.groupBox_3)
@@ -174,6 +185,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.groupBox.setFont(font)
         self.groupBox.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.groupBox.setObjectName("groupBox")
@@ -242,6 +254,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.groupBox1.setFont(font)
         self.groupBox1.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.groupBox1.setObjectName("groupBox1")
@@ -255,6 +268,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn1_1.setFont(font)
         self.haulInfoBtn1_1.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -267,6 +281,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn1_2.setFont(font)
         self.haulInfoBtn1_2.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -279,6 +294,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn1_3.setFont(font)
         self.haulInfoBtn1_3.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -291,6 +307,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn1_4.setFont(font)
         self.haulInfoBtn1_4.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -309,6 +326,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.groupBox2.setFont(font)
         self.groupBox2.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.groupBox2.setObjectName("groupBox2")
@@ -322,6 +340,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn2_1.setFont(font)
         self.haulInfoBtn2_1.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -334,6 +353,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn2_2.setFont(font)
         self.haulInfoBtn2_2.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -346,6 +366,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn2_3.setFont(font)
         self.haulInfoBtn2_3.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -358,6 +379,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn2_4.setFont(font)
         self.haulInfoBtn2_4.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -376,6 +398,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.groupBox3.setFont(font)
         self.groupBox3.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.groupBox3.setObjectName("groupBox3")
@@ -389,6 +412,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn3_1.setFont(font)
         self.haulInfoBtn3_1.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -401,6 +425,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn3_2.setFont(font)
         self.haulInfoBtn3_2.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -413,6 +438,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn3_3.setFont(font)
         self.haulInfoBtn3_3.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -425,6 +451,7 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(14)
         font.setBold(True)
+        font.setWeight(75)
         self.haulInfoBtn3_4.setFont(font)
         self.haulInfoBtn3_4.setStyleSheet("QWidget {\n"
 "    background-color: white;\n"
@@ -435,6 +462,8 @@ class Ui_clamsHaul(object):
         self.horizontalLayout_3.addWidget(self.groupBox3)
         self.verticalLayout_9.addLayout(self.horizontalLayout_3)
         self.verticalLayout_10.addWidget(self.groupBox_3)
+        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.verticalLayout_10.addItem(spacerItem2)
         self.groupBox_2 = QtWidgets.QGroupBox(parent=clamsHaul)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Maximum)
         sizePolicy.setHorizontalStretch(0)
@@ -450,17 +479,19 @@ class Ui_clamsHaul(object):
         font.setFamily("Arial Black")
         font.setPointSize(16)
         font.setBold(True)
+        font.setWeight(75)
         self.commentBtn.setFont(font)
         self.commentBtn.setObjectName("commentBtn")
         self.horizontalLayout.addWidget(self.commentBtn)
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout.addItem(spacerItem2)
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.horizontalLayout.addItem(spacerItem3)
         self.doneBtn = QtWidgets.QPushButton(parent=self.groupBox_2)
         self.doneBtn.setMinimumSize(QtCore.QSize(250, 0))
         font = QtGui.QFont()
         font.setFamily("Arial Black")
         font.setPointSize(16)
         font.setBold(True)
+        font.setWeight(75)
         self.doneBtn.setFont(font)
         self.doneBtn.setObjectName("doneBtn")
         self.horizontalLayout.addWidget(self.doneBtn)

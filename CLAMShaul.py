@@ -43,6 +43,7 @@
 """
 
 #  imports
+import os
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -254,6 +255,8 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
         self.groupBox3.hide()
 
         #  set the GUI labels
+        self.haulInfoBtns[0][0].setText('')
+        self.haulInfoBtns[1][0].setText('')
         self.groupBox1.setTitle('Haul Weight Type')
         self.groupBox2.setTitle('Haul Weight')
         self.partitionLabels[0].setText('<font size=16>Codend')
@@ -282,6 +285,8 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
             self.haulInfoBtns[j][3].hide()
 
         #  set the GUI labels
+        self.haulInfoBtns[0][0].setText('')
+        self.haulInfoBtns[1][0].setText('')
         self.groupBox1.setTitle('Haul Weight Type')
         self.groupBox2.setTitle('Haul Weight')
 
@@ -297,10 +302,14 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
         hasEQ, = query.first()
         if hasEQ:
             #  it was, set the label
+            self.haulInfoBtns[0][1].setText('')
+            self.haulInfoBtns[1][1].setText('')
             self.partitionLabels[1].setText('Codend 2')
         else:
             #  it wasn't - hide the button
             self.haulInfoBtn1_2.setEnabled(False)
+            self.partitionLabels[1].setText('')
+
 
         #  now check if the 3rd codend was deployed - determined by the
         #  presence of EQ for the 3rd codend
@@ -311,10 +320,14 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
         hasEQ, = query.first()
         if hasEQ:
             #  it was, set the label
-            self.partitionLabels[1].setText('Codend 3')
+            self.haulInfoBtns[0][2].setText('')
+            self.haulInfoBtns[1][2].setText('')
+            self.partitionLabels[2].setText('Codend 3')
         else:
             #  it wasn't - hide the button
-            self.haulInfoBtn1_2.setEnabled(False)
+            self.haulInfoBtn1_3.setEnabled(False)
+            self.partitionLabels[2].setText('')
+
 
         #  set up the partion and haul parameters for a multi codend trawl
         self.partitions=['Codend_1', 'Codend_2', 'Codend_3']
@@ -346,12 +359,17 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
             #  and hide some more buttons
             for i in range(0,4):
                 self.haulInfoBtns[2][i].hide()
+            self.groupBox3.hide()
 
             #  set the labels
             self.groupBox1.setTitle('Flow Meter Start')
             self.groupBox2.setTitle('Flow Meter End')
             self.partitionLabels[0].setText('Codend 1')
             self.partitionLabels[1].setText('Codend 2')
+            self.haulInfoBtns[0][0].setText('')
+            self.haulInfoBtns[1][0].setText('')
+            self.haulInfoBtns[0][1].setText('')
+            self.haulInfoBtns[1][1].setText('')
 
             #  set up the partion and haul parameters for a bongo
             self.partitions=['Codend_1', 'Codend_2']
@@ -366,11 +384,14 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
                 self.partitionLabels[i].hide()
                 for j in range(3):
                     self.haulInfoBtns[j][i].hide()
+            self.groupBox3.hide()
 
             #  set the labels
             self.groupBox1.setTitle('Flow Meter Start')
             self.groupBox2.setTitle('Flow Meter End')
             self.partitionLabels[0].setText('Codend')
+            self.haulInfoBtns[0][0].setText('')
+            self.haulInfoBtns[0][1].setText('')
 
             #  set up the partion and haul parameters for a methot
             self.partitions=['Codend']
@@ -405,6 +426,7 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
 
     def writeHaul(self):
 
+
         #  first check if all of the haul buttons have been completed
         haulInfoCompleteFlag = True
         for btns in self.haulInfoBtns:
@@ -433,11 +455,12 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
         # Insert or update the haul parameters and values for each main partition
         for i, partition in enumerate(self.partitions):
             for j, parameter in enumerate(self.parameters):
-                sql = ("SELECT * FROM event_data WHERE ship=" + self.ship + " AND survey=" + self.survey +
+                sql = ("SELECT event_parameter FROM event_data WHERE ship=" + self.ship + " AND survey=" + self.survey +
                        " AND event_id=" + self.activeHaul + " AND partition='" + partition +
                        "' AND event_parameter='" + parameter + "'")
                 query = self.db.dbQuery(sql)
-                if query.first():
+                val, = query.first()
+                if val is not None:
                     #  There is an existing record - update it with new values
                     sql = ("UPDATE event_data SET parameter_value='" + self.haulInfoBtns[j][i].text() +
                         "' WHERE ship=" + self.ship + " AND survey=" + self.survey + " AND event_id=" +
@@ -471,7 +494,7 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
                     self.activeHaul + " AND event_data.partition = '" + pnet_partition +
                     "' AND event_data.event_parameter = 'PartitionWeight'")
             query2 = self.db.dbQuery(sql)
-            hasParam, query2.first()
+            hasParam, = query2.first()
 
             #  if PartitionWeight doesn't exist, then insert the PartitionWeightType and
             #  PartitionWeight parameters.
