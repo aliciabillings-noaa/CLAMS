@@ -595,8 +595,9 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         # play the sound
         self.sounds[i].play()
 
-        # do the validations
-        for valObj in self.validations[i]:
+        # do the validations and record any time the user ignores the error
+        missing_validations = []
+        for valObj, valName in zip(self.validations[i], self.valNames[i]):
             # instantiate the validation object with the database credentials and the current species
             valObj = valObj(self.db, self.activeSpcCode)
             # perform the validation
@@ -609,15 +610,49 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     return
                 else:
                     # user has overridden the validation error
-                    if not self.specimenKey == None:
-                        self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                    self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                                                 "You're in big trouble, " + self.firstName, 'info')
-                        #  insert event into overrides table
-                        sql = ("INSERT INTO overrides (ship,survey,event_id,record_id,table_name," +
-                                "scientist,description) VALUES (" + self.ship + ", " + self.survey +
-                                "," + self.activeHaul + "," + self.specimenKey + ",'measurements','" +
-                                self.scientist + "','Specimen weight is outside valid range.')")
-                        self.db.dbExec(sql)
+                    missing_validations.append(valName)
+        
+        if missing_validations:
+            if (self.specimenKey == None):
+                self.getNewSpecimen()
+            
+            update_missing_validations = False
+            # check to see if we have a validation error already for this specimen
+            sql = ("SELECT description FROM overrides " +
+                        "WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                        " AND table_name = 'validations'"
+                        " AND record_id = "+ self.specimenKey)
+            query = self.db.dbQuery(sql)
+            description,  = query.first()
+            # already entered in a validation error for this specimen, now need to update
+            if description:
+                missing_validations.append(','+description.split(' ')[2])
+                update_missing_validations = True
+            
+            if len(missing_validations) == 1:
+                #  user skipped through a single validation error
+                missing_validation_text = ('User allowed ' + missing_validations[0] +
+                        ' validation error(s).')
+            else:
+                missing_validation_text = ('User skipped ' + ','.join(missing_validations) + 
+                        ' validation error(s).')
+                
+            if update_missing_validations:
+                #  insert event into overrides table
+                sql = ("UPDATE overrides SET description = '" + missing_validation_text +
+                        "' WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                        " AND table_name = 'validations'"
+                        " AND record_id = "+ self.specimenKey)
+                self.db.dbExec(sql)
+            else:
+                #  insert event into overrides table
+                sql = ("INSERT INTO overrides (ship,survey,event_id,record_id,table_name," +
+                        "scientist,description) VALUES (" + self.ship + ", " + self.survey +
+                        "," + self.activeHaul + "," + self.specimenKey + ",'validations','" +
+                        self.scientist + "','" + missing_validation_text + "')")
+                self.db.dbExec(sql)
 
         self.values[i]=val
         self.writeMeasurement(i, True)
@@ -687,13 +722,14 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         # play the sound
         self.sounds[i].play()
 
-        # do the validations
-        for valObj in self.validations[i]:
+        # do the validations and record any time the user ignores the error
+        missing_validations = []
+        for valObj, valName in zip(self.validations[i], self.valNames[i]):
             # instantiate the validation object with the database credentials and the current species
             valObj = valObj(self.db, self.activeSpcCode)
             # perform the validation
             result = valObj.validate(val, self.measureType, self.values)
-            if not result[0] and result[0] is not None:
+            if not result[0] and not result[0] == None:
                 # validation failed - ask if user wants to redo or override
                 self.message.setMessage(self.errorIcons[1],self.errorSounds[1], result[1], 'choice')
                 if self.message.exec():
@@ -701,15 +737,48 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     return
                 else:
                     # user has overridden the validation error
-                    if not self.specimenKey == None:
-                        self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
-                                "You're in big trouble, " + self.firstName, 'info')
-                        #  insert event into overrides table
-                        sql = ("INSERT INTO overrides (ship,survey,event_id,record_id,table_name," +
-                                "scientist,description) VALUES (" + self.ship + ", " + self.survey +
-                                "," + self.activeHaul + "," + self.specimenKey + ",'measurements','" +
-                                self.scientist + "','Specimen weight is outside valid range.'")
-                        self.db.dbExec(sql)
+                    self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                                                "You're in big trouble, " + self.firstName, 'info')
+                    missing_validations.append(valName)
+        
+        if missing_validations:
+            if (self.specimenKey == None):
+                self.getNewSpecimen()
+            update_missing_validations = False
+            # check to see if we have a validation error already for this specimen
+            sql = ("SELECT description FROM overrides " +
+                        "WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                        " AND table_name = 'validations'"
+                        " AND record_id = "+ self.specimenKey)
+            query = self.db.dbQuery(sql)
+            description,  = query.first()
+            # already entered in a validation error for this specimen, now need to update
+            if description:
+                missing_validations.append(','+description.split(' ')[2])
+                update_missing_validations = True
+            
+            if len(missing_validations) == 1:
+                #  user skipped through a single validation error
+                missing_validation_text = ('User allowed ' + missing_validations[0] +
+                        ' validation error(s).')
+            else:
+                missing_validation_text = ('User skipped ' + ','.join(missing_validations) + 
+                        ' validation error(s).')
+                
+            if update_missing_validations:
+                #  insert event into overrides table
+                sql = ("UPDATE overrides SET description = '" + missing_validation_text +
+                        "' WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                        " AND table_name = 'validations'"
+                        " AND record_id = "+ self.specimenKey)
+                self.db.dbExec(sql)
+            else:
+                #  insert event into overrides table
+                sql = ("INSERT INTO overrides (ship,survey,event_id,record_id,table_name," +
+                        "scientist,description) VALUES (" + self.ship + ", " + self.survey +
+                        "," + self.activeHaul + "," + self.specimenKey + ",'validations','" +
+                        self.scientist + "','" + missing_validation_text + "')")
+                self.db.dbExec(sql)
 
         self.values[i]=val
         self.writeMeasurement(i, False)
@@ -976,6 +1045,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.dialogs = []
         self.interface = []
         self.validations = []
+        self.valNames = []
         self.values = []
         self.sqlString = []
         self.sqlLengthIndex = None
@@ -1075,15 +1145,18 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     "MEASUREMENT_TYPE = '"+type+"') "+
                     "ORDER BY VALIDATION_ORDER ASC ")
             query1 = self.db.dbQuery(sql1)
-            vals=[]
+            vals = []
+            valNames = []
 
             #  create an instance of the validation object and add to our list of validations
             for validations,  in query1:
                 valModule = ('validations.'+validations)
                 valObj = importlib.import_module(valModule)
                 valObj = getattr(valObj, validations)
+                valNames.append(validations)
                 vals.append(valObj)
 
+            self.valNames.append(valNames)
             self.validations.append(vals)
 
             #  build the measureView SQL list - this is a list of the measurements that
@@ -1332,7 +1405,6 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         if val:
             self.comment = val
-
 
     def checkOrder(self, i):
         '''checkOrder enforces the protocol order.
