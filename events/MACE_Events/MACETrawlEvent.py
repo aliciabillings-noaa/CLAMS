@@ -45,6 +45,7 @@
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
+import re
 import devices
 from ui import ui_MACETrawlEvent
 import numpad
@@ -206,6 +207,13 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         the trawl event form with data
         '''
 
+        #  setup reoccurring dialogs
+        self.numpad = numpad.NumPad(self)
+        self.message = messagedlg.MessageDlg(self)
+        self.timeDlg = timedlg.TimeDlg(self)
+        self.timeDlg.enableGetTimeButton(False)
+        self.netdlg = netdlg.NetDlg(self)
+
         #  query out the "slow" and "fast" SCS write rates. We write SCS data to the
         #  event_stream_data table at different rates depending on where we are in
         #  the event. We write faster between EQ and Haulback, and slower before EQ
@@ -242,7 +250,9 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         # if this is a restart or continuation of an already started event, reload previously collected data
         sql = ("SELECT event_id FROM " + self.schema + ".events WHERE ship=" + self.ship +
                 " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
+        query = self.db.dbQuery(sql)
         event_id, = query.first()
+
         if event_id:
             #  this is a restart so reload any existing data
             self.reloaded = True
@@ -258,13 +268,6 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 #  scientist selection aborted - exit
                 self.abort = True
                 self.close()
-
-        #  setup reoccurring dialogs
-        self.numpad = numpad.NumPad(self)
-        self.message = messagedlg.MessageDlg(self)
-        self.timeDlg = timedlg.TimeDlg(self)
-        self.timeDlg.enableGetTimeButton(False)
-        self.netdlg = netdlg.NetDlg(self)
 
         #  Set up sensors - first create an instance of SensorMonitor
         #  which will handle all the details of receiving and parsing
@@ -379,6 +382,14 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         self.gear, ev_type, perf_code, self.scientist, self.comment = query.first()
         self.sciLabel.setText(self.scientist)
 
+        #  if there isn't a comment - set it to an empty string.
+        if self.comment is None:
+            self.comment = ''
+
+        #  set up the elapsed time timer bits
+        elapsedSecs = 0
+        self.eventTimer.setHMS(0, 0, 0, 0)
+
         # set gear type combobox
         ind = self.gearBox.findText(self.gear)
         self.gearBox.setCurrentIndex(ind)
@@ -436,48 +447,45 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         if stratum:
             self.stratumBtn.setText(stratum)
 
-#TODO: FIGURE OUT HOW THESE WILL CHANGE WITH NEW OBSERVATION PROTOCOL. These checkboxes
-#      will probably be removed and replaced with a dialog displayed when an event is
-#      scrubbed capturing the reason it was scrubbed.
-#        # reload mammal and bird checkboxes
-#        sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship="+
-#                self.ship + " AND survey=" + self.survey + " AND event_id=" +
-#                self.activeEvent + " AND event_parameter='MarineMammalPresent'")
-#        query = self.db.dbQuery(sql)
-#        val, = query.first()
-#        if val == 'Y':
-#            self.marMammalBox.setChecked(True)
-#        else:
-#            self.marMammalBox.setChecked(False)
-#        sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship="+
-#                self.ship + " AND survey=" + self.survey + " AND event_id=" +
-#                self.activeEvent + " AND event_parameter='EndangeredSeabirdPresent'")
-#        query = self.db.dbQuery(sql)
-#        val, = query.first()
-#        if val == 'Y':
-#            self.seaBirdBox.setChecked(True)
-#        else:
-#            self.seaBirdBox.setChecked(False)
-
-        # reload button times
+        # reload button times and vals
         row=0
         for btn in self.buttons:
-            if btn.text().startsWith('C'):
-                g = str(btn.text())
-                partition='Codend_'+g[1]
-                parameter=[g.split(' ')[1]]
-            elif btn.text() in ['EQ', 'Haulback']:
-                partition='Codend'
-                parameter=[btn.text()]
-            else:
-                partition='MainTrawl'
-                parameter=[btn.text()]
 
+            #  For better or worse, multiple codend nets will have "C#" prepended to
+            #  the button text where # is the codend number starting at 1. For example
+            #  "C1 EQ" or "C1 Haulback". Here we pick apart the button text to determine
+            #  the partition and event parameter associated with each button
+            buttonText = btn.text()
+            if buttonText == '':
+                continue
+            multiCodend = re.findall("[cC][0-9]", buttonText)
+            if multiCodend:
+                partition = 'Codend_' + multiCodend[0][1]
+                parameter = buttonText.split(' ')[1]
+            elif buttonText.lower() in ['eq', 'haulback']:
+                partition = 'Codend'
+                parameter = buttonText
+            else:
+                partition = 'MainTrawl'
+                parameter = buttonText
+
+            #  first check for event_data parameters
             sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship=" +
                     self.ship + " AND survey=" + self.survey + " AND event_id=" + self.activeEvent +
-                    " AND partition='" + partition + "' AND event_parameter='" + parameter[0] + "'")
+                    " AND partition='" + partition + "' AND event_parameter='" + parameter + "'")
             query = self.db.dbQuery(sql)
             val, = query.first()
+
+            #  if this parameter is NOT an event_data parameter, it must either be a param that has not
+            #  yet been recorded OR it is an event_stream_data parameter so check event_stream_data
+            if val is None:
+                sql = ("SELECT TO_CHAR(time_stamp, 'MMDDYYYY HH24:MI:SS.FF3') FROM " + self.schema +
+                        ".event_stream_data WHERE ship=" + self.ship + " AND survey=" + self.survey +
+                        " AND event_id=" + self.activeEvent + " AND measurement_type='" + parameter + "'")
+                query = self.db.dbQuery(sql)
+                val, = query.first()
+
+            #  if we found something, populate the parameter's row
             if val:
                 #  update the button's table values
                 self.dataTable.setItem(row, 0, QTableWidgetItem(val))
@@ -487,21 +495,31 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                 self.dataTable.setItem(row, 2, QTableWidgetItem(buttonValues[1]))
                 self.dataTable.setItem(row, 3, QTableWidgetItem(buttonValues[2]))
                 self.buttons[row].setPalette(self.green)
+
+                #  compute the elapsed seconds since this button press - we'll use the
+                #  last completed button's value to populate the elapsed time display
+                elapsedSecs = self.btnTimes[row].secsTo(QDateTime().currentDateTime())
+
             row += 1
+
+        #  set the event timer to display the elapsed time for the current stage of the trawl
+        if elapsedSecs > 0:
+            self.eventTimer = self.eventTimer.addSecs(elapsedSecs)
+            self.timer.start(1000)
 
         self.dataTable.resizeColumnsToContents()
 
         #  The event has been started to we disable the gear box and enable comment button
         self.gearBox.setEnabled(False)
-        self.recording=True
+        self.recording = True
         self.commentBtn.setEnabled(True)
 
         #  check if this event has been completed. Completed is defined as having EQ and Haulback
         #  data. Once an event is completed, we only allow editing and do not collect stream data.
         for i in range(len(self.btnTimes)):
             #  check if either EQ or HB buttons are "empty"
-            if (self.btnTimes[i] == None and (self.buttons[i].text().endsWith('EQ') or
-                    self.buttons[i].text().endsWith('Haulback'))):
+            if (self.btnTimes[i] == None and (self.buttons[i].text().endswith('EQ') or
+                    self.buttons[i].text().endswith('Haulback'))):
                 #  one of them is not complete - ask if we should consider this a live event
                 reply = QMessageBox.question(self, 'Achtung!',"<font size = 14>This haul was not completed. " +
                         "Is this event still taking place?</font>", QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
@@ -509,7 +527,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                     #  this event is ongoing - set up for an active event
 
                     #  determine what SCS logging rate we should use
-                    if self.btnTimes[i]==None and self.buttons[i].text().endsWith('EQ'):
+                    if self.btnTimes[i]==None and self.buttons[i].text().endswith('EQ'):
                         #  EQ has not been pressed yet
                         self.SCSLogInterval = self.streamSlowLogInterval
                         self.fishingFlag=False
@@ -532,8 +550,8 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         #  inform the user that they can only edit and not collect new data.
         nCompletedButtons = 0
         for i in range(len(self.btnTimes)):
-            if (self.btnTimes[i] != None and (self.buttons[i].text().endsWith('EQ') or
-                    self.buttons[i].text().endsWith('Haulback'))):
+            if (self.btnTimes[i] != None and (self.buttons[i].text().endswith('EQ') or
+                    self.buttons[i].text().endswith('Haulback'))):
                 nCompletedButtons = nCompletedButtons + 1
         if nCompletedButtons == 2:
             QMessageBox.information(self, 'Kipaumbele!',"<font size=14>This haul appears to have been completed. " +
@@ -693,6 +711,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
 
 
     def displayTime(self):
+
         self.eventTimer = self.eventTimer.addSecs(1)
         if self.eventTimer.hour() > 0:
             self.elapseLabel.setText(self.eventTimer.toString('h:mm:ss'))
@@ -751,7 +770,6 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
         '''
         getEventData is called when an event button is pressed
         '''
-        print("GET EVENT DATA")
 
         #  if this is the first button pressed, we lock the gear type, write the
         #  initial event record, and set the "recording" state (meaning we've locked
@@ -939,7 +957,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
                             self.activeEvent + ",'" + partition + "','" + parameter[0] + "','" + time + "')")
                     self.db.dbExec(sql)
 
-                    if button_text.endsWith('EQ') or button_text.endsWith('Haulback'):
+                    if button_text.endswith('EQ') or button_text.endswith('Haulback'):
                         #  this is an EQ or Haulback button so we insert a GPS location too
                         sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, event_id, " +
                                 "partition, event_parameter, parameter_value) VALUES ("+ self.ship+","+

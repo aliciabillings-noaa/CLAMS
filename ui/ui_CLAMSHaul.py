@@ -13,7 +13,7 @@ class Ui_clamsHaul(object):
     def setupUi(self, clamsHaul):
         clamsHaul.setObjectName("clamsHaul")
         clamsHaul.setEnabled(True)
-        clamsHaul.resize(887, 730)
+        clamsHaul.resize(889, 737)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
