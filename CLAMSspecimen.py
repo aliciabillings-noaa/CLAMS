@@ -1627,11 +1627,17 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
 
     def closeEvent(self, event):
-        if self.activeSpcCode and self.specimenKey: # there's already some collections made
+
+        #  check if we're in the middle of a specimen
+        if self.activeSpcCode and self.specimenKey:
             self.getNext()
             if self.incomplete:
                 event.ignore()
                 return
+
+        #  store the application size and position
+        self.appSettings.setValue('winposition', self.pos())
+        self.appSettings.setValue('winsize', self.size())
 
         event.accept()
 
