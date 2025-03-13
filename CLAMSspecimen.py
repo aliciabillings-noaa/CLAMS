@@ -82,6 +82,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.errorSounds=parent.errorSounds
         self.errorIcons=parent.errorIcons
         self.scientist=parent.scientist
+        self.deviceData = parent.deviceData
         self.sqlLengthIndex = None
         self.freeze=False
 
@@ -130,29 +131,12 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.numpad = numpad.NumPad(self)
         self.message = messagedlg.MessageDlg(self)
 
-        # check if we have a label printer attached at this workstation
-        sql = ("SELECT MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME " +
-                             "FROM MEASUREMENT_SETUP INNER JOIN DEVICES ON " +
-                             "MEASUREMENT_SETUP.DEVICE_ID = DEVICES.DEVICE_ID WHERE " +
-                             "MEASUREMENT_SETUP.WORKSTATION_ID = " +  self.workStation +
-                             " AND DEVICES.DEVICE_NAME = 'Label_Printer'" +
-                             " GROUP BY MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME")
-        query = self.db.dbQuery(sql)
-        device = query.first()
-
         # if there is a printer set up, initialize the printer and add the sound
-        if device:
+        if 'Label_Printer' in self.deviceData:
             #  initialize the Label Printer
-            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, device[0])
+            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, self.deviceData['Label_Printer']['id'])
 
-            # if there is a printer connected, find the sound
-            sql = ("select a.parameter_value " +
-                                "from device_configuration a, devices b " +
-                                "where a.device_id=b.device_id " +
-                                "and b.device_name='Label_Printer' "+
-                                "and a.device_parameter='SoundFile'")
-            query = self.db.dbQuery(sql)
-            sound_file,  = query.first()
+            sound_file = self.deviceData['Label_Printer']['soundeffect']
             if sound_file:
                 hasExt = sound_file.split('.')
                 if len(hasExt) > 1:
@@ -216,6 +200,12 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  Connect up slots for protocol buttons
         for btn in self.buttons:
             btn.clicked.connect(self.btnInput)
+
+        #  initialize the timer for the serial I/O "temporal filter"
+        self.__serialIOTimer = QTimer(self)
+        self.__serialIOTimer.setSingleShot(True)
+        self.__serialIOTimerOK = True
+        self.__serialIOTimer.timeout.connect(self.__serialIOFilter)
 
         #  set up an init timer
         initTimer = QTimer(self)
@@ -453,9 +443,16 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         # figure out code direction for value
         self.manualFlag = False
+        
+        # get the device ID for this device if it is in the specimen module
+        if 'specimen' in self.deviceData[device]['measurements']:
+            device_id = self.deviceData[device]['id']
+        else:
+            return
+        
         try:
             #  get an index into our devices list for this device
-            ind = self.devices.index(device)
+            ind = self.devices.index(device_id)
         except:
             #  somehow we have received data from a device we didn't configure?
             print("ERROR: CLAMSspecimen.serialInput: received data from unknown device? How can that be?")
@@ -475,22 +472,32 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.__serialIOTimerOK = False
         self.__serialIOTimer.start(self.__serialIOTimerInterval)
 
-        #  Check if this measurement is "in order" or out of order.
-        if (self.forceOrder[ind] == '1'):
-            #  this is an in order measurement - determine if this device
-            #  provides multiple measurements
-            if (self.devices.count(device) == 1):
-                # only one measurement using this device
+        # determine if this device provides multiple measurements
+        if (self.devices.count(device_id) == 1):
+            # only one measurement using this device
+            if (self.forceOrder[ind] == '1'):
+                #  this measurement is an in order measurement
                 self.cycle(ind)
             else:
-                # this device can provide multiple measurements - find next empty value
-                for i in self.iterator:
-                    if (self.devices[i] == device) and (self.values[i] == None):
-                        self.cycle(i)
-                        break
+                #  this measurement is an out of order measurement
+                self.outCycle(ind)
         else:
-            #  this measurement is an out of order measurement
-            self.outCycle(ind)
+            # this device can provide multiple measurements - find next empty value
+            for i in self.iterator:
+                if (self.devices[i] == device_id):
+                    last_ind = i
+                    if (self.values[i] == None):
+                        if (self.forceOrder[i] == '1'):
+                            self.cycle(i)
+                        else:
+                            self.outCycle(i)
+                        break
+            # made it through without finding a None in the values, so they are all filled- do the last one
+            if (self.forceOrder[last_ind] == '1'):
+                self.cycle(last_ind)
+            else:
+                self.outCycle(last_ind)
+
 
 
     def btnInput(self):
