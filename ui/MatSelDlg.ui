@@ -26,7 +26,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -47,13 +50,17 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>12</pointsize>
+         <family>Arial Black</family>
+         <pointsize>16</pointsize>
          <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
        <property name="text">
         <string>Select Maturity...</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
@@ -67,7 +74,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -88,7 +98,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -109,7 +122,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -130,7 +146,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -151,7 +170,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -172,7 +194,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -193,7 +218,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -211,7 +239,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">

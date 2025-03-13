@@ -53,9 +53,4 @@ UPDATE devices SET device_interface='Network' where device_id > 799 and device_i
 ALTER TABLE devices MODIFY (device_interface NOT NULL);
 ALTER TABLE devices MODIFY (active NOT NULL);
 
-
-
-
-AKCSL1170A-NL22
-
-AKCSL2051-LN20
+alter table MEASUREMENT_SETUP drop column DEVICE_INTERFACE;

@@ -443,13 +443,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         # figure out code direction for value
         self.manualFlag = False
-        
+
         # get the device ID for this device if it is in the specimen module
         if 'specimen' in self.deviceData[device]['measurements']:
             device_id = self.deviceData[device]['id']
         else:
             return
-        
+
         try:
             #  get an index into our devices list for this device
             ind = self.devices.index(device_id)
@@ -620,11 +620,11 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                                                 "You're in big trouble, " + self.firstName, 'info')
                     missing_validations.append(valName)
-        
+
         if missing_validations:
             if (self.specimenKey == None):
                 self.getNewSpecimen()
-            
+
             update_missing_validations = False
             # check to see if we have a validation error already for this specimen
             sql = ("SELECT description FROM overrides " +
@@ -637,15 +637,15 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             if description:
                 missing_validations.append(','+description.split(' ')[2])
                 update_missing_validations = True
-            
+
             if len(missing_validations) == 1:
                 #  user skipped through a single validation error
                 missing_validation_text = ('User allowed ' + missing_validations[0] +
                         ' validation error(s).')
             else:
-                missing_validation_text = ('User skipped ' + ','.join(missing_validations) + 
+                missing_validation_text = ('User skipped ' + ','.join(missing_validations) +
                         ' validation error(s).')
-                
+
             if update_missing_validations:
                 #  insert event into overrides table
                 sql = ("UPDATE overrides SET description = '" + missing_validation_text +
@@ -747,7 +747,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                                                 "You're in big trouble, " + self.firstName, 'info')
                     missing_validations.append(valName)
-        
+
         if missing_validations:
             if (self.specimenKey == None):
                 self.getNewSpecimen()
@@ -763,15 +763,15 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             if description:
                 missing_validations.append(','+description.split(' ')[2])
                 update_missing_validations = True
-            
+
             if len(missing_validations) == 1:
                 #  user skipped through a single validation error
                 missing_validation_text = ('User allowed ' + missing_validations[0] +
                         ' validation error(s).')
             else:
-                missing_validation_text = ('User skipped ' + ','.join(missing_validations) + 
+                missing_validation_text = ('User skipped ' + ','.join(missing_validations) +
                         ' validation error(s).')
-                
+
             if update_missing_validations:
                 #  insert event into overrides table
                 sql = ("UPDATE overrides SET description = '" + missing_validation_text +
@@ -1059,12 +1059,17 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         nMeasurements = 0
 
         # get the measurements for this species
-        sql = ("SELECT PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE, MEASUREMENT_SETUP.DEVICE_ID, MEASUREMENT_SETUP.DEVICE_INTERFACE,  "+
-                              "PROTOCOL_DEFINITIONS.FORCE_MEASUREMENT, PROTOCOL_DEFINITIONS.FORCE_ORDER, PROTOCOL_DEFINITIONS.LABEL "+
-                              " FROM PROTOCOL_DEFINITIONS, MEASUREMENT_SETUP WHERE ( MEASUREMENT_SETUP.MEASUREMENT_TYPE = "+
-                              "PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE ) and ( ( PROTOCOL_DEFINITIONS.PROTOCOL_NAME = '"+self.protocol+"' ) AND "+
-                              "( MEASUREMENT_SETUP.WORKSTATION_ID = "+self.workStation+" ) AND ( MEASUREMENT_SETUP.GUI_MODULE = 'Specimen' ) ) "+
-                              " ORDER BY PROTOCOL_DEFINITIONS.MEASUREMENT_ORDER ASC")
+        sql = ("SELECT PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE, MEASUREMENT_SETUP.DEVICE_ID," +
+                "DEVICES.DEVICE_INTERFACE,PROTOCOL_DEFINITIONS.FORCE_MEASUREMENT," +
+                "PROTOCOL_DEFINITIONS.FORCE_ORDER,PROTOCOL_DEFINITIONS.LABEL " +
+                "FROM MEASUREMENT_SETUP JOIN PROTOCOL_DEFINITIONS " +
+                "ON PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE=MEASUREMENT_SETUP.MEASUREMENT_TYPE " +
+                "JOIN DEVICES ON DEVICES.DEVICE_ID=MEASUREMENT_SETUP.DEVICE_ID " +
+                "WHERE PROTOCOL_DEFINITIONS.PROTOCOL_NAME='"+self.protocol+"' AND " +
+                "MEASUREMENT_SETUP.WORKSTATION_ID="+self.workStation+" AND  " +
+                "MEASUREMENT_SETUP.GUI_MODULE='Specimen' " +
+                "ORDER BY PROTOCOL_DEFINITIONS.MEASUREMENT_ORDER ASC")
+
         query = self.db.dbQuery(sql)
 
         #  Initialize length type combo box to disabled until you encounter a 'length' in the protocol
