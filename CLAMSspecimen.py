@@ -491,7 +491,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                             self.cycle(i)
                         else:
                             self.outCycle(i)
-                        break
+                        return
             # made it through without finding a None in the values, so they are all filled- do the last one
             if (self.forceOrder[last_ind] == '1'):
                 self.cycle(last_ind)
