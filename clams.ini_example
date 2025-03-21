@@ -2,7 +2,7 @@
 ;  Example CLAMS database configuration file
 ;
 
-;  Specify the ODBC data source used to connect to the database
+;  Specify the ODBC data source used to connect to the database.
 ODBC_Data_Source = AFSCD1-64
 
 
