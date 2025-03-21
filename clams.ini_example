@@ -1,0 +1,56 @@
+;
+;  Example CLAMS database configuration file
+;
+
+;  Specify the ODBC data source used to connect to the database
+ODBC_Data_Source = AFSCD1-64
+
+
+;  Specify the user and user's password used to connect to the database
+;  If the username and/or password are omitted here, you will be asked
+;  for them when CLAMS starts.
+User = clamsbase2
+Password = 
+
+
+;  Specify the database backend Currently either 'Oracle', 'Postgres', or 'Other'
+;
+;  Setting this to 'Postgres' will use the Qt native Postgres driver (QPSQL)
+;
+;  Setting this to 'Oracle' will use the Qt ODBC driver (QODBC) with some
+;  minor Oracle specific setup.
+;
+;  Setting this to 'Other' will use the Qt ODBC driver (QODBC)
+Database = Oracle
+
+
+; set the width of vertical scroll bars in the CLAMS UI.
+; This is set pretty wide for use in the fish processing
+; lab where people will be wearing gloves.
+GUI-ScrollBar-Width = 40
+
+
+;  Specify the paths to various application directories. These directories
+;  contain the sounds and images used by CLAMS and they define some
+;  directories where various logs are written. These paths must be defined
+;  using FORWARD slashes
+;
+
+;  ErrorLogDir sets the path to the directory where the application
+;  wrror logs are written. Note that currently the ErrorLogDir argument
+;  is ignored as we're not launching CLAMS with stdout and stderr piped
+;  to a file.
+ErrorLogDir = C:/CLAMS/logs/error_logs
+
+;  LoggingDir specifies the directory where the SQL backup files are
+;  written. These files contain all SQL DML and can be used to restore
+;  data in the case of a catastrophic database issue.
+LoggingDir = ./sql_logs
+
+;  ImageDir, SoundsDir, and IconDir are the paths to the directory with
+;  fish and gear images, the directory with the sounds, and the directory
+;  with the icons CLAMS uses.
+ImageDir = ./images
+SoundsDir = ./sounds
+IconDir = ./icons
+

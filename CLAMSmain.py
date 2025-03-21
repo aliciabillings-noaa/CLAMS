@@ -57,7 +57,7 @@ from ui import ui_CLAMSMain
 
 class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
 
-    def __init__(self, dataSource, schema, user, password, settings, parent=None):
+    def __init__(self, dataSource, user, password, settings, parent=None):
         #  initialize the superclasses
         super().__init__(parent)
 
@@ -71,7 +71,7 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
 
         #  set database credentials
         self.db = None
-        self.schema = schema
+        self.schema = user
         self.dbName = dataSource
         self.dbUser = user
         self.dbPassword = password
@@ -692,7 +692,6 @@ if __name__ == "__main__":
     dataSource = initSettings.value('ODBC_Data_Source', '')
     user = initSettings.value('User', '')
     password = initSettings.value('Password', '')
-    schema = initSettings.value('Schema', 'clamsbase2')
 
     #  extract the application paths and settings
     settings = {}
@@ -707,7 +706,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     #  create an instance of the CLAMS main form
-    form = CLAMSMain(dataSource, schema, user, password, settings)
+    form = CLAMSMain(dataSource, user, password, settings)
 
     #  show it
     form.show()
