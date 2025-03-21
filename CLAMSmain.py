@@ -248,11 +248,21 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         setting up the main window.
         '''
 
-        #  determine if we're connecting to an Oracle database or not
+        #  determine if we're connecting to an Oracle, postgres, or "other"
+        #  database. Since the Oracle driver does not ship compiled with
+        #  Qt, we use ODBC for Oracle. Postgres uses the Qt "native" postgres
+        #  driver. Other uses ODBC.
         if self.settings['Database'].lower() == 'oracle':
             isOracle = True
-        else:
+            driver = 'QODBC'
+        elif self.settings['Database'].lower() == 'postgres':
+            #  use the native Qt Postgres driver
             isOracle = False
+            driver = 'QPSQL'
+        else:
+            #  for everything else just use ODBC
+            isOracle = False
+            driver = 'QODBC'
 
         #  if we're missing any credentials, get them from the user
         if self.dbName == '' or self.dbUser == '' or self.dbPassword == '':
@@ -268,7 +278,8 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
 
         #  create an instance of our dbConnection
         self.db = dbConnection.dbConnection(self.dbName, self.dbUser,
-                self.dbPassword, label=self.schema, isOracle=isOracle)
+                self.dbPassword, label=self.schema, isOracle=isOracle,
+                driver=driver)
 
         #  and try to connect
         try:
