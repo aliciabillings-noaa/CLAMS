@@ -244,7 +244,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
             commonQuery = "SELECT species.common_name FROM species ORDER BY species.common_name"
             sciQuery = "SELECT species.scientific_name FROM species WHERE species_code<999900 ORDER BY species.scientific_name"
         else:
-            like_exp = "'"+self.chars+"%'"
+            like_exp = "'%"+self.chars+"%'"
             commonQuery = ("SELECT species.common_name FROM species WHERE upper(species.common_name)" +
                 " LIKE upper(" + like_exp + ") AND species_code<999900 ORDER BY species.common_name")
             sciQuery = ("SELECT species.scientific_name FROM species WHERE upper(species.scientific_name) "+
