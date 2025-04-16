@@ -1019,7 +1019,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         if self.admin:
             #  admin mode shows all measurements
             sql = ("SELECT SPECIMEN_ID, "+ sqlString +" FROM V_SPECIMEN_MEASUREMENTS WHERE " +
-                                      "ship="+self.ship+" AND survey="+self.survey+" AND haul="+self.activeHaul+
+                                      "ship="+self.ship+" AND survey="+self.survey+
                                       " AND sample_id="+self.activeSample+"  AND " +
                                       "PROTOCOL_NAME = '" + self.protocol +"'" + sqlStringEnd +
                                       "ORDER BY SPECIMEN_ID")
@@ -1027,7 +1027,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         else:
             #  regular mode shows only measurements at that station
             sql = ("SELECT SPECIMEN_ID, "+ sqlString +" FROM V_SPECIMEN_MEASUREMENTS WHERE " +
-                  "ship="+self.ship+" AND survey="+self.survey+" AND haul="+self.activeHaul+
+                  "ship="+self.ship+" AND survey="+self.survey+
                   " AND sample_id="+self.activeSample+"  AND " +
                   "PROTOCOL_NAME = '" + self.protocol + "' AND WORKSTATION_ID = " +
                   self.workStation + sqlStringEnd + "ORDER BY SPECIMEN_ID")
