@@ -1023,8 +1023,6 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                                       " AND sample_id="+self.activeSample+"  AND " +
                                       "PROTOCOL_NAME = '" + self.protocol +"'" + sqlStringEnd +
                                       "ORDER BY SPECIMEN_ID")
-            print('admin')
-            print(sql)
             self.measureModel.setQuery(sql, self.db.db)
         else:
             #  regular mode shows only measurements at that station
