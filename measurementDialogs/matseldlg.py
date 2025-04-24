@@ -40,18 +40,15 @@
 |               - signal/slot connections
 |               - added some function explanation
 |               - fixed any PEP8 issues
-|               - added a main to test if works (commented out)
-|
-| NOTE: cannot test this until it is called with parent values
 """
 
 from PyQt6.QtWidgets import *
 from ui import ui_MatSelDlg
 import matguide
-from sys import argv
 
 
 class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
+
     def __init__(self,  parent=None):
         super(MatSelDlg, self).__init__(parent)
         self.setupUi(self)
@@ -59,11 +56,12 @@ class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
         self.settings = parent.settings
         self.speciesName = parent.activeSpcName
         self.activeSpcCode = parent.activeSpcCode
+        self.activeSpcSubcat = parent.activeSpcSubcat
 
         # variable declarations
         self.result = ()
-        self.buttons = [self.mat1Btn, self.mat2Btn, self.mat3Btn, self.mat4Btn, self.mat5Btn, self.mat6Btn,
-                        self.mat7Btn, self.mat8Btn]
+        self.buttons = [self.mat1Btn, self.mat2Btn, self.mat3Btn, self.mat4Btn, self.mat5Btn,
+                self.mat6Btn, self.mat7Btn, self.mat8Btn]
         # used for NWFSC
         self.oto_present = True
 
@@ -81,7 +79,7 @@ class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
                        "(mt.maturity_table = " + mat_stage_query + ")"
         query = self.db.dbQuery(mat_desc_sql)
         maturityBtnText = []
-        
+
         for button_text, description in query:
             maturityBtnText.append(button_text)
 
@@ -92,34 +90,26 @@ class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
             try:
                 btn.setText(maturityBtnText[self.buttons.index(btn)])
             except:
-                btn.setText(' -  ')
+                btn.setText(' - ')
                 btn.setEnabled(False)
+
 
     def setup(self, parent):
         pass
+
 
     def getMat(self):
         self.result = (True, self.sender().text())
         self.accept()
 
+
     def getGuide(self):
         matGuide = matguide.MatGuide(self)
         matGuide.exec()
+
 
     def closeEvent(self, event):
 
         self.result = (False, '')
         self.reject()
 
-
-"""
-if __name__ == "__main__":
-    #  create an instance of QApplication
-    app = QApplication(argv)
-    #  create an instance of the dialog
-    form = MatSelDlg()
-    #  show it
-    form.show()
-    #  and start the application...
-    app.exec()
-"""
