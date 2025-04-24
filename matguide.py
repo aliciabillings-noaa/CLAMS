@@ -55,7 +55,6 @@ class MatGuide(QDialog, ui_MatGuide.Ui_matGuide):
         #  get the maturity table for this species
         sql = ("SELECT parameter_value FROM species_data WHERE lower(species_parameter)='maturity_table' "+
                 "AND species_code="+self.activeSpcCode + " AND subcategory='" + self.activeSpcSubcat + "'")
-        print(sql)
         query = self.db.dbQuery(sql)
         maturityTable, = query.first()
         self.maturityTable = maturityTable
