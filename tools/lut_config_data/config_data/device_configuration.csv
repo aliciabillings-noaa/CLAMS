@@ -70,6 +70,7 @@
 "9","Module","OtolithYesNoDlg"
 "52","Module","HeadTakenYesNoDlg"
 "53","Module","AdiposeConditionDlg"
+"54","Module","FinClipTakenYesNoDlg"
 "15","Module","SexSelUnknownDlg"
 "41","BaudRate","9600"
 "41","SerialPort","5"
