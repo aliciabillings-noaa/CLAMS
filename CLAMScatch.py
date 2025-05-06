@@ -820,6 +820,15 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         # update the GUI
         self.updateTables()
 
+        #  update total wt in species table
+        sql = ("SELECT sum(weight) FROM baskets where sample_id=" 
+                + self.activeSampleKey 
+                + " group by sample_id")
+        wtQuery = self.db.dbQuery(sql)
+        wt, = wtQuery.first()
+        item = self.speciesList.findItems(self.activeSpcName,  Qt.MatchFlag.MatchExactly)
+        self.speciesList.setItem(item[0].row(), 2, QTableWidgetItem(wt))
+
         #  we're done with this basket - unfreeze
         self.freeze = False
 
