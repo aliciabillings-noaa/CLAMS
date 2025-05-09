@@ -688,8 +688,17 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         if not self.numpad.exec():
             return
 
+        #  ensure that the value is numeric
+        try:
+            val = float(self.numpad.value)
+        except:
+            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                    "You entered a non-numeric value!?! Please try again.", 'info')
+            self.message.exec()
+            return
+
         #  check that we didn't get a 0 weight
-        if (self.numpad.value == 0):
+        if (val <= 0):
             self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                     "You have entered 0 (zero) for the basket weight which is not " +
                     "allowed. If your sample is too small to register " +
@@ -698,7 +707,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             return
 
         #  get the manual weight using the numpad dialog
-        self.currentBasketWt = self.numpad.value
+        self.currentBasketWt = val
 
         #  note that this is a manual entry
         self.manualFlag = True
@@ -1297,7 +1306,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             return
 
         # update database - first check if this is a non-count basket type
-        if editDlg.count == '-':
+        if editDlg.count in ['-', '', 'NULL', 'null']:
             #  this is not a count basket - set count to NULL
             editDlg.count = 'NULL'
 
@@ -1472,6 +1481,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.speciesList.setHorizontalHeaderItem(3, headerItem)
 
         #  loop thru the samples and add them to the species list table
+        # todo: AB - this would be nice if it could be ordered by the parent and then the sample_id
         sql = ("SELECT samples.sample_id, species.common_name, species.scientific_name," +
                 "species.species_code, samples.parent_sample, samples.subcategory, samples.sample_type"+
                 " FROM samples, species WHERE samples.species_code=species.species_code AND " +
