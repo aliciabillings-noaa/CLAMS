@@ -18,11 +18,6 @@ clamsABL.ini
 #[Ii]cons/*
 __pycache__/
 *.py[cod]
-<<<<<<< Updated upstream
 clams_NWFSC.ini
 .vs/*
-venv/*
-=======
-[Vv]env/
-.vs/
->>>>>>> Stashed changes
+[Vv]env/*
