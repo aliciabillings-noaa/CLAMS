@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\noaa-afsc-mace\CLAMS\ui\AddCatchSpcDlg.ui'
+# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260\CLAMS\ui\AddCatchSpcDlg.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -13,6 +13,7 @@ class Ui_addcatchspcDlg(object):
     def setupUi(self, addcatchspcDlg):
         addcatchspcDlg.setObjectName("addcatchspcDlg")
         addcatchspcDlg.setWindowModality(QtCore.Qt.WindowModality.NonModal)
+        addcatchspcDlg.resize(955, 677)
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(addcatchspcDlg)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.horizontalLayout_10 = QtWidgets.QHBoxLayout()

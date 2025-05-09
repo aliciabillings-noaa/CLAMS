@@ -84,6 +84,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.activeSampleKey = None
         self.activeSpcName = None
         self.activeSpcCode = None
+        self.activeFullName = None
+        self.samplePicture = None
         self.comment = ''
         self.validList = [1, 1, 1]# sets valid sample type choices
         self.freeze = False
@@ -101,12 +103,15 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  do some UI setup
         self.sciLabel.setText(self.scientist)
         self.firstName = self.scientist.split(' ')[0]
+        self.haulNum.setText(self.activeHaul)
 
         #  set up tables for data display - most of this is done in QDesigner
         #  but some properties don't seem to "stick" (maybe QDesigner is buggy?)
         self.basketTable.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.basketTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.basketTable.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.basketTable.horizontalHeader().setStretchLastSection(True)
+        self.speciesList.horizontalHeader().setStretchLastSection(True)
 
         # set up recurring dialogs
         self.message = messagedlg.MessageDlg(self)
@@ -116,7 +121,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.spcDlg = addcatchspcdlg.AddCatchSpcDlg(self)
 
         #  connect signals and slots
-        #self.resizeEvent.connect(self.resizeWindow)
         self.addspcBtn.clicked.connect(self.getSpecies)
         self.manualBtn.clicked.connect(self.getManual)
         self.doneBtn.clicked.connect(self.close)
@@ -151,9 +155,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         checkHaulTimer.setSingleShot(True)
         checkHaulTimer.timeout.connect(self.formInit)
         checkHaulTimer.start(0)
-
-        # set the event number
-        self.haulNum.setText(self.activeHaul)
 
 
     def formInit(self):
@@ -190,6 +191,14 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         query = self.db.dbQuery(sql)
         for basketType, in query:
             self.basketTypes.append(basketType)
+
+        #  set up the basket summary table based on the basket types available for this gear
+        self.sumTable.clearContents()
+        self.sumTable.setRowCount(len(self.basketTypes))
+        for i, bType in enumerate(self.basketTypes):
+            headerItem = QTableWidgetItem(bType)
+            headerItem.setFont(self.headerFont)
+            self.sumTable.setVerticalHeaderItem(i, headerItem)
 
         #  check if this is a plankton trawl  - they're handled a bit differently
         sql = ("SELECT GEAR.GEAR_TYPE FROM events, GEAR WHERE (events.GEAR = "+
@@ -235,8 +244,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.printSound = soundEffect
         else:
             self.printSound = None
-
-
 
         #  setup parent sample. if not present, create whole catch sample which is
         #  the top level sample (no parent)
@@ -320,7 +327,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #self.loadDeviceSounds()
 
         #  reload the species list - this populates the species list
-        self.reloadSpeciesList()
+        self.reloadSamplesList()
 
 
         self.updateParentKeys()
@@ -342,25 +349,25 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
     def addSpecies(self):
         '''addSpecies is called when a species is added using the add species dialog.
-
         '''
+
         self.addspec_flag = False
 
+        #  get the species info we need from the dialog
         code = self.spcDlg.activeSpcCode
         spcName = self.spcDlg.activeSpcName
         subCat = self.spcDlg.activeSpcSubcat
+        sampleType = self.spcDlg.activeSampleType
 
         # parent sample
         parentKey  = self.parentSamples[self.spcDlg.parentSample]
-        self.createSample(code, spcName, subCat,  self.spcDlg.nameType,  parentKey)
+        self.createSample(code, spcName, subCat,  self.spcDlg.nameType,  parentKey, sampleType)
 
         #
         self.updateParentKeys()
 
-        # are we creating a mix sample? Need the parent key for species in mix...
-
         # make this new addition the active one...
-        self.reloadSpeciesList()
+        self.reloadSamplesList()
 
         self.addspec_flag = True
 
@@ -390,7 +397,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.parentSamples.update({'SortingTable':self.sortingTableKey})
 
 
-    def createSample(self, code, name, subCat, nameType, parentSample):
+    def createSample(self, code, name, subCat, nameType, parentSample, sampleType):
 
         #  check if the species that we're being told to add is already in
         #  out list of samples.
@@ -402,14 +409,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             if self.speciesList.findItems(name, Qt.MatchFlag.MatchExactly):
                 #  species is already in the list - just return
                 return
-
-        #  set the sample type - first, check if we're adding a mix
-        if code in ('100002', '100003', '100004'):
-            #  this is a mix type
-            sampleType = self.mixtureNames[code]
-        else:
-            #  this is not a mix, so assume this is a Species sample type
-            sampleType='Species'
 
         #  insert this data into the samples table
         sql = ("INSERT INTO samples (ship,survey,event_id,partition,sample_type," +
@@ -465,6 +464,12 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.activeSampleType = sampleType
         self.activeSpcCode = self.speciesDict[self.activeSpcName]
 
+        #  if EnablePresentSampleType is true, we alter UI depending on the
+        #  sample type. This will disable some controls if the activeSampleType
+        #  is "Present" since we cannot add baskets to a Present sample.
+        if self.settings['EnablePresentSampleType'] in ['1', 'true', 'True']:
+            self.setActiveSampleType(self.activeSampleType)
+
         # look for previous data on species
         self.updateTables()
         self.focus='speciesList'
@@ -486,6 +491,45 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         sampleComments, = query.first()
         if sampleComments:
             self.comment = sampleComments
+
+
+    def setActiveSampleType(self, sampleType):
+        '''setActiveSampleType enables/disables basket creation and other
+        UI elements based on the sample type. The "Present" sample type
+        (if enabled) cannot have baskets assigned to it so this method
+        will disable controls that allow adding baskets.
+        '''
+
+        if sampleType == 'Present':
+            enabled = False
+
+            #  clear basket table
+            self.basketTable.clearContents()
+            self.basketTable.setRowCount(0)
+
+            headerItem = QTableWidgetItem("Weight (kg)")
+            headerItem.setFont(self.headerFont)
+            self.basketTable.setHorizontalHeaderItem(0, headerItem)
+            headerItem = QTableWidgetItem("Count")
+            headerItem.setFont(self.headerFont)
+            self.basketTable.setHorizontalHeaderItem(1, headerItem)
+            headerItem = QTableWidgetItem("Basket Type")
+            headerItem.setFont(self.headerFont)
+            self.basketTable.setHorizontalHeaderItem(2, headerItem)
+
+            #  sero out summary values
+            for i in range(len(self.basketTypes)):
+                self.sumTable.setItem(i, 0, QTableWidgetItem('0'))
+                self.sumTable.setItem(i, 1, QTableWidgetItem('0'))
+
+        else:
+            enabled = True
+
+        self.basketTable.setEnabled(enabled)
+        self.sumTable.setEnabled(enabled)
+        self.manualBtn.setEnabled(enabled)
+        self.transBtn.setEnabled(enabled)
+        self.editBtn.setEnabled(enabled)
 
 
     def checkSampleExists(self, sampID):
@@ -520,16 +564,17 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  load the fish pic, if available
         self.picLabel.clear()
-        pic = QImage()
-        if pic.load(self.settings['ImageDir'] + 'fishPics' + os.sep + imgName):
-            pic = pic.scaled(self.picLabel.size(),Qt.AspectRatioMode.KeepAspectRatio)
+        self.samplePicture = QImage()
+        if self.samplePicture.load(self.settings['ImageDir'] + 'fishPics' + os.sep + imgName):
+            pic = self.samplePicture.scaled(self.picLabel.size(),Qt.AspectRatioMode.KeepAspectRatio)
             self.picLabel.setPixmap(QPixmap.fromImage(pic))
-            self.picLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-            self.picLabel.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         else:
             #  no pic available
             self.picLabel.clear()
             self.picLabel.setText("<Image Unavailable>")
+            self.samplePicture = None
+        self.picLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.picLabel.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
 
     def getActiveSpc(self):
@@ -563,7 +608,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                         "You must re-add it if you need it.",'info')
             self.message.exec()
             #  refresh the species list
-            self.reloadSpeciesList()
+            self.reloadSamplesList()
             return
 
         #  get the species name
@@ -596,6 +641,13 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.activeSampleKey = sampleId
         self.activeSampleType = sampleType
         self.activeSpcCode = self.speciesDict[str(self.activeSpcName)]
+        self.activeFullName = speciesName
+
+        #  if EnablePresentSampleType is true, we alter UI depending on the
+        #  sample type. This will disable some controls if the activeSampleType
+        #  is "Present" since we cannot add baskets to a Present sample.
+        if self.settings['EnablePresentSampleType'] in ['1', 'true', 'True']:
+            self.setActiveSampleType(self.activeSampleType)
 
         # look for previous data on species
         self.updateTables()
@@ -631,10 +683,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.message.exec()
             return
 
-        if (self.settings['OrganizationName'] == 'SWFSC'):
-            self.numpad.msgLabel.setText("Enter the Weight (kg)")
-        else:
-            self.numpad.msgLabel.setText("Enter the Weight")
+        #  display the numpad dialog for manual weight entry
+        self.numpad.msgLabel.setText("Enter the Weight (kg)")
         if not self.numpad.exec():
             return
 
@@ -683,6 +733,11 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.message.setMessage(self.errorIcons[2],self.errorSounds[2], self.firstName +
                     ", please select a species.",'info')
             self.message.exec()
+            return
+
+        #  check if the current sample type is "Present" and ignore input if so.
+        #  we don't allow baskets to be assigned to Present samples.
+        if self.activeSampleType in ['Present', None]:
             return
 
         #  ensure that the value is numeric - noise on the data lines, poor connections,
@@ -820,40 +875,38 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         # update the GUI
         self.updateTables()
 
-        #  update total wt in species table
-        sql = ("SELECT sum(weight) FROM baskets where sample_id=" 
-                + self.activeSampleKey 
-                + " group by sample_id")
-        wtQuery = self.db.dbQuery(sql)
-        wt, = wtQuery.first()
-        item = self.speciesList.findItems(self.activeSpcName,  Qt.MatchFlag.MatchExactly)
-        self.speciesList.setItem(item[0].row(), 2, QTableWidgetItem(wt))
-
         #  we're done with this basket - unfreeze
         self.freeze = False
 
 
     def updateTables(self):
-        '''updateTables updates the basket weights and summary tables. It is called
+        '''updateTables updates the basket and samples tables. It is called
         during initial form setup and also when a basket is added, modified, or deleted.
         '''
+
+        #  create some dicts to handle basket totals by sample type. We accumulate
+        #  totals for the summary table below when populating the baskets table
+        basketTotalWeight = {}
+        basketTotalCount = {}
+        sumTableRows = {}
+        for i, bType in enumerate(self.basketTypes):
+            basketTotalWeight[bType] = 0
+            basketTotalCount[bType] = 0
+            sumTableRows[bType] = i
 
         #  update the basket table - first, clear the contents
         self.basketTable.clearContents()
         self.basketTable.setRowCount(0)
         basketCount = 0
 
-        if (self.settings['OrganizationName'] == 'SWFSC'):
-            headerItem = QTableWidgetItem("Weight (kg)")
-        else:
-            headerItem = QTableWidgetItem("Weight")
-
+        #  set up the table headers
+        headerItem = QTableWidgetItem("Weight (kg)")
         headerItem.setFont(self.headerFont)
         self.basketTable.setHorizontalHeaderItem(0, headerItem)
         headerItem = QTableWidgetItem("Count")
         headerItem.setFont(self.headerFont)
         self.basketTable.setHorizontalHeaderItem(1, headerItem)
-        headerItem = QTableWidgetItem("Type")
+        headerItem = QTableWidgetItem("Basket Type")
         headerItem.setFont(self.headerFont)
         self.basketTable.setHorizontalHeaderItem(2, headerItem)
 
@@ -864,14 +917,21 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 self.activeSampleKey+" ORDER BY basket_id")
         query = self.db.dbQuery(sql)
         for basketId, basketWeight, count, basketType in query:
-            #  round the basket weight for display
+            #  convert the weight to float and accumulate totals
             try:
                 basketWeight = float(basketWeight)
-                basketWeight = str(round(basketWeight,2))
+                basketTotalWeight[basketType] += basketWeight
+                basketTotalCount[basketType] += 1
             except:
-                basketWeight = '0.00'
+                basketWeight = 0
+                basketTotalWeight[basketType] += 0
+                basketTotalCount[basketType] += 1
 
             #  add this basket to the table
+            if basketWeight >= 0.01:
+                basketWeight = str(round(basketWeight,2))
+            else:
+                basketWeight = str(round(basketWeight,3))
             self.basketTable.insertRow(basketCount)
             headerItem = QTableWidgetItem(basketId)
             headerItem.setFont(self.headerFont)
@@ -886,65 +946,25 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.scrollToBottom()
 
         #  now update the basket summary table
-        self.sumTable.clearContents()
-        self.sumTable.setRowCount(0)
-        typeCount = 0
-        totalWeight = 0
-        totalBasketCount = 0
+        totalSampleWeight = 0
+        for basketType in self.basketTypes:
+            count = str(basketTotalCount[basketType])
+            if basketTotalWeight[basketType] >= 0.01:
+                weight = str(round(basketTotalWeight[basketType],2))
+            else:
+                weight = str(round(basketTotalWeight[basketType],3))
+            totalSampleWeight += basketTotalWeight[basketType]
+            self.sumTable.setItem(sumTableRows[basketType], 0, QTableWidgetItem(count))
+            self.sumTable.setItem(sumTableRows[basketType], 1, QTableWidgetItem(weight))
 
-        headerItem = QTableWidgetItem("Weight")
-        headerItem.setFont(self.headerFont)
-        self.sumTable.setHorizontalHeaderItem(0, headerItem)
-        headerItem = QTableWidgetItem("Basket Count")
-        headerItem.setFont(self.headerFont)
-        self.sumTable.setHorizontalHeaderItem(1, headerItem)
-
-        # get total weights and counts per basket type and update the table
-        sql = ("SELECT sum(WEIGHT), count(weight), basket_type FROM BASKETS " +
-                "WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id="+
-                self.activeHaul+" AND sample_id="+self.activeSampleKey+" GROUP BY basket_type")
-        query = self.db.dbQuery(sql)
-        for sumWeight, basketCount, basketType in query:
-            #  round the basket weight totals for display
-            try:
-                sumWeight = float(sumWeight)
-                dispWeight = str(round(sumWeight,2))
-            except:
-                dispWeight = '0.00'
-
-            #  insert row in sum table
-            self.sumTable.insertRow(typeCount)
-            headerItem = QTableWidgetItem(basketType)
-            headerItem.setFont(self.headerFont)
-            self.sumTable.setVerticalHeaderItem(typeCount, headerItem)
-            self.sumTable.setItem(typeCount, 0, QTableWidgetItem(dispWeight))
-            self.sumTable.setItem(typeCount, 1, QTableWidgetItem(basketCount))
-            typeCount += 1
-
-            #  total up the weights and basket counts for each type - these should
-            #  always be numeric but if for some reason they aren't we just ignore
-            #  the returned value.
-            try:
-                totalWeight += float(sumWeight)
-            except:
-                pass
-            try:
-                totalBasketCount += int(basketCount)
-            except:
-                pass
-
-        #  set the total values in the table
-        totalWeight = str(round(totalWeight,2))
-        self.sumTable.insertRow(typeCount)
-        headerItem = QTableWidgetItem('Total')
-        headerItem.setFont(self.headerFont)
-        self.sumTable.setVerticalHeaderItem(typeCount, headerItem)
-        self.sumTable.setItem(typeCount, 0, QTableWidgetItem(str(totalWeight)))
-        self.sumTable.setItem(typeCount, 1, QTableWidgetItem(str(totalBasketCount)))
-
-        #  resize columns and scroll to bottom
-        self.sumTable.resizeColumnsToContents()
-        self.sumTable.scrollToBottom()
+        #  lastly, update the total sample weight in the samples table
+        if totalSampleWeight >= 0.01:
+            totalSampleWeight = str(round(totalSampleWeight,2))
+        else:
+            totalSampleWeight = str(round(totalSampleWeight,3))
+        item = self.speciesList.findItems(self.activeFullName,  Qt.MatchFlag.MatchExactly)
+        if item:
+            self.speciesList.setItem(item[0].row(), 3, QTableWidgetItem(totalSampleWeight))
 
 
     def getSpeciesFocus(self):
@@ -1171,7 +1191,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 self.db.dbExec(sql)
 
             #  refresh the species list
-            self.reloadSpeciesList()
+            self.reloadSamplesList()
 
         #  update the tables
         self.updateTables()
@@ -1422,7 +1442,10 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         return mixSubWeight, mixSpeciesWeight
 
 
-    def reloadSpeciesList(self):
+    def reloadSamplesList(self):
+        '''reloadSamplesList updates the Samples table
+
+        '''
 
         #  disconnect the selection changed signal so we don't
         #  trigger it when the list is cleared.
@@ -1444,21 +1467,24 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         headerItem = QTableWidgetItem("Type")
         headerItem.setFont(self.headerFont)
         self.speciesList.setHorizontalHeaderItem(2, headerItem)
+        headerItem = QTableWidgetItem("Weight (kg)")
+        headerItem.setFont(self.headerFont)
+        self.speciesList.setHorizontalHeaderItem(3, headerItem)
 
         #  loop thru the samples and add them to the species list table
         sql = ("SELECT samples.sample_id, species.common_name, species.scientific_name," +
-                "species.species_code, samples.parent_sample, samples.subcategory"+
+                "species.species_code, samples.parent_sample, samples.subcategory, samples.sample_type"+
                 " FROM samples, species WHERE samples.species_code=species.species_code AND " +
                 "samples.ship="+self.ship+" AND samples.survey=" + self.survey +
                 " AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
                 self.activePartition+"' AND samples.species_code NOT IN " +
                 "(100000,100001) ORDER BY samples.sample_id ASC")
         sampleQuery = self.db.dbQuery(sql)
-        for sampleId, commonName, sciName, spCode, parentId, subcat in sampleQuery:
+        for sampleId, commonName, sciName, spCode, parentId, subcat, sample_type in sampleQuery:
             #  get the namespace - if the species is added using common name,
             #  then we display the common name. If added with the sci name,
             #  we display the sci name.
-            sql = ("SELECT PARAMETER_VALUE FROM sample_data WHERE sample_parameter=" +
+            sql = ("SELECT parameter_value FROM sample_data WHERE sample_parameter=" +
                     "'sample_display_name' AND ship=" + self.ship + " AND survey=" +
                     self.survey + " AND event_id=" + self.activeHaul +
                     "AND sample_id="+ sampleId)
@@ -1497,13 +1523,21 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 myParent = parentName
             else:
                 myParent = ''
-            
-            #  get the total basket wt
-            sql = ("SELECT sum(weight) FROM baskets where sample_id=" 
-                   + sampleId 
-                   + " group by sample_id")
+
+            #  get the total basket weights for this sample
+            sql = ("SELECT SUM(weight) FROM baskets WHERE ship=" + self.ship +
+                    " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
+                    "AND sample_id="+ sampleId + " GROUP BY sample_id")
             wtQuery = self.db.dbQuery(sql)
-            wt, = wtQuery.first()
+            sampleWeight, = wtQuery.first()
+            try:
+                sampleWeight = float(sampleWeight)
+                if sampleWeight >= 0.01:
+                    sampleWeight = round(sampleWeight,2)
+                else:
+                    sampleWeight = round(sampleWeight,3)
+            except:
+                sampleWeight = 0
 
             #  add this sample to the table
             self.speciesList.insertRow(nSamples)
@@ -1512,7 +1546,13 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.speciesList.setVerticalHeaderItem(nSamples,headerItem)
             self.speciesList.setItem(nSamples, 0, QTableWidgetItem(name))
             self.speciesList.setItem(nSamples, 1, QTableWidgetItem(myParent))
-            self.speciesList.setItem(nSamples, 2, QTableWidgetItem(wt))
+            self.speciesList.setItem(nSamples, 2, QTableWidgetItem(sample_type))
+            #  display the sample weight total based on type
+            if sample_type in ['Present']:
+                sampleWeight = ''
+            else:
+                sampleWeight = str(sampleWeight)
+            self.speciesList.setItem(nSamples, 3, QTableWidgetItem(sampleWeight))
             nSamples += 1
             self.speciesDict.update({species:spCode})
         self.speciesList.resizeColumnsToContents()
@@ -1630,11 +1670,17 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.appSettings.setValue('winposition', self.pos())
             self.appSettings.setValue('winsize', self.size())
 
-    def resizeEvent(self, rsEvent):
-        self.speciesList.resizeColumnsToContents()
-        self.basketTable.resizeColumnsToContents()
-        self.sumTable.resizeColumnsToContents()
 
+    def resizeEvent(self, event):
+
+        #  resize the sample picture
+        if self.samplePicture:
+            pic = self.samplePicture.scaled(self.picLabel.size(),Qt.AspectRatioMode.KeepAspectRatio)
+            self.picLabel.setPixmap(QPixmap.fromImage(pic))
+        self.picLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.picLabel.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+
+        super().resizeEvent(event)
 
 
     def checkWindowLocation(self, position, size, padding=[5, 25]):

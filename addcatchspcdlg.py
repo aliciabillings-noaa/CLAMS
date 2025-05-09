@@ -44,6 +44,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from ui import  ui_AddCatchSpcDlg
 import listseldialog
+import sampletypeseldlg
 
 
 class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
@@ -71,6 +72,8 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         self.chars = ''
         self.updatingDigit = False
         self.settings = parent.settings
+        self.mixtureNames = {'100000':'WholeHaul', '100001':'SortingTable',
+                '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2'}
 
         #  restore the application state
         self.appSettings = QSettings('CLAMS', 'AddCatchSppDialog')
@@ -83,6 +86,9 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         #  now move and resize the window
         self.move(position)
         self.resize(size)
+
+        #  create the sample type selection dialog
+        self.SampTypeDlg = sampletypeseldlg.sampletypeseldlg(self)
 
         #  put the keyboard buttons into a list to easily reference them
         self.digitBtns=[self.A_Btn,self.B_Btn,self.C_Btn,self.D_Btn,self.E_Btn,self.F_Btn,
@@ -97,9 +103,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         #  connect the other signals
         self.fullspcCList.itemClicked[QListWidgetItem].connect(self.getSpcSel)
         self.fullspcSList.itemClicked[QListWidgetItem].connect(self.getSpcSel)
-
         self.lineEdit.textEdited.connect(self.searchEdited)
-
         self.backBtn.clicked.connect(self.clearOneChar)
         self.clearBtn.clicked.connect(self.clearAllChar)
         self.doneBtn.clicked.connect(self.close)
@@ -421,6 +425,29 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
                             self.activeSpcSubcat+"' AND species_parameter='Previous_Occurrence'")
                 self.db.dbExec(sql)
 
+        #  set the sample type - first, check if we're adding a mix
+        if self.activeSpcCode in ('100002', '100003', '100004'):
+            #  this is a mix type
+            self.activeSampleType = self.mixtureNames[code]
+
+        #  if not, next check if we're enabling the 'Present' sample type
+        elif self.settings['EnablePresentSampleType'] in ['1', 'true', 'True']:
+            #  we are - present the sample type selection dialog
+            self.SampTypeDlg.exec()
+
+            #  check to make sure the user selected something
+            if not self.SampTypeDlg.result[0]:
+                self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
+                    "You must select a sample type when adding a sample to your catch.", 'info')
+                self.message.exec()
+                return
+
+            #  set the sample type
+            self.activeSampleType = self.SampTypeDlg.result[1]
+        else:
+            #  if not a mix and Present type is not enabled - the sample type is Species
+            self.activeSampleType = 'Species'
+
         #  emit the changed signal to update parent
         self.changed.emit()
 
@@ -482,13 +509,19 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
             self.fullspcCList.addItems(spcList)
 
 
-
-
     def getRadioSel(self):
 
         self.history=10
         self.getSpcHistory()
 
+
+    def closeEvent(self, event):
+        '''closeEvent is called when the form is closed.
+        '''
+
+        #  store the window size and position
+        self.appSettings.setValue('winposition', self.pos())
+        self.appSettings.setValue('winsize', self.size())
 
 
     def checkWindowLocation(self, position, size, padding=[5, 25]):
