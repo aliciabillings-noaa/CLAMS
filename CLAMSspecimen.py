@@ -579,8 +579,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
             #  check if this is a manually entered value or from a device
             if (self.manualFlag):
-                if (self.settings['OrganizationName'] == 'SWFSC' and
-                    (self.measureType[i] == 'barcode'
+                if (self.settings['OrganizationName'] == 'SWFSC' and 
+                    (self.measureType[i] == 'barcode' 
                     or self.measureType[i] == 'dna_finclip_number')):
                     keyDialog = keypad.KeyPad(self.comment, self)
                     keyDialog.exec()
@@ -715,8 +715,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         else:
             #  check if this is a manually entered value or from a device
             if self.manualFlag:
-                if (self.settings['OrganizationName'] == 'SWFSC' and
-                    (self.measureType[i] == 'barcode' or
+                if (self.settings['OrganizationName'] == 'SWFSC' and 
+                    (self.measureType[i] == 'barcode' or 
                     self.measureType[i] == 'dna_finclip_number')):
                     keyDialog = keypad.KeyPad(self.comment, self)
                     keyDialog.exec()
@@ -828,18 +828,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         else:
             measure_type = self.measureType[i]
 
-        #  TODO: Melina ran into issues with bad data causing the SQL inserts/updates to
-        #        fail and added some exception handling. This handles the error, but
-        #        results in BAD SQL in the SQL log. I would rather filter out the bad
-        #        values before we get to this point.
-
         #  check if we're editing (overwriting) a record or inserting a new one
         if self.editFieldFlag:
             # overwrite record - UPDATE
-            sql =("UPDATE measurements SET measurement_value ='" + self.values[i] +
-                    "' WHERE  ship=" + self.ship + " AND survey=" + self.survey + " AND event_id=" +
-                    self.activeHaul + " AND sample_id=" + self.activeSample + " AND specimen_id = " +
-                    self.specimenKey + " AND measurement_type = '" + measure_type+"'")
+            sql =("UPDATE measurements SET measurement_value ='" +
+                                   self.values[i] + "' WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
+                                   " AND sample_id="+self.activeSample+" AND specimen_id = " +self.specimenKey + " AND measurement_type = '" +
+                                   measure_type+"'")
             self.db.dbExec(sql)
             # update table
             self.updateMeasureView()
@@ -848,23 +843,17 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         else:
             #  this is a new record - INSERT
-            sql = ("INSERT INTO measurements (ship, survey, event_id, sample_id, specimen_id, " +
-                    "measurement_type, device_id, measurement_value) VALUES (" +self.ship+
-                    ","+self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey + ",'" +
-                    measure_type + "'," + self.devices[i] + ",'" + self.values[i] + "')")
+            sql = ("INSERT INTO measurements (ship, survey, event_id, sample_id, specimen_id, measurement_type, device_id, " +
+                                    "measurement_value) VALUES (" +self.ship+","+self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey + ",'" +
+                                    measure_type + "'," + self.devices[i] + ",'" +
+                                    self.values[i] + "')")
             self.db.dbExec(sql)
 
             # When finClip taken marked as true, then autofill dna_finclip_number
             # with last four survey digits + 'SH' + speciesNumber eg 2506SH001
             dnaFinclipNum = 'dna_finclip_number'
             if measure_type == 'finclip_taken' and self.values[i] == 'Yes' and dnaFinclipNum in self.measureType:
-
-                sql = ("SELECT count(*) from measurements where measurement_type='finclip_taken' and ship=" +
-                        self.ship +  " AND survey = " + self.survey +  " AND event_id = " + self.activeHaul)
-                query = self.db.dbQuery(sql)
-                index,  = query.first()
-                speciesNum = index.zfill(3)
-
+                speciesNum = str(self.measureModel.rowCount() + 1).zfill(3)
                 dnaFinclip = self.survey[-4:] + 'SH' + speciesNum
                 sql = ("INSERT INTO measurements (ship, survey, event_id, sample_id, specimen_id, measurement_type, device_id, " +
                                     "measurement_value) VALUES (" +self.ship+","+self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey + ",'" +
@@ -1531,7 +1520,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     break
 
         #  get data from db - query everything *BUT* length
-        sql = ("SELECT ship, survey, event_id, specimen_id, species_code, common_name, "+
+        sql = ("SELECT ship, survey, haul, specimen_id, species_code, common_name, "+
                 "organism_weight, sex, maturity, scientist, barcode FROM v_specimen_measurements WHERE "+
                 "survey=" + self.survey +" AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
         query = self.db.dbQuery(sql)
@@ -1553,22 +1542,24 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  to query all of the length measurements regardless of their name. First we build
         #  a list of all length types.
         len_list = []
-        sql = ("SELECT measurement_type FROM measurement_types WHERE is_length=1")
+        sql = ("SELECT measurement_type FROM measurement_types WHERE " +
+                "is_length=1")
         query = self.db.dbQuery(sql)
         for type, in query:
             len_list.append(type)
 
-        #  When the length type is changed in the combo box, only the specimens with that
-        #  length type are shown in the table, therefore, the only option for length type
+        # When the length type is changed in the combo box, only the specimens with that
+        # length type are shown in the table, therefore, the only option for length type
         #  selected is the one currently active in the combo box- query using that type
         if self.lengthTypeBox.isEnabled():
-            lengthType = self.lengthTypeBox.currentText()
+            lengthType = str(self.lengthTypeBox.currentText())
 
-            sql = ("SELECT measurement_value from measurements WHERE " +
-                    "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
-                    " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
+            sql = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
+                "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
+                " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
             query = self.db.dbQuery(sql)
-            length, = query.first()
+            data  = query.first()
+            length=data[1]
 
             #  now build the length string to print
             if lengthType in len_list:
@@ -1583,12 +1574,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             length='NaN'
             for lengthType in self.measureType:
                 if lengthType in len_list:
-                    query = ("SELECT measurement_value from measurements WHERE " +
-                            "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
-                            " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
+                    lengthType = str(lengthType)
+                    query = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
+                        "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
+                        " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
                     query = self.db.dbQuery(sql)
-                    length, = query.first()
-
+                    data  = query.first()
+                    length = data[1]
                     ind = lengthType.find('_')+1
                     if ind != 0:
                         lt = lengthType[0].upper()+lengthType[ind].upper()
