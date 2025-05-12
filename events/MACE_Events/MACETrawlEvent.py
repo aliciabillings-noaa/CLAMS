@@ -349,7 +349,7 @@ class Event(QDialog, ui_MACETrawlEvent.Ui_MACETrawlEvent):
             self.sciList.append(scientist)
 
         #  present the sci selection dialog
-        self.listDialog = listseldialog.ListSelDialog(self.sciList, self)
+        self.listDialog = listseldialog.ListSelDialog(self.sciList, parent=self)
         self.listDialog.label.setText(dialogMessage)
         if self.listDialog.exec():
             #  sci selected

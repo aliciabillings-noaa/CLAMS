@@ -428,7 +428,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         #  set the sample type - first, check if we're adding a mix
         if self.activeSpcCode in ('100002', '100003', '100004'):
             #  this is a mix type
-            self.activeSampleType = self.mixtureNames[code]
+            self.activeSampleType = self.mixtureNames[self.activeSpcCode]
 
         #  if not, next check if we're enabling the 'Present' sample type
         elif self.settings['EnablePresentSampleType'] in ['1', 'true', 'True']:
