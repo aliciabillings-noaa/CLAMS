@@ -14,12 +14,15 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-.. module:: selectFEATTrawlEvent
+.. module:: startMACETrawlEvent
 
-    :synopsis: selectFEATTrawlEvent presents the event selection dialog
+    :synopsis: startMACETrawlEvent presents the event selection dialog
                allowing the user to select the event (new or previous) and
-               then sets the current trawl to that number. Used in the Wet Lab
-               to bypass the need for the
+               then opens the trawl event form for that event. It used
+               to also present the simple protected spp. check dialog but
+               that was disabled starting with the FY22 field season since
+               the PS observation protocol changed and the observation
+               start and stop actions were integrated into our trawl events.
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
@@ -33,22 +36,21 @@
 | Maintained by:
 |       Rick Towler   <rick.towler@noaa.gov>
 """
-"""
-selectFEATTrawlEvent is a helper function used to launch the FEAT select trawl event.
-This helper function was needed to implement the new event launcher system.
-New event forms should be written such that they do not need a helper function.
-"""
 
-import FEATTrawlEvent
+import eventseldlg
 
 
-class SelectFEATTrawlEvent():
-
+class startFEATTrawlEvent:
     def __init__(self, parent):
+        #  create an instance of the event selection dialog
+        hlDialog = eventseldlg.EventSelDlg(parent)
 
-        self.parent = parent
-        # create an instance of the trawl event dialog and display
-        trawl_event = FEATTrawlEvent.FEATTrawlEvent(self.parent)
-        trawl_event.exec_()
-        if trawl_event.result() == 1:
-            self.parent.activeEvent = trawl_event.activeEvent
+        #  display the event select dialog
+        if hlDialog.exec():
+            #  check if a event number was selected - exit if not
+            if not hlDialog.activeEvent:
+                return
+
+            #  set the active event
+            parent.activeEvent = hlDialog.activeEvent
+            parent.reloaded = hlDialog.reloaded
