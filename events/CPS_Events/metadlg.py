@@ -61,11 +61,68 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         self.scientist = parent.scientist
         self.event_entered = parent.event_entered
 
+        self.message = messagedlg.MessageDlg(self)
+
+        # this is all hard-coded for now todo: should use DB for this later
+        self.required_params = ['Collection', 'OrderOcc', 'Fisher']
+
+        # load dropdown boxes
+        self.load_dropdowns()
+
+        self.pbs = {'Collection': [self.pb_collection, 'ed', 'np'],
+                    'OrderOcc': [self.pb_order_occ, 'ed', 'np'],
+                    'WireOut': [self.pb_wire_out, 'ed', 'np'],
+                    'TowSpeedSTW': [self.pb_tow_speed_stw, 'ed', 'np'],
+                    'TowSpeedSOG': [self.pb_tow_speed_sog, 'ed', 'np'],
+                    'WindSpd': [self.pb_wind_spd, 'ed', 'np'],
+                    'WindWaves': [self.pb_wind_dir, 'ed', 'np'],
+                    'SurfaceTemp': [self.pb_surface_temp, 'ed', 'np'],
+                    'BottomDepth': [self.pb_bottom_depth, 'ed', 'np'],
+                    'Salinity': [self.pb_salinity, 'ed', 'np']}
+        self.cbs = {'Fisher': [self.cb_fisher, 'ed'],
+                    'State': [self.cb_state, 'ed'],
+                    'Country': [self.cb_country, 'ed'],
+                    'Gear': [self.cb_gear, 'ed'],
+                    'FishingMode': [self.cb_fishing_mode, 'ed'],
+                    'ArcedTow': [self.cb_arced_tow, 'ga'],
+                    'SeaCondition': [self.cb_sea_cond, 'ga'],
+                    'Clouds': [self.cb_clouds, 'ga']}
+        self.tf = {'DownswellTow': [self.tf_downswell_tow, 'ed', 'np'],
+                    'HeadropeTDR': [self.tf_headrope, 'ed', 'np'],
+                    'FootropeTDR': [self.tf_footrope, 'ed', 'kp'],
+                    'Camera': [self.tf_camera, 'ed', 'np']}
+        
+        # set up numpad ane keypad
+        self.numpad = numpad.NumPad(self)
+        self.keypad = keypad.KeyPad('', self)
+        
+        # set signals and slots
+        for param, btn in self.pbs.items():
+            btn[0].clicked.connect(self.enter_data)
+        self.pb_save.clicked.connect(self.save)
+        self.pb_cancel.clicked.connect(self.cancel)
+
     def reload_data(self):
         """
         populates the widgets with data loaded from the database
         :return: none
         """
+        # refill any buttons
+        for param, pb_lst in self.pbs.items():
+            pb, table, np = pb_lst
+            # see if it exists
+            exists = self.check_if_exists(param, table)
+            # set text if so
+            if exists != 0:
+                pb.setText(exists)
+        # refill any drop downs
+        for param, cb_lst in self.cbs.items():
+            cb, table = cb_lst
+            # see if it exists
+            exists = self.check_if_exists(param, table)
+            # set text if so
+            if exists != 0:
+                cb.setCurrentText(exists)
 
     def load_dropdowns(self):
         """
@@ -73,56 +130,28 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         todo: hard-coded for now, but should be updated when a fix is available
         :return:
         """
-        # list of scientists for the fisher
-        sci_sql = "SELECT scientist FROM personnel WHERE active=1"
+        # Overall lookups
+        # List of scientists for the fisher
+        sci_sql = "SELECT scientist FROM personnel WHERE active=1 ORDER BY scientist"
         sci_query = self.db.dbQuery(sci_sql)
         for sci, in sci_query:
-            self.cb_sci.addItem(sci)
-            self.cb_sci.setCurrentIndex(-1)
+            self.cb_fisher.addItem(sci)
+            self.cb_fisher.setCurrentIndex(-1)
+        
+        # Init combo boxes to empty value
+        self.cb_state.setCurrentIndex(-1)
+        self.cb_country.setCurrentIndex(-1)
+        self.cb_arced_tow.setCurrentIndex(-1)
+        self.cb_sea_cond.setCurrentIndex(-1)
+        self.cb_clouds.setCurrentIndex(-1)
 
-        # list of gear
+        # Gear tab
+        # List of gear
         gear_sql = "SELECT gear FROM gear WHERE active=1"
         gear_query = self.db.dbQuery(gear_sql)
         for gear, in gear_query:
             self.cb_gear.addItem(gear)
             self.cb_gear.setCurrentIndex(-1)
-
-        # list of tom weights
-        tom_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
-                   "WHERE gear_accessory = 'Tom_weights' AND active = 1")
-        tom_query = self.db.dbQuery(tom_sql)
-        for tom, in tom_query:
-            self.cb_toms.addItem(tom)
-            self.cb_toms.setCurrentIndex(-1)
-
-        # SBE lists
-        sbe_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
-                   "WHERE gear_accessory = 'SBE_serial' AND active = 1")
-        sbe_query = self.db.dbQuery(sbe_sql)
-        for sbe, in sbe_query:
-            # add to headrope
-            self.cb_head_sbe.addItem(sbe)
-            self.cb_head_sbe.setCurrentIndex(-1)
-            # add to footrope
-            self.cb_foot_sbe.addItem(sbe)
-            self.cb_foot_sbe.setCurrentIndex(-1)
-            # add to camera
-            self.cb_cam_sbe.addItem(sbe)
-            self.cb_cam_sbe.setCurrentIndex(-1)
-
-        # camera type and view
-        cam_t_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
-                     "WHERE gear_accessory = 'Cam_type' AND active = 1")
-        cam_v_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
-                     "WHERE gear_accessory = 'Cam_view' AND active = 1")
-        cam_t_query = self.db.dbQuery(cam_t_sql)
-        cam_v_query = self.db.dbQuery(cam_v_sql)
-        for c_type, in cam_t_query:
-            self.cb_cam_type.addItem(c_type)
-            self.cb_cam_type.setCurrentIndex(-1)
-        for c_view, in cam_v_query:
-            self.cb_cam_view.addItem(c_view)
-            self.cb_cam_view.setCurrentIndex(-1)
 
     def enter_data(self):
         """

@@ -48,7 +48,7 @@
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>3</number>
+      <number>0</number>
      </property>
      <property name="tabBarAutoHide">
       <bool>false</bool>
@@ -61,7 +61,23 @@
        <item row="0" column="0">
         <layout class="QGridLayout" name="gridLayout">
          <item row="3" column="1">
-          <widget class="QComboBox" name="cb_state"/>
+          <widget class="QComboBox" name="cb_state">
+           <item>
+            <property name="text">
+             <string>CA</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>OR</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>WA</string>
+            </property>
+           </item>
+          </widget>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="l_order_occ">
@@ -78,7 +94,23 @@
           </widget>
          </item>
          <item row="4" column="1">
-          <widget class="QComboBox" name="cb_country"/>
+          <widget class="QComboBox" name="cb_country">
+           <item>
+            <property name="text">
+             <string>CA</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>US</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>MX</string>
+            </property>
+           </item>
+          </widget>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="l_country">
@@ -205,7 +237,23 @@
           </widget>
          </item>
          <item row="4" column="1">
-          <widget class="QComboBox" name="cb_arcedTow"/>
+          <widget class="QComboBox" name="cb_arced_tow">
+           <item>
+            <property name="text">
+             <string>No</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Port</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Starboard</string>
+            </property>
+           </item>
+          </widget>
          </item>
          <item row="3" column="0">
           <widget class="QCheckBox" name="tf_downswell_tow">
@@ -215,7 +263,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QComboBox" name="cb_toms">
+          <widget class="QComboBox" name="cb_fishing_mode">
            <property name="font">
             <font>
              <pointsize>14</pointsize>
@@ -223,10 +271,15 @@
              <bold>true</bold>
             </font>
            </property>
+           <item>
+            <property name="text">
+             <string>Surface</string>
+            </property>
+           </item>
           </widget>
          </item>
          <item row="2" column="0">
-          <widget class="QLabel" name="l_wireOut">
+          <widget class="QLabel" name="l_wire_out">
            <property name="text">
             <string>Wire Out (M)</string>
            </property>
@@ -240,7 +293,7 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QLabel" name="l_toms">
+          <widget class="QLabel" name="l_fishing_mode">
            <property name="font">
             <font>
              <pointsize>14</pointsize>
@@ -268,21 +321,21 @@
           </widget>
          </item>
          <item row="5" column="0">
-          <widget class="QLabel" name="l_towSpeedSTW">
+          <widget class="QLabel" name="l_tow_speed_stw">
            <property name="text">
             <string>Tow Speed STW (avg) knots</string>
            </property>
           </widget>
          </item>
          <item row="4" column="0">
-          <widget class="QLabel" name="l_arcedTow">
+          <widget class="QLabel" name="l_arced_tow">
            <property name="text">
             <string>Arced Tow</string>
            </property>
           </widget>
          </item>
          <item row="6" column="0">
-          <widget class="QLabel" name="l_towSpeedSOG">
+          <widget class="QLabel" name="l_tow_speed_sog">
            <property name="text">
             <string>Tow Speed SOG (avg) knots</string>
            </property>
@@ -345,7 +398,23 @@
        <item row="0" column="0">
         <layout class="QGridLayout" name="gridLayout_8">
          <item row="3" column="1">
-          <widget class="QComboBox" name="cb_clouds"/>
+          <widget class="QComboBox" name="cb_clouds">
+           <item>
+            <property name="text">
+             <string>None</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Partly Cloudy</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Overcast Foggy</string>
+            </property>
+           </item>
+          </widget>
          </item>
          <item row="0" column="0">
           <widget class="QLabel" name="l_wind_spd">
@@ -469,10 +538,36 @@
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QComboBox" name="cb_sea_cond"/>
+          <widget class="QComboBox" name="cb_sea_cond">
+           <item>
+            <property name="text">
+             <string>Calm</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Calm Moderate</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Moderate</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Moderate Rough</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Rough</string>
+            </property>
+           </item>
+          </widget>
          </item>
          <item row="4" column="1">
-          <widget class="QPushButton" name="pu_surface_temp">
+          <widget class="QPushButton" name="pb_surface_temp">
            <property name="text">
             <string/>
            </property>
