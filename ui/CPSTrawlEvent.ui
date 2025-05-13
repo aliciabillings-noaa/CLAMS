@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FEATTrawlEvent</class>
- <widget class="QDialog" name="FEATTrawlEvent">
+ <class>CPSTrawlEvent</class>
+ <widget class="QDialog" name="CPSTrawlEvent">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -38,6 +38,7 @@
        <property name="font">
         <font>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -54,6 +55,7 @@
        <property name="font">
         <font>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -67,6 +69,7 @@
        <property name="font">
         <font>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -80,6 +83,7 @@
        <property name="font">
         <font>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -112,6 +116,7 @@
        <property name="font">
         <font>
          <pointsize>18</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -139,6 +144,7 @@
      <property name="font">
       <font>
        <pointsize>28</pointsize>
+       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -177,6 +183,7 @@
             <property name="font">
              <font>
               <pointsize>12</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
@@ -193,6 +200,7 @@
             <property name="font">
              <font>
               <pointsize>19</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
@@ -208,27 +216,29 @@
         </item>
         <item>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="2">
-           <widget class="QLabel" name="meta3">
+          <item row="1" column="1">
+           <widget class="QLabel" name="l_tdLon">
             <property name="font">
              <font>
-              <pointsize>12</pointsize>
+              <pointsize>19</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
-            <property name="text">
-             <string>TD Longitude</string>
+            <property name="frameShape">
+             <enum>QFrame::Box</enum>
             </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
+            <property name="text">
+             <string/>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QLabel" name="l_td">
+           <widget class="QLabel" name="l_tdLat">
             <property name="font">
              <font>
               <pointsize>19</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
@@ -241,15 +251,16 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLabel" name="meta2">
+           <widget class="QLabel" name="meta3">
             <property name="font">
              <font>
               <pointsize>12</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
             <property name="text">
-             <string>TD Latitude</string>
+             <string>Fishing Mode</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -257,50 +268,19 @@
            </widget>
           </item>
           <item row="0" column="0">
-           <widget class="QLabel" name="meta1">
+           <widget class="QLabel" name="meta2">
             <property name="font">
              <font>
               <pointsize>12</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
             <property name="text">
-             <string>Target Depth</string>
+             <string>Collection #</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLabel" name="l_tdLat">
-            <property name="font">
-             <font>
-              <pointsize>19</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Box</enum>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QLabel" name="l_tdLon">
-            <property name="font">
-             <font>
-              <pointsize>19</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Box</enum>
-            </property>
-            <property name="text">
-             <string/>
             </property>
            </widget>
           </item>
@@ -347,6 +327,7 @@
             <property name="font">
              <font>
               <pointsize>16</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
@@ -358,6 +339,32 @@
             </property>
             <property name="alignment">
              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pb_startmmw">
+            <property name="minimumSize">
+             <size>
+              <width>170</width>
+              <height>37</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>170</width>
+              <height>36</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Start MM Watch</string>
             </property>
            </widget>
           </item>
@@ -378,16 +385,17 @@
             <property name="font">
              <font>
               <pointsize>12</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
             <property name="text">
-             <string>NIW</string>
+             <string>Net In Water</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pb_sd">
+           <widget class="QPushButton" name="pb_eq">
             <property name="minimumSize">
              <size>
               <width>170</width>
@@ -403,36 +411,12 @@
             <property name="font">
              <font>
               <pointsize>12</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
             <property name="text">
-             <string>SD</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pb_td">
-            <property name="minimumSize">
-             <size>
-              <width>170</width>
-              <height>37</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>170</width>
-              <height>36</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>TD</string>
+             <string>Equilibrium</string>
             </property>
            </widget>
           </item>
@@ -453,30 +437,12 @@
             <property name="font">
              <font>
               <pointsize>12</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
             <property name="text">
-             <string>HB</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pb_du">
-            <property name="minimumSize">
-             <size>
-              <width>170</width>
-              <height>37</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>DU</string>
+             <string>Haul Back</string>
             </property>
            </widget>
           </item>
@@ -497,16 +463,17 @@
             <property name="font">
              <font>
               <pointsize>12</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
             <property name="text">
-             <string>NOD</string>
+             <string>Net On Deck</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pb_com">
+           <widget class="QPushButton" name="pb_stopmmw">
             <property name="minimumSize">
              <size>
               <width>170</width>
@@ -522,13 +489,27 @@
             <property name="font">
              <font>
               <pointsize>12</pointsize>
+              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
             <property name="text">
-             <string>COM</string>
+             <string>Stop MM Watch</string>
             </property>
            </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
@@ -552,6 +533,7 @@
        <property name="font">
         <font>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -632,21 +614,6 @@
          <string>New Row</string>
         </property>
        </row>
-       <row>
-        <property name="text">
-         <string>New Row</string>
-        </property>
-       </row>
-       <row>
-        <property name="text">
-         <string>New Row</string>
-        </property>
-       </row>
-       <row>
-        <property name="text">
-         <string>New Row</string>
-        </property>
-       </row>
        <column>
         <property name="text">
          <string>Event</string>
@@ -685,6 +652,7 @@
          <property name="font">
           <font>
            <pointsize>12</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -707,6 +675,7 @@
          <property name="font">
           <font>
            <pointsize>14</pointsize>
+           <weight>75</weight>
            <bold>true</bold>
           </font>
          </property>
@@ -758,6 +727,7 @@
        <property name="font">
         <font>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -784,6 +754,7 @@ Comment</string>
        <property name="font">
         <font>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>

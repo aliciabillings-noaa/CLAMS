@@ -1520,7 +1520,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     break
 
         #  get data from db - query everything *BUT* length
-        sql = ("SELECT ship, survey, haul, specimen_id, species_code, common_name, "+
+        sql = ("SELECT ship, survey, event_id, specimen_id, species_code, common_name, "+
                 "organism_weight, sex, maturity, scientist, barcode FROM v_specimen_measurements WHERE "+
                 "survey=" + self.survey +" AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
         query = self.db.dbQuery(sql)
@@ -1575,7 +1575,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             for lengthType in self.measureType:
                 if lengthType in len_list:
                     lengthType = str(lengthType)
-                    query = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
+                    sql = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
                         "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
                         " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
                     query = self.db.dbQuery(sql)
