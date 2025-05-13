@@ -1516,8 +1516,10 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 species = commonName
 
             #  if applicable, add the subcategory to the name
-            if subcat.lower() != 'none':
-                name = species+'-'+subcat
+            if subcat is None:
+                name = species
+            elif subcat.lower() != 'none':
+                name = species+'-'+ subcat
             else:
                 name = species
 

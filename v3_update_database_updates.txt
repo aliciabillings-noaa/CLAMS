@@ -56,6 +56,11 @@ ALTER TABLE devices MODIFY (active NOT NULL);
 alter table MEASUREMENT_SETUP drop column DEVICE_INTERFACE;
 
 
+--add the vessel_code column to ships
+ALTER TABLE ships ADD vessel_code VARCHAR(6);
+
+
+
 
 -- THESE ONLY NEED TO BE APPLIED TO ALICIA'S COPIES OF THE DEV DATABASE EXPORT
 

@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS_WPy64-31260\CLAMS\ui\SexSelUnknownDlg.ui'
+# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\noaa-afsc-mace\CLAMS\ui\SexSelUnknownDlg.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -12,9 +12,9 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_sexUnknownDlg(object):
     def setupUi(self, sexUnknownDlg):
         sexUnknownDlg.setObjectName("sexUnknownDlg")
-        sexUnknownDlg.resize(403, 248)
+        sexUnknownDlg.resize(401, 300)
         self.verticalLayoutWidget = QtWidgets.QWidget(parent=sexUnknownDlg)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 371, 231))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 371, 281))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -54,6 +54,19 @@ class Ui_sexUnknownDlg(object):
         self.femaleBtn.setFont(font)
         self.femaleBtn.setObjectName("femaleBtn")
         self.verticalLayout.addWidget(self.femaleBtn)
+        self.unsexedBtn = QtWidgets.QPushButton(parent=self.verticalLayoutWidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.unsexedBtn.sizePolicy().hasHeightForWidth())
+        self.unsexedBtn.setSizePolicy(sizePolicy)
+        self.unsexedBtn.setMinimumSize(QtCore.QSize(165, 50))
+        font = QtGui.QFont()
+        font.setFamily("Arial Black")
+        font.setPointSize(14)
+        self.unsexedBtn.setFont(font)
+        self.unsexedBtn.setObjectName("unsexedBtn")
+        self.verticalLayout.addWidget(self.unsexedBtn)
         self.unknownBtn = QtWidgets.QPushButton(parent=self.verticalLayoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -77,4 +90,5 @@ class Ui_sexUnknownDlg(object):
         self.label.setText(_translate("sexUnknownDlg", "Select the sex..."))
         self.maleBtn.setText(_translate("sexUnknownDlg", "Male"))
         self.femaleBtn.setText(_translate("sexUnknownDlg", "Female"))
-        self.unknownBtn.setText(_translate("sexUnknownDlg", "Not Opened"))
+        self.unsexedBtn.setText(_translate("sexUnknownDlg", "Unsexed"))
+        self.unknownBtn.setText(_translate("sexUnknownDlg", "Unknown"))

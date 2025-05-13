@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>403</width>
-    <height>248</height>
+    <width>401</width>
+    <height>300</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <x>20</x>
      <y>10</y>
      <width>371</width>
-     <height>231</height>
+     <height>281</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -89,6 +89,31 @@
      </widget>
     </item>
     <item>
+     <widget class="QPushButton" name="unsexedBtn">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>165</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>Arial Black</family>
+        <pointsize>14</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Unsexed</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QPushButton" name="unknownBtn">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
@@ -109,7 +134,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Not Opened</string>
+       <string>Unknown</string>
       </property>
      </widget>
     </item>
