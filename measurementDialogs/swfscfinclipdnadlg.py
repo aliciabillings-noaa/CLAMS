@@ -68,15 +68,15 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
         self.db = parent.db
         self.survey=parent.survey
         self.ship=parent.ship
-
-        #  since specimen already has the numpad, we'll use it here
         self.numpad = parent.numpad
+        self.message = parent.message
+        self.errorIcons = parent.errorIcons
+        self.errorSounds = parent.errorSounds
 
         #  connect signals
         self.yesBtn.clicked.connect(self.getResponse)
         self.noBtn.clicked.connect(self.getResponse)
         self.vialNumberBtn.clicked.connect(self.editVialNum)
-
 
 
     def editVialNum(self):
@@ -94,12 +94,16 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
             #  user cancelled action
             return
 
-        #  get the next full vial number using the new number just
-        #  selected
-        thisVialNumber = self.getVialNumber(self.numpad.value)
+        try:
+            thisNum = float(self.numpad.value)
 
-        #  update the UI
-        self.vialNumber.setText(thisVialNumber)
+            #  get the next full vial number using the new number just selected
+            thisVialNumber = self.getVialNumber(thisNum)
+
+            #  update the UI
+            self.vialNumberBtn.setText(thisVialNumber)
+        except:
+            pass
 
 
     def getNextNumber(self):
@@ -111,9 +115,11 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
         #  series.
         sql = ("SELECT measurement_value FROM measurements WHERE ship=" + self.ship +
                 " AND survey=" + self.survey + " AND measurement_type='dna_finclip_number' " +
-                "SORT BY measurement_value DESC")
+                "AND measurement_value <> 'None' ORDER BY measurement_value DESC")
         query = self.db.dbQuery(sql)
         lastVialNum, = query.first()
+        print(sql)
+        print(lastVialNum)
 
         #  wrap this in a try block to handle the first number (when lastVialNum == None)
         #  This will also catch malformed numbers and will return 1 in those cases too.
@@ -122,6 +128,8 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
             thisNum = lastVialNum + 1
         except:
             thisNum = 1
+
+        print(thisNum)
 
         return thisNum
 
@@ -167,7 +175,7 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
         thisVialNumber = self.getVialNumber(thisNum)
 
         #  update the UI
-        self.vialNumber.setText(thisVialNumber)
+        self.vialNumberBtn.setText(thisVialNumber)
 
 
     def setCaption(self, text):
@@ -189,8 +197,11 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
                 "AND measurement_value='" + vialNum + "'")
         query = self.db.dbQuery(sql)
         hasThisVial, = query.first()
+        print(sql)
+        print("HASVIAL",hasThisVial)
 
-        if hasThisVial is not None:
+
+        if hasThisVial is None:
             return True
         else:
             return False
@@ -216,9 +227,12 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
                 self.setup(None)
                 return
 
+            result = self.vialNumberBtn.text()
+        else:
+            result = "None"
 
-        #  return the text
-        self.result = (True, self.vialNumberBtn.text())
+        #  return the result
+        self.result = (True, result)
         self.accept()
 
 
@@ -227,7 +241,7 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
         sets the result tuple to access from the calling dialog
         :return: self.reject and return
         """
-        self.result = (False, '')
+        self.result = (False, None)
         self.reject()
 
 

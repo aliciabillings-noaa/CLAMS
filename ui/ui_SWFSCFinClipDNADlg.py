@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\noaa-afsc-mace\CLAMS\ui\SWFSCFinClipDNA.ui'
+# Form implementation generated from reading ui file 'C:\Users\rick.towler\Work\noaa-afsc-mace\CLAMS\ui\SWFSCFinClipDNADlg.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -9,15 +9,15 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 
-class Ui_SWFSCFinClipDNA(object):
-    def setupUi(self, SWFSCFinClipDNA):
-        SWFSCFinClipDNA.setObjectName("SWFSCFinClipDNA")
-        SWFSCFinClipDNA.resize(533, 204)
-        SWFSCFinClipDNA.setMinimumSize(QtCore.QSize(354, 180))
-        SWFSCFinClipDNA.setMaximumSize(QtCore.QSize(16777215, 16777215))
-        self.verticalLayout = QtWidgets.QVBoxLayout(SWFSCFinClipDNA)
+class Ui_SWFSCFinClipDNADlg(object):
+    def setupUi(self, SWFSCFinClipDNADlg):
+        SWFSCFinClipDNADlg.setObjectName("SWFSCFinClipDNADlg")
+        SWFSCFinClipDNADlg.resize(485, 188)
+        SWFSCFinClipDNADlg.setMinimumSize(QtCore.QSize(354, 180))
+        SWFSCFinClipDNADlg.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.verticalLayout = QtWidgets.QVBoxLayout(SWFSCFinClipDNADlg)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.msgLabel = QtWidgets.QLabel(parent=SWFSCFinClipDNA)
+        self.msgLabel = QtWidgets.QLabel(parent=SWFSCFinClipDNADlg)
         font = QtGui.QFont()
         font.setFamily("Arial Black")
         font.setPointSize(16)
@@ -29,7 +29,7 @@ class Ui_SWFSCFinClipDNA(object):
         self.verticalLayout.addWidget(self.msgLabel)
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setObjectName("gridLayout")
-        self.yesBtn = QtWidgets.QPushButton(parent=SWFSCFinClipDNA)
+        self.yesBtn = QtWidgets.QPushButton(parent=SWFSCFinClipDNADlg)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -44,16 +44,7 @@ class Ui_SWFSCFinClipDNA(object):
         self.yesBtn.setFont(font)
         self.yesBtn.setObjectName("yesBtn")
         self.gridLayout.addWidget(self.yesBtn, 0, 0, 1, 1)
-        self.lineEdit = QtWidgets.QLineEdit(parent=SWFSCFinClipDNA)
-        font = QtGui.QFont()
-        font.setFamily("Arial Black")
-        font.setPointSize(14)
-        font.setBold(True)
-        font.setWeight(75)
-        self.lineEdit.setFont(font)
-        self.lineEdit.setObjectName("lineEdit")
-        self.gridLayout.addWidget(self.lineEdit, 0, 1, 1, 1)
-        self.noBtn = QtWidgets.QPushButton(parent=SWFSCFinClipDNA)
+        self.noBtn = QtWidgets.QPushButton(parent=SWFSCFinClipDNADlg)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -68,17 +59,28 @@ class Ui_SWFSCFinClipDNA(object):
         self.noBtn.setFont(font)
         self.noBtn.setObjectName("noBtn")
         self.gridLayout.addWidget(self.noBtn, 1, 0, 1, 1)
+        self.vialNumberBtn = QtWidgets.QPushButton(parent=SWFSCFinClipDNADlg)
+        font = QtGui.QFont()
+        font.setFamily("Arial Black")
+        font.setPointSize(14)
+        font.setBold(True)
+        font.setWeight(75)
+        self.vialNumberBtn.setFont(font)
+        self.vialNumberBtn.setStyleSheet("QWidget {\n"
+"    background-color: white;\n"
+"}")
+        self.vialNumberBtn.setObjectName("vialNumberBtn")
+        self.gridLayout.addWidget(self.vialNumberBtn, 0, 1, 1, 1)
         self.gridLayout.setColumnStretch(0, 70)
-        self.gridLayout.setColumnStretch(1, 30)
         self.verticalLayout.addLayout(self.gridLayout)
 
-        self.retranslateUi(SWFSCFinClipDNA)
-        QtCore.QMetaObject.connectSlotsByName(SWFSCFinClipDNA)
+        self.retranslateUi(SWFSCFinClipDNADlg)
+        QtCore.QMetaObject.connectSlotsByName(SWFSCFinClipDNADlg)
 
-    def retranslateUi(self, SWFSCFinClipDNA):
+    def retranslateUi(self, SWFSCFinClipDNADlg):
         _translate = QtCore.QCoreApplication.translate
-        SWFSCFinClipDNA.setWindowTitle(_translate("SWFSCFinClipDNA", "DNA Finclip?"))
-        self.msgLabel.setText(_translate("SWFSCFinClipDNA", "Are you taking a DNA Fin Clip?"))
-        self.yesBtn.setText(_translate("SWFSCFinClipDNA", "Yes"))
-        self.lineEdit.setText(_translate("SWFSCFinClipDNA", "YYSSVVXXX"))
-        self.noBtn.setText(_translate("SWFSCFinClipDNA", "No"))
+        SWFSCFinClipDNADlg.setWindowTitle(_translate("SWFSCFinClipDNADlg", "DNA Finclip?"))
+        self.msgLabel.setText(_translate("SWFSCFinClipDNADlg", "Are you taking a DNA Fin Clip?"))
+        self.yesBtn.setText(_translate("SWFSCFinClipDNADlg", "Yes"))
+        self.noBtn.setText(_translate("SWFSCFinClipDNADlg", "No"))
+        self.vialNumberBtn.setText(_translate("SWFSCFinClipDNADlg", "YYSSVVXXX"))
