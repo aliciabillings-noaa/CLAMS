@@ -1060,7 +1060,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  set the model view SQL
         if self.admin:
             #  admin mode shows all measurements
-            sql = ("SELECT SPECIMEN_ID, "+ sqlString +" FROM V_SPECIMEN_MEASUREMENTS WHERE " +
+            sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM V_SPECIMEN_MEASUREMENTS WHERE " +
                     "ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND sample_id="+self.activeSample+"  AND " +
                     "PROTOCOL_NAME = '" + self.protocol +"'" + sqlStringEnd +
@@ -1068,7 +1068,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             self.measureModel.setQuery(sql, self.db.db)
         else:
             #  regular mode shows only measurements at that station
-            sql = ("SELECT SPECIMEN_ID, "+ sqlString +" FROM V_SPECIMEN_MEASUREMENTS WHERE " +
+            sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM V_SPECIMEN_MEASUREMENTS WHERE " +
                   "ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
                   " AND sample_id="+self.activeSample+
                   " AND PROTOCOL_NAME = '" + self.protocol + "' AND WORKSTATION_ID = " +
