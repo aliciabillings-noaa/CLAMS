@@ -43,6 +43,7 @@
 from PyQt6.QtWidgets import QDialog
 from ui import ui_TypeSelDialog
 
+
 class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
     def __init__(self, parent=None):
         super(TypeSelDialog, self).__init__(parent)
@@ -51,11 +52,24 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
 
         self.buttons = [self.btn_0, self.btn_1, self.btn_2, self.btn_3]
 
-        #  first hide buttons
+        #  hide the buttons and connect their signals. We will show and label
+        #  the buttons in the buttonSetup method which is called just prior to
+        #  dialog display as the buttons are dynamic.
+        #
+        #  Note that it is important that the signals are connected here, and
+        #  *not* in buttonSetup since signal connections "stack" so each call
+        #  to buttonSetup would add an additional event when a button was
+        #  clicked, causing the numpad for count baskets to keep popping up as
+        #  single clicks would generate additional events.
         for button in self.buttons:
             button.hide()
+            button.clicked.connect(self.typeSelected)
 
+        #  copy some parent's attributes and set the default for getCount.
         self.numDlg = parent.numpad
+        self.message = parent.message
+        self.errorIcons = parent.errorIcons
+        self.errorSounds = parent.errorSounds
         self.getCount = True
 
 
@@ -79,9 +93,8 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
 
         # then set them up for the basket types
         for i in range(len(basketTypes)):
-            self.buttons[i].show()
             self.buttons[i].setText(basketTypes[i])
-            self.buttons[i].clicked.connect(self.selType)
+            self.buttons[i].show()
 
         #  enable/disable based on the list of valid types
         for i in range(len(validList)):
@@ -96,27 +109,38 @@ class TypeSelDialog(QDialog, ui_TypeSelDialog.Ui_typeselDialog):
         self.getCount = getCount
 
 
-    def selType(self):
-        '''selType is called when the user clicks a basket type button
-
+    def typeSelected(self):
+        '''typeSelected is called when the user clicks a basket type button.
+        If the type is "count" it will show the numpad to get the count.
         '''
+
         self.count = None
-        self.basketType = self.sender().text()
-        if self.basketType.lower() == 'count' and self.getCount:
+        self.basketType = None
+
+        basketType = self.sender().text()
+        if basketType.lower() == 'count' and self.getCount:
             self.numDlg.msgLabel.setText("Enter Count")
+            self.numDlg.Clear()
             self.numDlg.exec()
-            if (self.numDlg.value != None):
+            if self.numDlg.value is not None:
                 #  get the value from the numpad
-                self.count=self.numDlg.value
+                self.count = self.numDlg.value
             else:
                 # the user cancelled the numpad selection
+                self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                    "You didn't enter a count for your count basket. This basket weight will be ignored.",'info')
+                self.message.exec()
                 return
+
+        #  set the basket type
+        self.basketType = self.sender().text()
 
         self.accept()
 
 
     def closeEvent(self, event=None):
         if self.basketType == None:
+            self.count = None
             self.reject()
 
 

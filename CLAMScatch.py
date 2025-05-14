@@ -93,6 +93,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.devices = {}
         self.sounds = {}
         self.basketTypes = []
+        self.subcategories = []
         self.manualDevice ='0'
         self.parentSamples = {}
         self.mixtureNames = {'100000':'WholeHaul', '100001':'SortingTable',
@@ -322,6 +323,12 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         else:
             #  If we don't have a partition weight type, then we're not subsampling
             self.whHaulFlag=False
+
+        #  get the list of possible subcategories
+        sql = ("SELECT subcategory FROM species_subcategories")
+        query = self.db.dbQuery(sql)
+        for subcategory, in query:
+            self.subcategories.append(subcategory)
 
         # set up device sounds
         #self.loadDeviceSounds()
@@ -629,14 +636,14 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.addspec.exec()
             self.freeze = False
 
-        #  check if this species has a subcategory and adjust the name
+        #  check if this species has a subcategory and adjust the name.
         nameSplit = speciesName.split('-')
-        if len(nameSplit) > 1:
+        if nameSplit[-1] in self.subcategories:
             self.activeSpcSubcat = nameSplit[-1]
             self.activeSpcName='-'.join(nameSplit[0:-1])
         else:
             self.activeSpcSubcat = 'None'
-            self.activeSpcName = nameSplit[0]
+            self.activeSpcName = speciesName
 
         self.activeSampleKey = sampleId
         self.activeSampleType = sampleType
@@ -836,7 +843,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.typeDlg.buttonSetup(self.validList, self.basketTypes)
         if self.typeDlg.exec():
             self.basketType = self.typeDlg.basketType
-            self.count=self.typeDlg.count
+            self.count = self.typeDlg.count
         else:
             self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                     "You didn't choose a Basket type. This basket weight will be ignored.",'info')
@@ -1516,8 +1523,10 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 species = commonName
 
             #  if applicable, add the subcategory to the name
-            if subcat.lower() != 'none':
-                name = species+'-'+subcat
+            if subcat is None:
+                name = species
+            elif subcat.lower() != 'none':
+                name = species+'-'+ subcat
             else:
                 name = species
 

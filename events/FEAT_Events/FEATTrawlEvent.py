@@ -1,14 +1,49 @@
+# coding=utf-8
+
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
+
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
 """
-The CLAMS FEAT Trawl event dialog. This form provides the FEAT trawl select event form and
-actions for CLAMS.
+.. module:: FEATTrawlEvent
+
+    :synopsis: This will allow for the user to enter the trawl (event)
+               number directly, bypassing the need for a trawl form. It
+               is intended to phase this out by 2026. Written by Alicia
+               Billings <alicia.billings@noaa.gov>
+
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assessment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Mike Levine   <mike.levine@noaa.gov>
+|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+|       Alicia Billings <alicia.billings@noaa.gov>
 """
 
 #  import
-from PyQt4.QtGui import *
-from PyQt4 import QtSql
-from ui.xga import ui_FEATTrawlEvent
-from ui.xga import ui_FEATEventNum
-from ui.xga import ui_FEATEventParams
+from PyQt6.QtWidgets import *
+from ui import ui_FEATTrawlEvent
+from ui import ui_FEATEventNum
+from ui import ui_FEATEventParams
 import numpad
 import messagedlg
 from datetime import datetime as dt
@@ -27,16 +62,16 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
         #  copy some properties from our parent
         self.db = parent.db
         self.schema = parent.schema
-        self.activeEvent = parent.activeEvent
         self.survey = parent.survey
         self.ship = parent.ship
-        self.backLogger = parent.backLogger
         self.settings = parent.settings
         self.errorSounds = parent.errorSounds
         self.errorIcons = parent.errorIcons
         self.workStation = parent.workStation
         self.testing = parent.testing
 
+        # todo: get the current event out of the database
+        self.activeEvent = 0
         #  setup reoccurring dialogs
         self.numpad = numpad.NumPad(self)
         self.message = messagedlg.MessageDlg(self)
@@ -53,15 +88,10 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
         self.active = False
         self.check_active()
 
-        # set connect event to disabled until code is finished in 2020
-        # TODO: connect event to net config data
-        self.pb_connect.setEnabled(False)
-
         # set slots
         self.lw_events.currentTextChanged.connect(self.check_events)
         self.pb_choose.clicked.connect(self.choose_event)
         self.pb_add.clicked.connect(self.add_event)
-        self.pb_connect.clicked.connect(self.connect_event)
         self.pb_cancel.clicked.connect(self.reject)
         self.cb_active.clicked.connect(self.check_active)
         self.pb_edit.clicked.connect(self.edit_event_num)
@@ -77,40 +107,41 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
         else:
             self.l_current.setText("Current Event: NONE")
 
-        # fill the list with events in the database
+        # get the events and performance out of the database
         if not self.active:
-            query = QtSql.QSqlQuery("SELECT * FROM Events WHERE survey = '" + str(self.survey) + "' ORDER BY event_id")
+            event_sql = ("SELECT event_id, performance_code FROM " + self.schema + ".events WHERE survey="
+                         + self.survey + " AND ship=" + self.ship + " ORDER BY event_id")
         else:
-            query = QtSql.QSqlQuery("SELECT * FROM Events WHERE survey = '" + str(self.survey) +
-                                    "' AND performance_code != 0 ORDER BY event_id")
+            event_sql = ("SELECT event_id, performance_code FROM " + self.schema + ".events WHERE survey="
+                         + self.survey + " AND ship=" + self.ship + " AND performance_code != 0 ORDER BY event_id")
+        event_query = self.db.dbQuery(event_sql)
+        # clear the events from the list
         self.lw_events.clear()
-        while query.next():
-            cur_ev = query.value(2).toString()
-            perf = query.value(5).toString()
+
+        for cur_ev, perf in event_query:
             if self.activeEvent == cur_ev:
                 lst_item = QListWidgetItem(cur_ev + "\tCurrent")
             elif perf == '0':
                 lst_item = QListWidgetItem(cur_ev + "\tClosed")
             else:
                 # check if already has data
-                query2_txt = "SELECT * FROM Samples WHERE event_id = '" + str(cur_ev) + "'"
-                query2 = QtSql.QSqlQuery(query2_txt)
+                sample_sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE event_id=" + cur_ev)
+                samp_query = self.db.dbQuery(sample_sql)
                 query_size = 0
-                if query2.last():
-                    query_size += query2.at()
-                    query2.first()
-                    query2.previous()
+                for samp in samp_query:
+                    query_size += 1
                 if query_size > 0:
-                    lst_item = QListWidgetItem(query.value(2).toString() + "\tStarted")
+                    lst_item = QListWidgetItem(cur_ev + "\tStarted")
                 else:
-                    lst_item = QListWidgetItem(query.value(2).toString() + "\tEmpty")
+                    lst_item = QListWidgetItem(cur_ev + "\tEmpty")
             self.lw_events.addItem(lst_item)
             if self.activeEvent == cur_ev:
                 self.lw_events.setCurrentItem(lst_item)
                 self.pb_choose.setEnabled(True)
                 # check to see if samples exist
-                query3 = QtSql.QSqlQuery("SELECT * FROM Samples WHERE event_id = " + str(cur_ev))
-                if query3.first():
+                sample_sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE event_id=" + cur_ev)
+                samp_query = self.db.dbQuery(sample_sql)
+                if samp_query.first():
                     self.pb_edit.setEnabled(False)
                 else:
                     self.pb_edit.setEnabled(True)
@@ -127,7 +158,7 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
             elif self.lw_events.currentItem().text().contains("Current"):
                 # check to see if samples exist
                 temp_event = self.lw_events.currentItem().text().split("\t")[0]
-                query = QtSql.QSqlQuery("SELECT * FROM Samples WHERE event_id = " + str(temp_event))
+                query = self.db.dbQuery("SELECT * FROM Samples WHERE event_id = " + str(temp_event))
                 if query.first():
                     self.pb_edit.setEnabled(False)
                 else:
@@ -146,9 +177,12 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
         """
         temp_event = self.lw_events.currentItem().text().split("\t")
         self.activeEvent = temp_event[0]
-        QtSql.QSqlQuery("UPDATE Application_Configuration SET Parameter_Value = " +
-                        str(self.activeEvent + " WHERE Parameter = 'ActiveEvent'"))
-        QtSql.QSqlQuery("UPDATE Events SET performance_code=-99 WHERE event_id = " + str(self.activeEvent))
+        update_ac_sql = ("UPDATE " + self.schema + ".application_configuration SET parameter_value='"
+                         + str(self.activeEvent) + "' WHERE parameter='ActiveEvent'")
+        self.db.dbQuery(update_ac_sql)
+        update_ev_sql = ("UPDATE " + self.schema + ".events SET performance_code=-99 WHERE event_id="
+                         + self.activeEvent)
+        self.db.dbQuery(update_ev_sql)
         self.accept()
 
     def add_event(self):
@@ -159,94 +193,57 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
         new_event = AddEvent(self.numpad)
         if new_event.result() == 1:
             self.activeEvent = new_event.activeEvent
-            other_params = AddParams()
+            other_params = AddParams(self)
             self.gear = other_params.gear
             self.event_type = other_params.event_type
             self.sci = other_params.sci
             cont = 0
 
             # check if event already exists in database for this gear and survey
-            dup_query = QtSql.QSqlQuery("SELECT * FROM EVENTS WHERE event_id=%s and gear='%s'"
-                                        % (self.activeEvent, self.gear))
-            if not dup_query.first():
+            dup_sql = ("SELECT event_id FROM " + self.schema + ".events WHERE survey=" + self.survey + " AND ship="
+                       + self.ship + " AND event_id=" + self.activeEvent + " AND gear='" + self.gear + "'")
+            dup_query = self.db.dbQuery(dup_sql)
+            pres, = dup_query.first()
+            if not pres:
                 cont = 1
                 values = "(" + self.ship + "," + self.survey + "," + self.activeEvent + ",'" + self.gear + "'," \
                          + self.event_type + ",-99,'" + self.sci + "','')"
-                query_txt = "INSERT INTO EVENTS (Ship, Survey, Event_Id, Gear, Event_Type, Performance_Code, " \
-                            "Scientist, Comments) VALUES %s" % values
-                query = QtSql.QSqlQuery()
-                query.prepare(query_txt)
-                if query.exec_():
-                    self.db.commit()
-                    cont = 1
-                    # insert into the event_data table
-                    # get the current date
-                    cur_date = int(dt.strftime(dt.now(), "%Y%m%d"))
-                    # enter some event data for the CODEND
+                insert_sql = ("INSERT INTO " + self.schema + ".events (ship, survey, event_id, gear, event_type, "
+                                                             "performance_code, scientist, comments) VALUES " + values)
+                self.db.dbQuery(insert_sql)
 
-                    # enter the date of the event (EventOverallDate)
-                    values1 = "(" + self.ship + "," + self.survey + "," + self.activeEvent + ",'Codend'" + \
-                              ",'EventOverallDate'," + str(cur_date) + ")"
-                    query_txt_1 = "INSERT INTO EVENT_DATA (Ship, Survey, Event_Id, Partition, Event_Parameter, " \
-                                  "Parameter_Value) VALUES %s" % values1
-                    date_data = QtSql.QSqlQuery()
-                    date_data.prepare(query_txt_1)
-                    if date_data.exec_():
-                        self.db.commit()
-                        cont = 1
-                        # enter the trawl scientist
-                        values2 = "(" + self.ship + "," + self.survey + "," + self.activeEvent + ",'Codend'" + \
-                                  ",'TrawlScientist','" + self.sci + "')"
-                        query_txt2 = "INSERT INTO EVENT_DATA (Ship, Survey, Event_Id, Partition, Event_Parameter, " \
-                                     "Parameter_Value) VALUES %s" % values2
-                        ev_data = QtSql.QSqlQuery()
-                        ev_data.prepare(query_txt2)
-                        if ev_data.exec_():
-                            self.db.commit()
-                            update_txt = "UPDATE APPLICATION_CONFIGURATION SET parameter_value='%s' WHERE " \
-                                         "parameter = 'ActiveEvent'" % self.activeEvent
-                            update = QtSql.QSqlQuery()
-                            update.prepare(update_txt)
-                            if update.exec_():
-                                self.db.commit()
-                                cont = 1
-                                self.set_cur_event()
+                # insert into the event_data table
 
-                            else:
-                                cont = 0
-                                msg = "Updating the current event in the database failed"
-                                self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg)
-                                print("update current event failed")
-                        else:
-                            cont = 0
-                            msg = "Event data 'Trawl Scientist' insert failed"
-                            self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg)
-                            print("event data scientist insert failed")
-                    else:
-                        cont = 0
-                        msg = "Event data 'EventOverallDate' insert failed"
-                        self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg)
-                        print("event data date insert failed")
-                else:
-                    cont = 0
-                    msg = "Event insert failed"
-                    self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg)
-                    print("events insert failed")
-                # self.accept()
+                # get the current date
+                cur_date = int(dt.strftime(dt.now(), "%Y%m%d"))
+
+                # enter the date of the event (EventOverallDate)
+                date_values = "(" + self.ship + "," + self.survey + "," \
+                              + self.activeEvent + ",'Codend','EventOverallDate'," + str(cur_date) + ")"
+                date_sql = ("INSERT INTO " + self.schema + ".event_data (Ship, Survey, Event_Id, Partition, "
+                                                           "Event_Parameter, Parameter_Value) VALUES %s" % date_values)
+                self.db.dbQuery(date_sql)
+
+                # enter the trawl scientist
+                sci_vals = "(" + self.ship + "," + self.survey + "," \
+                           + self.activeEvent + ",'Codend','TrawlScientist','" + self.sci + "')"
+                sci_sql = ("INSERT INTO " + self.schema + ".event_data (Ship, Survey, Event_Id, Partition, "
+                                                          "Event_Parameter, Parameter_Value) VALUES %s" % sci_vals)
+                self.db.dbQuery(sci_sql)
+
+                # set the current event in the application_configuration table
+                update_sql = ("UPDATE " + self.schema + ".application_configuration SET parameter_value='"
+                              + self.activeEvent + "' WHERE parameter = 'ActiveEvent'")
+                self.db.dbQuery(update_sql)
+                self.set_cur_event()
             else:
                 cont = 0
                 msg = "That event already exists in the database"
                 self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg)
+                self.message.show()
                 print("duplicate entry")
-            #if cont == 1:
-                #self.accept()
-
-    def connect_event(self):
-        """
-        takes data from the NC db and connects it to this db for final trawl stats
-        :return:
-        """
-        print("connect event")
+            if cont == 1:
+                self.accept()
 
     def check_active(self):
         """
@@ -269,7 +266,7 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
         # pull event number out of list item
         temp_event = self.lw_events.currentItem().text().split("\t")[0]
         # check again to make sure there are no samples for the event number
-        query = QtSql.QSqlQuery("SELECT * FROM Samples WHERE event_id = " + str(temp_event))
+        query = self.db.dbQuery("SELECT * FROM Samples WHERE event_id = " + str(temp_event))
         if query.first():
             # if there are samples, send up msg
             self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
@@ -280,45 +277,45 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
             # if no samples
             # send up numpad to get new number
             self.numpad.msgLabel.setText("Enter the new event number")
-            if not self.numpad.exec_():
+            if not self.numpad.exec():
                 return
             value = self.numpad.value
             # check that number isn't in the database
-            query_2 = QtSql.QSqlQuery("SELECT * FROM Events WHERE event_id = " + str(value))
+            query_2 = self.db.dbQuery("SELECT * FROM Events WHERE event_id = " + str(value))
             if query_2.first():
                 # if there is an event, send up msg
                 self.message.setMessage(self.errorIcons[1], self.errorSounds[1], "That event is already in the "
                                                                                  "database, please choose another")
-                self.message.exec_()
+                self.message.exec()
             else:
                 # if not update the event_data table
                 try:
-                    QtSql.QSqlQuery("ALTER TABLE Event_Data disable constraint EVENTS_EVENT_DATA_FK")
-                    QtSql.QSqlQuery("UPDATE Event_Data SET event_id = " + str(value) + " WHERE event_id = "
+                    self.db.dbQuery("ALTER TABLE Event_Data disable constraint EVENTS_EVENT_DATA_FK")
+                    self.db.dbQuery("UPDATE Event_Data SET event_id = " + str(value) + " WHERE event_id = "
                                     + str(temp_event))
-                    QtSql.QSqlQuery("ALTER TABLE Event_Data enable constraint EVENTS_EVENT_DATA_FK")
+                    self.db.dbQuery("ALTER TABLE Event_Data enable constraint EVENTS_EVENT_DATA_FK")
                     # update the event table
                     try:
-                        QtSql.QSqlQuery("UPDATE Events SET event_id = " + str(value) + " WHERE event_id = "
+                        self.db.dbQuery("UPDATE Events SET event_id = " + str(value) + " WHERE event_id = "
                                         + str(temp_event))
                         # update the application_configuration table
                         try:
-                            QtSql.QSqlQuery("UPDATE Application_Configuration SET parameter_value = " + str(value) +
+                            self.db.dbQuery("UPDATE Application_Configuration SET parameter_value = " + str(value) +
                                             "WHERE parameter = 'ActiveEvent'")
                             self.activeEvent = value
                             self.set_cur_event()
                         except:
                             self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
                                                     "Could not update Active Event with the new event id")
-                            self.message.exec_()
+                            self.message.exec()
                     except:
                         self.message.setMessage(self.errorIcons[1], self.errorSounds[1], "Could not update Events "
                                                                                          "table with the new event id")
-                        self.message.exec_()
+                        self.message.exec()
                 except:
                     self.message.setMessage(self.errorIcons[1], self.errorSounds[1], "Could not update Event_Data "
                                                                                      "table with the new event id")
-                    self.message.exec_()
+                    self.message.exec()
 
 
 class AddEvent(QDialog, ui_FEATEventNum.Ui_Dialog):
@@ -337,7 +334,7 @@ class AddEvent(QDialog, ui_FEATEventNum.Ui_Dialog):
         self.pb_cancel.clicked.connect(self.reject)
         self.pb_num.clicked.connect(self.set_event)
 
-        self.exec_()
+        self.exec()
 
     def set_event(self):
         """
@@ -345,7 +342,7 @@ class AddEvent(QDialog, ui_FEATEventNum.Ui_Dialog):
         :return:
         """
         self.numpad.msgLabel.setText("Enter event num")
-        if not self.numpad.exec_():
+        if not self.numpad.exec():
             return
         self.pb_num.setText(self.numpad.value)
 
@@ -359,7 +356,7 @@ class AddEvent(QDialog, ui_FEATEventNum.Ui_Dialog):
 
 
 class AddParams(QDialog, ui_FEATEventParams.Ui_Dialog):
-    def __init__(self):
+    def __init__(self, parent):
         """
         allows user to add an event
         """
@@ -369,6 +366,7 @@ class AddParams(QDialog, ui_FEATEventParams.Ui_Dialog):
         self.setupUi(self)
 
         # set up variables
+        self.db = parent.db
         self.gear = ""
         self.event_type = ""
         self.sci = "Check NC"
@@ -377,14 +375,14 @@ class AddParams(QDialog, ui_FEATEventParams.Ui_Dialog):
         self.fill_combos()
 
         # hide the trawl scientist
-        self.label_3.hide()
-        self.cb_sci.hide()
+        # self.label_3.hide()
+        # self.cb_sci.hide()
 
         # set slots
         self.pb_ok.clicked.connect(self.add_params)
         self.pb_cancel.clicked.connect(self.reject)
 
-        self.exec_()
+        self.exec()
 
     def fill_combos(self):
         """
@@ -392,19 +390,21 @@ class AddParams(QDialog, ui_FEATEventParams.Ui_Dialog):
         :return:
         """
         # get gear list
-        gear = QtSql.QSqlQuery("SELECT gear FROM GEAR WHERE active=1")
-        while gear.next():
-            self.cb_gear.addItem(gear.value(0).toString())
+        gear_sql = "SELECT gear FROM GEAR WHERE active=1"
+        gear_query = self.db.dbQuery(gear_sql)
+        for gear, in gear_query:
+            self.cb_gear.addItem(gear)
 
         # get event_types
-        e_types = QtSql.QSqlQuery("SELECT description FROM EVENT_TYPES")
-        while e_types.next():
-            self.cb_event_type.addItem(e_types.value(0).toString())
+        e_sql = "SELECT description FROM EVENT_TYPES"
+        e_query = self.db.dbQuery(e_sql)
+        for description, in e_query:
+            self.cb_event_type.addItem(description)
 
         # get scientists
-        scis = QtSql.QSqlQuery("SELECT scientist FROM PERSONNEL WHERE active=1")
-        while scis.next():
-            self.cb_sci.addItem(scis.value(0).toString())
+        scis = self.db.dbQuery("SELECT scientist FROM PERSONNEL WHERE active=1")
+        for sci, in scis:
+            self.cb_sci.addItem(sci)
 
     def add_params(self):
         """
@@ -415,7 +415,7 @@ class AddParams(QDialog, ui_FEATEventParams.Ui_Dialog):
         self.sci = self.cb_sci.currentText()
         desc = self.cb_event_type.currentText()
         # get event_type_id
-        ev_type = QtSql.QSqlQuery("SELECT event_type FROM EVENT_TYPES where description = '" + desc + "'")
-        ev_type.first()
-        self.event_type = ev_type.value(0).toString()
+        ev_sql = ("SELECT event_type FROM EVENT_TYPES where description = '" + desc + "'")
+        ev_query = self.db.dbQuery(ev_sql)
+        self.event_type, = ev_query.first()
         self.accept()

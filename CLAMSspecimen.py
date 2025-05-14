@@ -18,9 +18,9 @@
 
     :synopsis: CLAMSspecimen presents the CLAMS specimen form.
                 The specimen form is used to make measurements on individual specimens.
-                Once a species is weighed into a partition, the specimen module can be
-                used to select the species and make specific measurements on each specimen
-                based species-specific protocols.
+                Once a species is added to a sample and a "measure" basket is collected,
+                the specimen module can be used to select the species and make specific
+                measurements on each specimen based species-specific protocols.
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
@@ -57,9 +57,8 @@ import ZebraLabelPrinter
 
 class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
     '''CLAMSSpecimen presents the CLAMS specimen form.  The specimen form is used
-    to collect and store measurements on specimens, structured based on established protocols.
-    The species that can be measured for the haul that have been added using the catch
-    form are displayed.
+    to collect and store measurements on specimens based on protocols defined in
+    the database.
     '''
 
     def __init__(self, parent=None):
@@ -93,7 +92,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #   Identical measurements from the same device will be ignored for this
         #   period of time filtering out accidental double scans/measurements
         #   from devices.
-        self.__serialIOTimerInterval = 3000
+        self.serialIOTimerInterval = 3000
 
         # set the scientist labels
         self.sciLabel.setText(self.scientist)
@@ -119,7 +118,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.editStateFlag = False
         self.incomplete = False
         self.protocol = None
-        self.buttons = [self.btn_0, self.btn_1, self.btn_2, self.btn_3, self.btn_4, self.btn_5, self.btn_6, self.btn_7, self.btn_8, self.btn_9]
+        self.buttons = [self.btn_0, self.btn_1, self.btn_2, self.btn_3, self.btn_4,
+                self.btn_5, self.btn_6, self.btn_7, self.btn_8, self.btn_9]
         self.lastSerialValue = [None,None]
         self.devices = []
         self.sqlString = None
@@ -137,7 +137,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         # if there is a printer set up, initialize the printer and add the sound
         if 'Label_Printer' in self.deviceData:
             #  initialize the Label Printer
-            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, self.deviceData['Label_Printer']['id'])
+            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor,
+                    self.deviceData['Label_Printer']['id'])
 
             sound_file = self.deviceData['Label_Printer']['soundeffect']
             if sound_file:
@@ -178,7 +179,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         # set up our QTableView
         font = QFont('helvetica', 12, -1, False)
         self.measureView.setFont(font)
-        self.measureModel = QtSql.QSqlQueryModel() #TODO: change this to a QTableView using QtDesigner, following ~ line 107 of ClamsCatch
+        #TODO: change this to a QTableView using QtDesigner, following ~ line 107 of ClamsCatch
+        self.measureModel = QtSql.QSqlQueryModel()
         self.measureView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.measureView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.measureView.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -204,11 +206,17 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         for btn in self.buttons:
             btn.clicked.connect(self.btnInput)
 
+        #  initially we disable all UI elements, then we will enable
+        #  them as we mnove through the init process. This ensures that
+        #  various buttons are not enabled if the user bails on some part
+        #  of the setup process
+        self.enableUIElements(False)
+
         #  initialize the timer for the serial I/O "temporal filter"
-        self.__serialIOTimer = QTimer(self)
-        self.__serialIOTimer.setSingleShot(True)
-        self.__serialIOTimerOK = True
-        self.__serialIOTimer.timeout.connect(self.__serialIOFilter)
+        self.serialIOTimer = QTimer(self)
+        self.serialIOTimer.setSingleShot(True)
+        self.serialIOTimerOK = True
+        self.serialIOTimer.timeout.connect(self.serialIOFilter)
 
         #  set up an init timer
         initTimer = QTimer(self)
@@ -222,17 +230,34 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         and it continues form/module setup, by entering into initializing the species
         '''
         self.initializing = True
+
         # get the first species
         self.getSpecies()
 
 
-    def __serialIOFilter(self):
-        '''__serialIOFilter is an internal method that simply resets the __serialIOTimerOK
-        property after a specific amount of time. When __serialIOTimerOK is false, serialInput
+    def enableUIElements(self, enabled):
+
+
+        #for btn in self.buttons:
+        #    btn.setVisible(enabled)
+
+        self.cycleBtn.setEnabled(enabled)
+        self.protoBtn.setEnabled(enabled)
+        self.deleteBtn.setEnabled(enabled)
+        self.commentBtn.setEnabled(enabled)
+        self.collectBtn.setEnabled(enabled)
+        self.printBtn.setEnabled(enabled)
+        self.measureView.setEnabled(enabled)
+
+
+
+    def serialIOFilter(self):
+        '''serialIOFilter is an internal method that simply resets the serialIOTimerOK
+        property after a specific amount of time. When serialIOTimerOK is false, serialInput
         will filter (ignore) values matching the last received value from a serial device.
         This helps eliminate accidental 2nd scans of bar codes, for example.
         '''
-        self.__serialIOTimerOK = True
+        self.serialIOTimerOK = True
 
 
     def lengthTypeChanged(self):
@@ -244,6 +269,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         # Provide user with the length type that should be measured.
         # Use this to re-inforce the new length type policy
         QMessageBox.information(self, "Length Measurement Type", "<font size = 12>You should now measure " +lengthType)
+
 
     def getSpecies(self):
         '''getSpecies is called when initializing the module and then when the new species button is pressed.
@@ -268,12 +294,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         subCats = []
         self.speciesDict = {}
         sql = ("SELECT species.common_name, species.scientific_name, samples.species_code, samples.sample_id, samples.subcategory FROM" +
-                              " species, samples, baskets WHERE species.species_code = samples.species_code" +
-                              " AND samples.ship=baskets.ship AND samples.survey=baskets.survey AND samples.event_id=baskets.event_id AND samples.sample_id=baskets.sample_id AND samples.ship=" + self.ship +
-                              " AND samples.survey=" + self.survey + " AND samples.event_id=" + self.activeHaul +
-                              " AND samples.partition='" + self.activePartition + "' AND baskets.basket_type=" +
-                              " 'Measure' AND samples.species_code <> 0 GROUP BY species.common_name," +
-                              " samples.species_code, species.scientific_name, samples.sample_id, samples.subcategory")
+                " species, samples, baskets WHERE species.species_code = samples.species_code" +
+                " AND samples.ship=baskets.ship AND samples.survey=baskets.survey AND " +
+                "samples.event_id=baskets.event_id AND samples.sample_id=baskets.sample_id AND samples.ship=" + self.ship +
+                " AND samples.survey=" + self.survey + " AND samples.event_id=" + self.activeHaul +
+                " AND samples.partition='" + self.activePartition + "' AND baskets.basket_type=" +
+                " 'Measure' AND samples.species_code <> 0 GROUP BY species.common_name," +
+                " samples.species_code, species.scientific_name, samples.sample_id, samples.subcategory")
         query = self.db.dbQuery(sql)
         for common_name, scientific_name, species_code, sample_id, subcategory in query:
 
@@ -310,8 +337,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         listDialog = listseldialog.ListSelDialog(species, 'Short', self)
         listDialog.label.setText('Pick a species to sample...')
         if not listDialog.exec():
-            #  user cancelled action
-            return
+            if self.initializing:
+                #  user cancelled and we're still setting up - close out
+                self.close()
+                return
+            else:
+                #  user cancelled action
+                return
 
         #  user selected a species - set some properties based on selection
         text = str(listDialog.itemList.currentItem().text())
@@ -379,6 +411,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 #  user cancelled action
                 return
         self.initializing = False
+        self.enableUIElements(True)
 
         #get picture
         if self.activeSpcSubcat != 'None':
@@ -405,7 +438,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.protocols = []
         nProtocols = 0
         sql = ("SELECT protocol_name FROM protocol_map WHERE species_code = " +
-                              self.activeSpcCode + " AND subcategory= '"+self.activeSpcSubcat +"' AND active=1")
+                self.activeSpcCode + " AND subcategory= '"+self.activeSpcSubcat +"' AND active=1")
         query = self.db.dbQuery(sql)
         for protocol_name,  in query:
             nProtocols = nProtocols + 1
@@ -462,7 +495,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             return
 
         #  Check if we have a duplicate serial value within the filter timer period
-        if (self.__serialIOTimerOK == False):
+        if (self.serialIOTimerOK == False):
             if (ind == self.lastSerialValue[0]) and (val == self.lastSerialValue[1]):
                 #  This measurement is the same as the last and we're within our filter period - ignore
                 return
@@ -472,8 +505,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.serialValue = val
 
         #  set the timer OK value to false and start the filter timer
-        self.__serialIOTimerOK = False
-        self.__serialIOTimer.start(self.__serialIOTimerInterval)
+        self.serialIOTimerOK = False
+        self.serialIOTimer.start(self.serialIOTimerInterval)
 
         # determine if this device provides multiple measurements
         if (self.devices.count(device_id) == 1):
@@ -568,7 +601,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             #  process the result
             result = current_dialog.result
             if result[0]:
-                #  user slected a value
+                #  user selected a value
                 val = result[1]
             else:
                 #  user cancelled action
@@ -579,27 +612,20 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
             #  check if this is a manually entered value or from a device
             if (self.manualFlag):
-                if (self.settings['OrganizationName'] == 'SWFSC' and 
-                    (self.measureType[i] == 'barcode' 
-                    or self.measureType[i] == 'dna_finclip_number')):
-                    keyDialog = keypad.KeyPad(self.comment, self)
-                    keyDialog.exec()
-                    val = keyDialog.dispEdit.toPlainText()
-                else:
-                    #  this value is entered manually - display the number pad
-                    self.numpad.msgLabel.setText("Enter " + self.label[i])
-                    if not self.numpad.exec():
-                        #  user cancelled action
-                        return
-                    #  get the number from the numpad and unset manualFlag value
-                    val = self.numpad.value
-                    #  check that we didn't get a 0 weight
-                    if (val == '0'):
-                        self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
-                            "for the basket weight which is not allowed. If your sample is too small to register " +
-                            "on the scale, you should enter 0.001", 'info')
-                        self.message.exec()
-                        return
+                #  this value is entered manually - display the number pad
+                self.numpad.msgLabel.setText("Enter " + self.label[i])
+                if not self.numpad.exec():
+                    #  user cancelled action
+                    return
+                #  get the number from the numpad and unset manualFlag value
+                val = self.numpad.value
+                #  check that we didn't get a 0 weight
+                if (val == '0'):
+                    self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
+                        "for the basket weight which is not allowed. If your sample is too small to register " +
+                        "on the scale, you should enter 0.001", 'info')
+                    self.message.exec()
+                    return
                 self.manualFlag = False
 
             elif not (self.serialValue == None):
@@ -715,25 +741,18 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         else:
             #  check if this is a manually entered value or from a device
             if self.manualFlag:
-                if (self.settings['OrganizationName'] == 'SWFSC' and 
-                    (self.measureType[i] == 'barcode' or 
-                    self.measureType[i] == 'dna_finclip_number')):
-                    keyDialog = keypad.KeyPad(self.comment, self)
-                    keyDialog.exec()
-                    val = keyDialog.dispEdit.toPlainText()
-                else:
-                    #  this value is entered manually
-                    self.numpad.msgLabel.setText("Enter " + self.label[i])
-                    if not self.numpad.exec():
-                        return
-                    val = self.numpad.value
-                    #  check that we didn't get a 0 weight
-                    if (val == '0'):
-                        self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
-                            "for the basket weight which is not allowed. If your sample is too small to register " +
-                            "on the scale, you should enter 0.001", 'info')
-                        self.message.exec()
-                        return
+                #  this value is entered manually
+                self.numpad.msgLabel.setText("Enter " + self.label[i])
+                if not self.numpad.exec():
+                    return
+                val = self.numpad.value
+                #  check that we didn't get a 0 weight
+                if (val == '0'):
+                    self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
+                        "for the basket weight which is not allowed. If your sample is too small to register " +
+                        "on the scale, you should enter 0.001", 'info')
+                    self.message.exec()
+                    return
                 self.manualFlag = False
 
             elif not self.serialValue == None:
@@ -831,41 +850,32 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  check if we're editing (overwriting) a record or inserting a new one
         if self.editFieldFlag:
             # overwrite record - UPDATE
-            sql =("UPDATE measurements SET measurement_value ='" +
-                                   self.values[i] + "' WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                                   " AND sample_id="+self.activeSample+" AND specimen_id = " +self.specimenKey + " AND measurement_type = '" +
-                                   measure_type+"'")
+            sql =("UPDATE measurements SET measurement_value ='" + self.values[i] + "' WHERE  ship="+
+                    self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
+                    " AND sample_id="+self.activeSample+" AND specimen_id = " +self.specimenKey +
+                    " AND measurement_type = '" + measure_type+"'")
             self.db.dbExec(sql)
+
             # update table
             self.updateMeasureView()
+
             # check conditionals
             self.checkConditionals()
 
         else:
             #  this is a new record - INSERT
-            sql = ("INSERT INTO measurements (ship, survey, event_id, sample_id, specimen_id, measurement_type, device_id, " +
-                                    "measurement_value) VALUES (" +self.ship+","+self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey + ",'" +
-                                    measure_type + "'," + self.devices[i] + ",'" +
-                                    self.values[i] + "')")
+            sql = ("INSERT INTO measurements (ship, survey, event_id, sample_id, specimen_id, " +
+                    "measurement_type, device_id, measurement_value) VALUES (" +self.ship+","+
+                    self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey +
+                    ",'" + measure_type + "'," + self.devices[i] + ",'" + self.values[i] + "')")
             self.db.dbExec(sql)
-
-            # When finClip taken marked as true, then autofill dna_finclip_number
-            # with last four survey digits + 'SH' + speciesNumber eg 2506SH001
-            dnaFinclipNum = 'dna_finclip_number'
-            if measure_type == 'finclip_taken' and self.values[i] == 'Yes' and dnaFinclipNum in self.measureType:
-                speciesNum = str(self.measureModel.rowCount() + 1).zfill(3)
-                dnaFinclip = self.survey[-4:] + 'SH' + speciesNum
-                sql = ("INSERT INTO measurements (ship, survey, event_id, sample_id, specimen_id, measurement_type, device_id, " +
-                                    "measurement_value) VALUES (" +self.ship+","+self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey + ",'" +
-                                    dnaFinclipNum + "'," + self.devices[i] + ",'" +
-                                    dnaFinclip + "')")
-                self.db.dbExec(sql)
-                self.buttons[i+1].setStyleSheet("background-color: green")
 
             # update table
             self.updateMeasureView()
+
             # check conditionals
             self.checkConditionals()
+
             if keepGoing:
                 self.moveOn(i)
 
@@ -913,6 +923,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 btn.setEnabled(self.buttonEnable[i])
                 if not self.buttonEnable[i]:
                     btn.setStyleSheet("background-color: gray")
+
 
     def getNext(self, skipChecks=False):
         '''getNext checks that all required measurements have been collected for a sample
@@ -1050,10 +1061,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         if self.admin:
             #  admin mode shows all measurements
             sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM V_SPECIMEN_MEASUREMENTS WHERE " +
-                                      "ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                                      " AND sample_id="+self.activeSample+"  AND " +
-                                      "PROTOCOL_NAME = '" + self.protocol +"'" + sqlStringEnd +
-                                      "ORDER BY SPECIMEN_ID")
+                    "ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
+                    " AND sample_id="+self.activeSample+"  AND " +
+                    "PROTOCOL_NAME = '" + self.protocol +"'" + sqlStringEnd +
+                    "ORDER BY SPECIMEN_ID")
             self.measureModel.setQuery(sql, self.db.db)
         else:
             #  regular mode shows only measurements at that station
@@ -1248,7 +1259,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         # get conditionals
         sql = ("SELECT CONDITIONALS.CONDITIONAL FROM CONDITIONALS WHERE ( "+
-                                            "CONDITIONALS.PROTOCOL_NAME = '"+self.protocol+"')")
+                "CONDITIONALS.PROTOCOL_NAME = '"+self.protocol+"')")
         query = self.db.dbQuery(sql)
         self.conditionals = []
 
@@ -1448,6 +1459,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         if val:
             self.comment = val
+
 
     def checkOrder(self, i):
         '''checkOrder enforces the protocol order.

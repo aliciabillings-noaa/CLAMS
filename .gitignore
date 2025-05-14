@@ -19,3 +19,5 @@ clamsABL.ini
 __pycache__/
 *.py[cod]
 clams_NWFSC.ini
+.vs/*
+[Vv]env/*

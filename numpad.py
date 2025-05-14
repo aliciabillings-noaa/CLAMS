@@ -108,6 +108,7 @@ class NumPad(QDialog, ui_NumPad.Ui_numpad):
         :return: none
         """
         self.dispBox.setText("")
+        self.value = None
 
 
     def Enter(self):
@@ -115,7 +116,11 @@ class NumPad(QDialog, ui_NumPad.Ui_numpad):
         sets the value, clears the display, and returns
         :return: self.accept and return
         """
-        self.value = self.dispBox.text()
+
+        value = self.dispBox.text()
+        if value == '':
+            value = None
+        self.value = value
         self.dispBox.setText("")
         self.accept()
 
@@ -126,6 +131,8 @@ class NumPad(QDialog, ui_NumPad.Ui_numpad):
         :param event:
         :return: self.reject and return
         """
+        self.dispBox.setText("")
+        self.value = None
         self.reject()
 
 
