@@ -118,8 +118,6 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
                 "AND measurement_value <> 'None' ORDER BY measurement_value DESC")
         query = self.db.dbQuery(sql)
         lastVialNum, = query.first()
-        print(sql)
-        print(lastVialNum)
 
         #  wrap this in a try block to handle the first number (when lastVialNum == None)
         #  This will also catch malformed numbers and will return 1 in those cases too.
@@ -128,8 +126,6 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
             thisNum = lastVialNum + 1
         except:
             thisNum = 1
-
-        print(thisNum)
 
         return thisNum
 
@@ -197,9 +193,6 @@ class SWFSCFinClipDNADlg(QDialog, ui_SWFSCFinClipDNADlg.Ui_SWFSCFinClipDNADlg):
                 "AND measurement_value='" + vialNum + "'")
         query = self.db.dbQuery(sql)
         hasThisVial, = query.first()
-        print(sql)
-        print("HASVIAL",hasThisVial)
-
 
         if hasThisVial is None:
             return True

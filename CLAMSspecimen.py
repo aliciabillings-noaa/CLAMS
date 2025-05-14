@@ -994,6 +994,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.comment=''
         #  reset the editing state
         self.editStateFlag = False
+
+        #  enable the sampleing method combobox
+        self.samplingMethodBox.setEnabled(True)
+
         #  enable the change protocol button - only enabled when you're not processing a specimen
         self.protoBtn.setEnabled(True)
 
@@ -1021,6 +1025,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 self.activeHaul+ ","+self.activeSample+","+ self.workStation + ",'" + self.scientist +
                 "','" + samplingMethod + "','" + self.protocol + "','" + self.comment + "')")
         self.db.dbExec(sql)
+
+        #  disable sampling method combobox  until we move onto the next specimen since
+        #  we've written the value to the db
+        self.samplingMethodBox.setEnabled(False)
 
         # get the newly created specimen key
         sql = ("SELECT max(specimen_id) FROM specimen WHERE ship="+self.ship+" AND survey="+self.survey+
@@ -1075,6 +1083,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                   self.workStation + sqlStringEnd + "ORDER BY SPECIMEN_ID")
             self.measureModel.setQuery(sql, self.db.db)
 
+
+        self.measureView.scrollToBottom()
 
 
     def setup(self):
