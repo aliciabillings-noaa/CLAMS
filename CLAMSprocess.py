@@ -16,9 +16,10 @@
 """
 .. module:: CLAMSProcess
 
-    :synopsis: CLAMSProcess is the fcatch processing form and is
-               displayed after a user selects a catch event to
-               process.
+    :synopsis: CLAMSProcess is the main catch processing form and is
+               displayed after a user selects a catch event to process.
+               It is the entry point to the other catch processing
+               modules (Haul, Catch, Length, and Specimen)
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
