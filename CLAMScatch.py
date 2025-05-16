@@ -102,9 +102,15 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.headerFont = QFont("Arial Black", 11, -1, False)
 
         #  set the basket precision - basket weights will be rounded to this many
-        #  digits after the decimal.
+        #  digits after the decimal. Note that currently the database supports
+        #  UP TO 4 digits. Values beyond that will be lost.
         if 'CatchBasketPrecision' in self.settings:
-            self.basketPrecision = self.settings['CatchBasketPrecision']
+            try:
+                #  convert the setting in the database to an integer
+                self.basketPrecision = int(self.settings['CatchBasketPrecision'])
+            except:
+                #  setting is in application_configuration but it isn't a number - default to 3
+                self.basketPrecision = 3
         else:
             #  setting is not in application_configuration - default to 3
             self.basketPrecision = 3
@@ -951,8 +957,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 basketTotalWeight[basketType] += 0
                 basketTotalCount[basketType] += 1
 
-            #  add this basket to the table CatchBasketPrecision
-            basketWeight = str(round(basketWeight,self.basketPrecision))
+            #  add this basket to the table
+            basketWeight = str(round(basketWeight, self.basketPrecision))
             self.basketTable.insertRow(basketCount)
             headerItem = QTableWidgetItem(basketId)
             headerItem.setFont(self.headerFont)
@@ -970,13 +976,13 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         totalSampleWeight = 0
         for basketType in self.basketTypes:
             count = str(basketTotalCount[basketType])
-            weight = str(round(basketTotalWeight[basketType],self.basketPrecision))
+            weight = str(round(basketTotalWeight[basketType], self.basketPrecision))
             totalSampleWeight += basketTotalWeight[basketType]
             self.sumTable.setItem(sumTableRows[basketType], 0, QTableWidgetItem(count))
             self.sumTable.setItem(sumTableRows[basketType], 1, QTableWidgetItem(weight))
 
         #  lastly, update the total sample weight in the samples table
-        totalSampleWeight = str(round(totalSampleWeight,self.basketPrecision))
+        totalSampleWeight = str(round(totalSampleWeight, self.basketPrecision))
         item = self.speciesList.findItems(self.activeFullName,  Qt.MatchFlag.MatchExactly)
         if item:
             self.speciesList.setItem(item[0].row(), 3, QTableWidgetItem(totalSampleWeight))
@@ -1550,7 +1556,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             sampleWeight, = wtQuery.first()
             try:
                 sampleWeight = float(sampleWeight)
-                sampleWeight = round(sampleWeight,self.basketPrecision)
+                sampleWeight = round(sampleWeight, self.basketPrecision)
             except:
                 sampleWeight = 0
 
