@@ -23,6 +23,10 @@ INSERT INTO "APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION
 
 INSERT INTO "APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('AllowEventChangeWhileProcessing', 'False', 'If True, the MasterStation can change the active event ID when other workstations are open. If false, all workstations must be closed before the active event is changed.');
 
+INSERT INTO "APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('CatchBasketPrecision', '2', 'Specify the number of digits after the decimal basket weights are rounded to. Currently the weight column in the baskets table is limited to 4 digits.');
+
+INSERT INTO "APPLICATION_CONFIGURATION" (PARAMETER, PARAMETER_VALUE, DESCRIPTION) VALUES ('EnablePresentSampleType', 'False', 'When True, users can add samples as Present. When False, all species are added as Species samples. Present samples indicate a species presence in the catch, but cannot have any baskets or measurements associated with them.');
+
 
 
 UPDATE APPLICATION_EVENTS SET EVENT_MODULE = 'MACETrawlEvent' WHERE EVENT_MODULE='startMACETrawlEvent';
@@ -58,6 +62,17 @@ alter table MEASUREMENT_SETUP drop column DEVICE_INTERFACE;
 
 --add the vessel_code column to ships
 ALTER TABLE ships ADD vessel_code VARCHAR(6);
+UPDATE ships SET vessel_code='DY' where ship=157;
+UPDATE ships SET vessel_code='MF' where ship=21;
+UPDATE ships SET vessel_code='SSFS' where ship=999;
+UPDATE ships SET vessel_code='SH' where ship=180;
+
+
+
+--  extend the precision of the basket weights in baskets table
+alter table baskets modify weight NUMBER(11,4);
+
+
 
 
 

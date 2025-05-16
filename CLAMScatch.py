@@ -128,6 +128,19 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.horizontalHeader().setStretchLastSection(True)
         self.speciesList.horizontalHeader().setStretchLastSection(True)
 
+        #  set up the the basket table headers
+        self.basketTable.clearContents()
+        self.basketTable.setRowCount(0)
+        headerItem = QTableWidgetItem("Weight (kg)")
+        headerItem.setFont(self.headerFont)
+        self.basketTable.setHorizontalHeaderItem(0, headerItem)
+        headerItem = QTableWidgetItem("Count")
+        headerItem.setFont(self.headerFont)
+        self.basketTable.setHorizontalHeaderItem(1, headerItem)
+        headerItem = QTableWidgetItem("Basket Type")
+        headerItem.setFont(self.headerFont)
+        self.basketTable.setHorizontalHeaderItem(2, headerItem)
+
         # set up recurring dialogs
         self.message = messagedlg.MessageDlg(self)
         self.numpad = numpad.NumPad(self)
