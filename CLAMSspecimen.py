@@ -1470,6 +1470,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         if val:
             self.comment = val
 
+        self.samplingMethodBox.setEnabled(False)
+
 
     def checkOrder(self, i):
         '''checkOrder enforces the protocol order.
@@ -1542,7 +1544,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     break
 
         #  get data from db - query everything *BUT* length
-        sql = ("SELECT ship, survey, haul, specimen_id, species_code, common_name, "+
+        sql = ("SELECT ship, survey, event_id, specimen_id, species_code, common_name, "+
                 "organism_weight, sex, maturity, scientist, barcode FROM v_specimen_measurements WHERE "+
                 "survey=" + self.survey +" AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
         query = self.db.dbQuery(sql)
@@ -1673,8 +1675,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
     def editSamplingMethod(self):
         # user toggles in sample flag - have to update data
         if self.editStateFlag:
-            sql = ("UPDATE specimen SET sampling_method =" + self.samplingMethodBox.currentText() +
-                    " WHERE ship="+self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+
+            sql = ("UPDATE specimen SET sampling_method ='" + self.samplingMethodBox.currentText() +
+                    "' WHERE ship="+self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND specimen_id = "+self.specimenKey)
             self.db.dbExec(sql)
 
