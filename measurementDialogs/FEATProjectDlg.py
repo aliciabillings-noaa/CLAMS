@@ -105,7 +105,7 @@ class FEATProjectDlg(QDialog):
 
         # add the instruction label
         instruction_label = QLabel()
-        instruction_label.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Calibri';")
+        instruction_label.setStyleSheet("color: rgb(0, 0, 127); font: 12pt 'Arial Black';")
         instruction_label.setText("Choose project to print label for...")
         self.overall_layout.addWidget(instruction_label)
 
@@ -123,7 +123,7 @@ class FEATProjectDlg(QDialog):
             chk = self.check_conditionals(proto_name)
             if chk:
                 btn = QPushButton()
-                btn.setStyleSheet("color: rgb(0, 0, 127); font: 16pt 'Calibri';")
+                btn.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Arial Black';")
                 btn.setText(proto_query.value(1).toString())
                 btn.clicked.connect(self.set_project)
                 self.overall_layout.addWidget(btn)

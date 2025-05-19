@@ -18,7 +18,10 @@
     <widget class="QLabel" name="label">
      <property name="font">
       <font>
-       <pointsize>18</pointsize>
+       <family>Arial Black</family>
+       <pointsize>16</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
@@ -38,7 +41,10 @@
       <widget class="QDateEdit" name="dateEdit">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -47,8 +53,14 @@
       <widget class="QTimeEdit" name="timeEdit">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
+       </property>
+       <property name="displayFormat">
+        <string>hh:mm:ss</string>
        </property>
        <property name="time">
         <time>
@@ -56,9 +68,6 @@
          <minute>0</minute>
          <second>0</second>
         </time>
-       </property>
-       <property name="displayFormat">
-        <string>hh:mm:ss</string>
        </property>
       </widget>
      </item>
@@ -72,7 +81,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -94,7 +106,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -112,7 +127,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">

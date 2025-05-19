@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>880</width>
-    <height>597</height>
+    <height>596</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -36,6 +36,7 @@
      </property>
      <property name="font">
       <font>
+       <family>Arial Black</family>
        <pointsize>18</pointsize>
        <weight>75</weight>
        <bold>true</bold>
@@ -71,7 +72,10 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
          </font>
         </property>
         <property name="text">
@@ -98,6 +102,7 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>18</pointsize>
           <weight>75</weight>
           <bold>true</bold>
@@ -124,7 +129,10 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
          </font>
         </property>
         <property name="text">
@@ -151,7 +159,10 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
          </font>
         </property>
         <property name="text">
@@ -178,7 +189,10 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
          </font>
         </property>
         <property name="text">
@@ -211,6 +225,7 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>18</pointsize>
           <weight>75</weight>
           <bold>true</bold>
@@ -237,7 +252,10 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
          </font>
         </property>
         <property name="text">
@@ -264,7 +282,10 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
          </font>
         </property>
         <property name="text">
@@ -297,7 +318,10 @@
         </property>
         <property name="font">
          <font>
+          <family>Arial Black</family>
           <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
          </font>
         </property>
         <property name="text">

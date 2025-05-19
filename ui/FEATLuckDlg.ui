@@ -21,6 +21,7 @@
        <property name="font">
         <font>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -32,7 +33,7 @@
      <item>
       <widget class="QCheckBox" name="cb_nad">
        <property name="styleSheet">
-        <string notr="true">font: 16pt &quot;Calibri&quot;;</string>
+        <string notr="true">font: 10pt &quot;Arial Black&quot;;</string>
        </property>
        <property name="text">
         <string>Gonad RNA Taken</string>
@@ -42,7 +43,7 @@
      <item>
       <widget class="QCheckBox" name="cb_liver">
        <property name="styleSheet">
-        <string notr="true">font: 16pt &quot;Calibri&quot;;</string>
+        <string notr="true">font: 10pt &quot;Arial Black&quot;;</string>
        </property>
        <property name="text">
         <string>Liver RNA Taken</string>
@@ -52,7 +53,7 @@
      <item>
       <widget class="QLabel" name="l_samp_num">
        <property name="styleSheet">
-        <string notr="true">font: 14pt &quot;Calibri&quot;;</string>
+        <string notr="true">font: 10pt &quot;Arial Black&quot;;</string>
        </property>
        <property name="text">
         <string>Use Sample Number: </string>
@@ -75,7 +76,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -112,7 +116,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -123,7 +130,7 @@
      <item>
       <widget class="QLabel" name="label_4">
        <property name="styleSheet">
-        <string notr="true">font: 14pt &quot;Calibri&quot;;</string>
+        <string notr="true">font: 10pt &quot;Arial Black&quot;;</string>
        </property>
        <property name="text">
         <string>Current Barcode</string>
@@ -133,7 +140,7 @@
      <item>
       <widget class="QLabel" name="l_cur_code">
        <property name="styleSheet">
-        <string notr="true">font: 14pt &quot;Calibri&quot;;</string>
+        <string notr="true">font: 10pt &quot;Arial Black&quot;;</string>
        </property>
        <property name="text">
         <string>None</string>
@@ -160,7 +167,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -197,7 +207,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
