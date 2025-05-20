@@ -64,7 +64,7 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         self.message = messagedlg.MessageDlg(self)
 
         # this is all hard-coded for now todo: should use DB for this later
-        self.required_params = ['Collection', 'OrderOcc', 'Fisher']
+        self.required_params = ['Collection', 'OrderOcc', 'Operator']
 
         # load dropdown boxes
         self.load_dropdowns()
@@ -73,13 +73,8 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
                     'OrderOcc': [self.pb_order_occ, 'ed', 'np'],
                     'WireOut': [self.pb_wire_out, 'ed', 'np'],
                     'TowSpeedSTW': [self.pb_tow_speed_stw, 'ed', 'np'],
-                    'TowSpeedSOG': [self.pb_tow_speed_sog, 'ed', 'np'],
-                    'WindSpd': [self.pb_wind_spd, 'ed', 'np'],
-                    'WindWaves': [self.pb_wind_dir, 'ed', 'np'],
-                    'SurfaceTemp': [self.pb_surface_temp, 'ed', 'np'],
-                    'BottomDepth': [self.pb_bottom_depth, 'ed', 'np'],
-                    'Salinity': [self.pb_salinity, 'ed', 'np']}
-        self.cbs = {'Fisher': [self.cb_fisher, 'ed'],
+                    'TowSpeedSOG': [self.pb_tow_speed_sog, 'ed', 'np']}
+        self.cbs = {'Operator': [self.cb_operator, 'ed'],
                     'State': [self.cb_state, 'ed'],
                     'Country': [self.cb_country, 'ed'],
                     'Gear': [self.cb_gear, 'ed'],
@@ -135,8 +130,8 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         sci_sql = "SELECT scientist FROM personnel WHERE active=1 ORDER BY scientist"
         sci_query = self.db.dbQuery(sci_sql)
         for sci, in sci_query:
-            self.cb_fisher.addItem(sci)
-            self.cb_fisher.setCurrentIndex(-1)
+            self.cb_operator.addItem(sci)
+            self.cb_operator.setCurrentIndex(-1)
         
         # Init combo boxes to empty value
         self.cb_state.setCurrentIndex(-1)
@@ -184,13 +179,18 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         todo: default for event type is used, but could be taken from db at some point
         :return:
         """
-        #  write record to events table
-        sql = ("INSERT INTO " + self.schema + ".events (ship, survey, event_id, gear, event_type, " +
-                "performance_code, scientist, comments) VALUES (" + self.ship + "," + self.survey + "," +
-               str(self.activeEvent) + ",'" + self.gear + "', 8, 0, '" + self.scientist + "', '')")
-        self.db.dbExec(sql)
-        # set the flag to true that the event was entered
-        self.event_entered = True
+        sql = ("SELECT * FROM " + self.schema + ".events where ship=" + self.ship + 
+               ' and survey=' + self.survey + ' and event_id= ' + str(self.activeEvent))
+        exists_query = self.db.dbQuery(sql)
+        exists = exists_query.first()
+        if not exists[0]:
+            #  write record to events table
+            sql = ("INSERT INTO " + self.schema + ".events (ship, survey, event_id, gear, event_type, " +
+                    "performance_code, scientist, comments) VALUES (" + self.ship + "," + self.survey + "," +
+                str(self.activeEvent) + ",'" + self.gear + "', 8, 0, '" + self.scientist + "', '')")
+            self.db.dbExec(sql)
+            # set the flag to true that the event was entered
+            self.event_entered = True
 
     def save(self):
         """
@@ -270,18 +270,6 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
                 # check if it already exists
                 exists = self.check_if_exists(param, table)
                 # if it is for the trawl scientist or the gear, update the EVENTS table as well
-                if param == 'TrawlScientist':
-                    update_sci_sql = ("UPDATE " + self.schema +
-                                      ".events SET scientist='" + cb.currentText() + "' WHERE ship="
-                                      + self.ship + " AND survey=" + self.survey +
-                                      " AND event_id=" + str(self.activeEvent))
-                    self.db.dbQuery(update_sci_sql)
-                elif param == 'Gear':
-                    update_gear_sql = ("UPDATE " + self.schema +
-                                       ".events SET gear='" + cb.currentText() + "' WHERE ship="
-                                       + self.ship + " AND survey=" + self.survey +
-                                       " AND event_id=" + str(self.activeEvent))
-                    self.db.dbQuery(update_gear_sql)
                 # if it doesn't exist and the text is not blank, add a new row
                 if exists == 0 and cb.currentText() != '':
                     if table == 'ed':

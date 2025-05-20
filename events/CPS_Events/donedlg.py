@@ -115,9 +115,10 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
             self.message.show()
         else:
             # get the performance code from the cb text
+            comments = self.cur_coms if self.cur_coms else ''
             code, desc = self.cb_perf.currentText().split(" - ")
             update_sql = ("UPDATE " + self.schema + ".events SET performance_code = " + str(code) +
-                          ", comments = '" + self.cur_coms + "' WHERE ship=" + self.ship + " AND survey="
+                          ", comments = '" + comments + "' WHERE ship=" + self.ship + " AND survey="
                           + self.survey + " AND event_id=" + str(self.activeEvent))
             self.db.dbQuery(update_sql)
 
