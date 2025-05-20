@@ -36,6 +36,7 @@
 """
 
 from PyQt6.QtWidgets import *
+from PyQt6.QtCore import *
 from ui import ui_CPSMetaDlg
 import numpad
 import keypad
@@ -82,10 +83,10 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
                     'ArcedTow': [self.cb_arced_tow, 'ga'],
                     'SeaCondition': [self.cb_sea_cond, 'ga'],
                     'Clouds': [self.cb_clouds, 'ga']}
-        self.tf = {'DownswellTow': [self.tf_downswell_tow, 'ed', 'np'],
-                    'HeadropeTDR': [self.tf_headrope, 'ed', 'np'],
-                    'FootropeTDR': [self.tf_footrope, 'ed', 'kp'],
-                    'Camera': [self.tf_camera, 'ed', 'np']}
+        self.tf = {'DownswellTow': [self.tf_downswell_tow, 'ed'],
+                    'HeadropeTDR': [self.tf_headrope, 'ed'],
+                    'FootropeTDR': [self.tf_footrope, 'ed'],
+                    'Camera': [self.tf_camera, 'ed']}
         
         # set up numpad ane keypad
         self.numpad = numpad.NumPad(self)
@@ -118,6 +119,13 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
             # set text if so
             if exists != 0:
                 cb.setCurrentText(exists)
+        # refill any tf
+        for param, tf_lst in self.tf.items():
+            tf, table = tf_lst
+            # get current value of check state
+            exists = self.check_if_exists(param, table)
+            state = Qt.CheckState.Checked if exists == 'Yes' else Qt.CheckState.Unchecked
+            tf.setCheckState(state)
 
     def load_dropdowns(self):
         """
@@ -184,10 +192,11 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         exists_query = self.db.dbQuery(sql)
         exists = exists_query.first()
         if not exists[0]:
-            #  write record to events table
+            # Write record to events table
+            # SW will only use event type 17 (Standard surface tow), so hardcoding it here.
             sql = ("INSERT INTO " + self.schema + ".events (ship, survey, event_id, gear, event_type, " +
                     "performance_code, scientist, comments) VALUES (" + self.ship + "," + self.survey + "," +
-                str(self.activeEvent) + ",'" + self.gear + "', 8, 0, '" + self.scientist + "', '')")
+                str(self.activeEvent) + ",'" + self.gear + "', 17, 0, '" + self.scientist + "', '')")
             self.db.dbExec(sql)
             # set the flag to true that the event was entered
             self.event_entered = True
@@ -311,6 +320,40 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
                                   + self.ship + " AND survey=" + self.survey + " AND event_id="
                                   + str(self.activeEvent) + " AND gear_accessory='" + param + "'")
                     self.db.dbQuery(cb_sql)
+            for param, tf_lst in self.tf.items():
+                tf, table = tf_lst
+                # check if it already exists
+                exists = self.check_if_exists(param, table)
+                paramVal = 'Yes' if tf.checkState() == Qt.CheckState.Checked else 'No'
+                # if it is for the trawl scientist or the gear, update the EVENTS table as well
+                # if it doesn't exist and the text is not blank, add a new row
+                if exists == 0:
+                    if table == 'ed':
+                        tf_sql = ("INSERT INTO " + self.schema +
+                                  ".event_data (ship, survey, event_id, partition, event_parameter, "
+                                  "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
+                                  + str(self.activeEvent) + ", 'MainTrawl', '" + param + "', '"
+                                  + paramVal + "')")
+                    else:
+                        tf_sql = ("INSERT INTO " + self.schema +
+                                  ".gear_accessory (ship, survey, event_id, gear_accessory, gear_accessory_option) "
+                                  "VALUES (" + self.ship + ", " + self.survey + ", " + str(self.activeEvent)
+                                  + ", '" + param + "', '" + paramVal + "')")
+                    self.db.dbQuery(tf_sql)
+                # if it exists and the text is not blank, update the row
+                elif exists != 0:
+                    if table == 'ed':
+                        tf_sql = ("UPDATE " + self.schema +
+                                  ".event_data SET parameter_value = '" + paramVal + "' WHERE ship="
+                                  + self.ship + " AND survey=" + self.survey + " AND event_id="
+                                  + str(self.activeEvent) + " AND partition='MainTrawl' AND event_parameter='"
+                                  + param + "'")
+                    else:
+                        tf_sql = ("UPDATE " + self.schema +
+                                  ".gear_accessory SET gear_accessory_option = '" + paramVal + "' WHERE ship="
+                                  + self.ship + " AND survey=" + self.survey + " AND event_id="
+                                  + str(self.activeEvent) + " AND gear_accessory='" + param + "'")
+                    self.db.dbQuery(tf_sql)
         self.accept()
 
     def check_if_exists(self, event_parameter, table):
