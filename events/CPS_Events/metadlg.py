@@ -65,13 +65,12 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         self.message = messagedlg.MessageDlg(self)
 
         # this is all hard-coded for now todo: should use DB for this later
-        self.required_params = ['Collection', 'OrderOcc', 'Operator']
+        self.required_params = ['Collection', 'Operator']
 
         # load dropdown boxes
         self.load_dropdowns()
 
         self.pbs = {'Collection': [self.pb_collection, 'ed', 'np'],
-                    'OrderOcc': [self.pb_order_occ, 'ed', 'np'],
                     'WireOut': [self.pb_wire_out, 'ed', 'np'],
                     'TowSpeedSTW': [self.pb_tow_speed_stw, 'ed', 'np'],
                     'TowSpeedSOG': [self.pb_tow_speed_sog, 'ed', 'np']}
@@ -86,7 +85,8 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         self.tf = {'DownswellTow': [self.tf_downswell_tow, 'ed'],
                     'HeadropeTDR': [self.tf_headrope, 'ed'],
                     'FootropeTDR': [self.tf_footrope, 'ed'],
-                    'Camera': [self.tf_camera, 'ed']}
+                    'Camera': [self.tf_camera, 'ed'],
+                    'Pingers': [self.tf_pingers, 'ed']}
         
         # set up numpad ane keypad
         self.numpad = numpad.NumPad(self)

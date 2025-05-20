@@ -193,7 +193,7 @@
              </font>
             </property>
             <property name="text">
-             <string>Fisher</string>
+             <string>Operator</string>
             </property>
            </widget>
           </item>
@@ -352,33 +352,6 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pb_startmmw">
-            <property name="minimumSize">
-             <size>
-              <width>170</width>
-              <height>37</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>170</width>
-              <height>36</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Arial Black</family>
-              <pointsize>12</pointsize>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>Start MM Watch</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QPushButton" name="pb_niw">
             <property name="minimumSize">
              <size>
@@ -487,33 +460,6 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pb_stopmmw">
-            <property name="minimumSize">
-             <size>
-              <width>170</width>
-              <height>37</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>170</width>
-              <height>36</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Arial Black</family>
-              <pointsize>12</pointsize>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>Stop MM Watch</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -595,16 +541,6 @@
        <attribute name="verticalHeaderDefaultSectionSize">
         <number>35</number>
        </attribute>
-       <row>
-        <property name="text">
-         <string>New Row</string>
-        </property>
-       </row>
-       <row>
-        <property name="text">
-         <string>New Row</string>
-        </property>
-       </row>
        <row>
         <property name="text">
          <string>New Row</string>
