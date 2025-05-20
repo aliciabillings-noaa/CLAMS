@@ -1601,7 +1601,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             for lengthType in self.measureType:
                 if lengthType in len_list:
                     lengthType = str(lengthType)
-                    query = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
+                    sql = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
                         "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
                         " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
                     query = self.db.dbQuery(sql)
