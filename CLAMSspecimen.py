@@ -177,8 +177,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.samplingMethodBox.setCurrentIndex(self.samplingMethodBox.findText('random'))
 
         # set up our QTableView
-        font = QFont('helvetica', 12, -1, False)
+        font = QFont('Arial Black', 10, -1, False)
         self.measureView.setFont(font)
+        self.measureView.horizontalHeader().setStyleSheet("QHeaderView::section { font-size: 8pt; font-family: 'Arial Black'; }")
+        self.measureView.verticalHeader().setStyleSheet("QHeaderView::section { font-size: 8pt; font-family: 'Arial Black'; }")
         #TODO: change this to a QTableView using QtDesigner, following ~ line 107 of ClamsCatch
         self.measureModel = QtSql.QSqlQueryModel()
         self.measureView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)

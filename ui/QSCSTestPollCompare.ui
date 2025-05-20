@@ -25,6 +25,13 @@
           <height>35</height>
          </size>
         </property>
+        <property name="font">
+         <font>
+          <family>Arial Black</family>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="text">
          <string>Compare</string>
         </property>
@@ -32,6 +39,13 @@
       </item>
       <item>
        <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <family>Arial Black</family>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="text">
          <string>Sensors from database compared to SCS stream</string>
         </property>

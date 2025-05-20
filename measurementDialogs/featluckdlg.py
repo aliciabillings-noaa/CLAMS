@@ -276,7 +276,7 @@ class GetLabel(QDialog):
         self.setWindowIcon(win_icon)
 
         print_btn = QPushButton()
-        print_btn.setStyleSheet("color: rgb(0, 0, 127); font: 16pt 'Calibri';")
+        print_btn.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Arial Black';")
         print_btn.setText("Print Label")
         print_btn.clicked.connect(self.create_label)
 

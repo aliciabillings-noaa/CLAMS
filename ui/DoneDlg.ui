@@ -16,12 +16,6 @@
     <height>400</height>
    </size>
   </property>
-  <property name="font">
-   <font>
-    <family>Calibri</family>
-    <pointsize>12</pointsize>
-   </font>
-  </property>
   <property name="windowTitle">
    <string>Finish Tow</string>
   </property>
@@ -38,7 +32,9 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>18</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -57,7 +53,9 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -76,7 +74,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -91,7 +92,9 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -104,7 +107,10 @@
       <widget class="QTextEdit" name="te_comment">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>11</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -129,8 +135,10 @@
        </property>
        <property name="font">
         <font>
-         <family>Calibri</family>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -140,6 +148,14 @@
      </item>
      <item>
       <spacer name="horizontalSpacer">
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -167,8 +183,10 @@
        </property>
        <property name="font">
         <font>
-         <family>Calibri</family>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">

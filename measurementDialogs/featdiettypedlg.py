@@ -478,7 +478,7 @@ class GetLabel(QDialog):
         self.setWindowIcon(win_icon)
 
         print_btn = QPushButton()
-        print_btn.setStyleSheet("color: rgb(0, 0, 127); font: 16pt 'Calibri';")
+        print_btn.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Arial Black';")
         print_btn.setText("Print Label")
         print_btn.clicked.connect(self.create_label)
 
@@ -555,7 +555,7 @@ class GetReasons(QDialog):
         self.overall_layout = QVBoxLayout()
 
         reason_label = QLabel()
-        reason_label.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Calibri';")
+        reason_label.setStyleSheet("color: rgb(0, 0, 127); font: 12pt 'Arial Black';")
         if location == 'collect':
             reason_label.setText("Why can't you take the stomach?")
             reasons = ["Blown", "Regurg", "Nicked", "Unknown"]
@@ -567,7 +567,7 @@ class GetReasons(QDialog):
         for r in reasons:
             btn = QPushButton()
             btn.setObjectName(r)
-            btn.setStyleSheet("color: rgb(0, 0, 127); font: 16pt 'Calibri';")
+            btn.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Arial Black';")
             btn.setText(r)
             btn.clicked.connect(self.set_reason)
             self.overall_layout.addWidget(btn)
@@ -575,12 +575,12 @@ class GetReasons(QDialog):
         # create finished and cancel buttons
         btn_box = QHBoxLayout()
         self.reason_done = QPushButton()
-        self.reason_done.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Calibri';")
+        self.reason_done.setStyleSheet("color: rgb(0, 0, 127); font: 12pt 'Arial Black';")
         self.reason_done.setText("Done")
         self.reason_done.clicked.connect(self.fin)
         self.reason_done.setEnabled(False)
         reason_cancel = QPushButton()
-        reason_cancel.setStyleSheet("color: rgb(0, 0, 127); font: 16pt 'Calibri';")
+        reason_cancel.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Arial Black';")
         reason_cancel.setText("Cancel")
         reason_cancel.clicked.connect(self.close)
         btn_box.addWidget(reason_cancel)
@@ -602,9 +602,9 @@ class GetReasons(QDialog):
         widgets = (self.overall_layout.itemAt(i) for i in range(self.overall_layout.count()))
         for w in widgets:
             if isinstance(w.widget(), QPushButton):
-                w.widget().setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Calibri'")
+                w.widget().setStyleSheet("color: rgb(0, 0, 127); font: 12pt 'Arial Black'")
         sending_btn = self.sender()
-        sending_btn.setStyleSheet("color: red; font: 18pt 'Calibri'")
+        sending_btn.setStyleSheet("color: red; font: 16pt 'Arial Black'")
         self.reason = sending_btn.text()
         self.reason_done.setEnabled(True)
 

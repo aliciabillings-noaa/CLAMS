@@ -606,7 +606,7 @@
          <property name="font">
           <font>
            <family>Arial Black</family>
-           <pointsize>9</pointsize>
+           <pointsize>18</pointsize>
           </font>
          </property>
          <property name="verticalScrollBarPolicy">

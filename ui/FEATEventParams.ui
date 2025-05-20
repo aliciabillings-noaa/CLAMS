@@ -24,7 +24,10 @@
       <widget class="QLabel" name="label_3">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -54,7 +57,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -63,7 +69,10 @@
       <widget class="QLabel" name="label_2">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -93,7 +102,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -102,7 +114,10 @@
       <widget class="QLabel" name="label">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -132,13 +147,23 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
      </item>
      <item>
       <spacer name="verticalSpacer">
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
@@ -172,7 +197,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>18</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -202,7 +230,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>18</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
