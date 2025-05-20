@@ -915,7 +915,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 else:
                     i_max = 0
                     for i in self.idxs:
-                        if i != 6:
+                        if i != (len(self.buttons) - 1):
                             self.disable_enable_buttons('disable', self.buttons[i])
                             if i_max < i:
                                 i_max = i
