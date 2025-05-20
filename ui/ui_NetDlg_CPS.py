@@ -95,5 +95,5 @@ class Ui_netDlg(object):
         netDlg.setWindowTitle(_translate("netDlg", "Net Mensuration Dialog"))
         self.cancelBtn.setText(_translate("netDlg", "Cancel"))
         self.label_4.setText(_translate("netDlg", "Door Spread"))
-        self.label_5.setText(_translate("netDlg", "FR"))
+        self.label_5.setText(_translate("netDlg", "Foot Rope Depth"))
         self.saveButton.setText(_translate("netDlg", "Save"))

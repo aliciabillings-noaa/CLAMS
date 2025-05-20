@@ -60,12 +60,10 @@ from acquisition.SensorMonitor import SensorMonitor
 from enum import Enum
 
 class Events(Enum):
-    StartMM = 'Start MM Watch'
     NIW = 'Net In Water'
     EQ = 'Equilibrium'
     HB = 'Haul Back'
     NOD = 'Net On Deck'
-    StopMM = 'Stop MM Watch'
 
 # noinspection PyArgumentList,PyCallByClass,PyTypeChecker
 class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
@@ -94,7 +92,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.scientist = "Unknown"
         self.gear = "MFT"
         self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth']
-        self.meta_info = ['Fisher', 'Collection', 'FishingMode']
+        self.meta_info = ['Operator', 'Collection', 'FishingMode']
         self.streamEQHBLogInterval = None
         self.streamSlowLogInterval = None
         self.reloaded = False
@@ -140,8 +138,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.statusLayout.addWidget(self.statusBar)
 
         # declare buttons
-        self.buttons = [self.pb_startmmw, self.pb_niw, self.pb_eq, self.pb_hb,
-                        self.pb_nod, self.pb_stopmmw]
+        self.buttons = [self.pb_niw, self.pb_eq, self.pb_hb, self.pb_nod, ]
         self.button_order = []
 
         self.streamWindowSeconds = 5
@@ -305,7 +302,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             # if there are no event buttons that are pressed yet (and therefore in self.button_order),
             if not self.button_order:
                 # enable the start mmw button
-                self.disable_enable_buttons('enable', self.pb_startmmw)
+                self.disable_enable_buttons('enable', self.pb_niw)
             else:
                 activeBtnIdx = self.cur_dt_row
                 curIdx = 0
@@ -413,12 +410,10 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                   "FROM " + self.schema + ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey +
                   " AND event_id=" + self.activeEvent + " AND partition='MainTrawl' AND event_parameter IN "
                                                         "('"  + 
-                                                        Events.StartMM.value + "', '" +
                                                         Events.NIW.value + "', '" +
                                                         Events.EQ.value + "', '" +
                                                         Events.HB.value + "', '" +
-                                                        Events.NOD.value + "', '" +
-                                                        Events.StopMM.value +
+                                                        Events.NOD.value +
                                                         "')"
                                                         "ORDER BY times ASC")
         ev_query = self.db.dbQuery(ev_sql)
@@ -712,7 +707,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.event_timer.stop()
 
         # set next button enabled if the current button isn't stop MM watch
-        if Events.StopMM.value not in self.cur_btn_txt:
+        if Events.NOD.value not in self.cur_btn_txt:
             self.disable_enable_buttons('disable', self.buttons[ind])
             self.disable_enable_buttons('enable', self.buttons[ind + 1])
 
@@ -910,7 +905,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 self.disable_enable_buttons('disable', 'events')
                 if not self.button_order:
                     # enable the niw and com buttons
-                    self.disable_enable_buttons('enable', self.pb_startmmw)
+                    self.disable_enable_buttons('enable', self.pb_niw)
                     # self.disable_enable_buttons('enable', self.pb_com)
                 else:
                     i_max = 0
@@ -932,7 +927,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                               " AND partition='MainTrawl' AND event_parameter='" + p + "'")
             query = self.db.dbQuery(sql)
             val, = query.first()
-            if 'fisher' in p.lower():
+            if 'operator' in p.lower():
                 self.l_fisher.setText(val)
             elif 'col' in p.lower():
                 self.l_collection.setText(val)
