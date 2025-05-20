@@ -74,7 +74,6 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
         populates with existing data. This is used when
         an event is reloaded and the dialog state has to be updated from the db.
         """
-        print('reload data')
         cur_btn = self.sender()
 
         if btn:
@@ -90,12 +89,9 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
                 " and event_id=" + self.activeEvent +
                 " and time_stamp=to_timestamp('" + self.cur_time + "', 'MMDDYYYY HH24:MI:SS.FF3')" +
                 " and measurement_type='" + self.net_btn + "'")
-            print(sql)
             query = self.db.dbQuery(sql)
             value, = query.first()
             if value:
-                print(query)
-                print(value)
                 cur_btn.setText(value)
 
     def edit_data(self):
@@ -129,11 +125,7 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
         adds a total record to the database or updates if it is flagged for editing
         :return:
         """
-        print('add record')
         self.close()
-
-        # update record
-        # new record
 
     def doneClicked(self):
         """
