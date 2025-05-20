@@ -52,12 +52,20 @@ import numpad
 import keypad
 import messagedlg
 import timedlg
-from events.CPS_Events import netdlg_feat
+from events.CPS_Events import netdlg_cps
 from events.CPS_Events import metadlg
 from events.CPS_Events import abortdlg
 from events.CPS_Events import donedlg
 from acquisition.SensorMonitor import SensorMonitor
+from enum import Enum
 
+class Events(Enum):
+    StartMM = 'Start MM Watch'
+    NIW = 'Net In Water'
+    EQ = 'Equilibrium'
+    HB = 'Haul Back'
+    NOD = 'Net On Deck'
+    StopMM = 'Stop MM Watch'
 
 # noinspection PyArgumentList,PyCallByClass,PyTypeChecker
 class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
@@ -86,7 +94,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.scientist = "Unknown"
         self.gear = "MFT"
         self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth']
-        self.meta_info = ['TrawlScientist', 'TargetDepth', 'TDLatitude', 'TDLongitude']
+        self.meta_info = ['Fisher', 'Collection', 'FishingMode']
         self.streamEQHBLogInterval = None
         self.streamSlowLogInterval = None
         self.reloaded = False
@@ -125,7 +133,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.message = messagedlg.MessageDlg(self)
         self.timeDlg = timedlg.TimeDlg()
         self.timeDlg.enableGetTimeButton(False)
-        self.netdlg = netdlg_feat.NetDlgFEAT(self)
+        self.netdlg = netdlg_cps.NetDlgCPS(self)
 
         # create a status bar to display the status of SCS
         self.statusBar = QStatusBar(self)
@@ -295,40 +303,27 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             # disable all event buttons (except com)
             self.disable_enable_buttons('disable', 'events')
             # if there are no event buttons that are pressed yet (and therefore in self.button_order),
-            # enable the NIW and COM buttons
             if not self.button_order:
-                # enable the niw and com buttons
-                self.disable_enable_buttons('enable', self.pb_niw)
-                #self.disable_enable_buttons('enable', self.pb_com)
-            # if both NIW and NOD have been pressed, disable all buttons except for metadata
-            elif 'NOD' in self.button_order and 'NIW' in self.button_order:
-                self.disable_enable_buttons('disable', 'events')
-                self.disable_enable_buttons('disable', self.pb_abort)
-                #self.disable_enable_buttons('disable', self.pb_com)
-                self.disable_enable_buttons('enable', self.doneBtn)
-            # if the NOD button has been pressed, enable the done button
-            elif 'NOD' in self.button_order:
-                self.disable_enable_buttons('enable', self.doneBtn)
-            # if 'NIW' has been pressed, enable the abort button
-            elif 'NIW' in self.button_order:
-                self.pb_abort.setEnabled(True)
-            # if buttons have been pressed, identify the last pressed by index and disable,
-            # while enabling the next button
+                # enable the start mmw button
+                self.disable_enable_buttons('enable', self.pb_startmmw)
             else:
-                i_max = 0
+                activeBtnIdx = self.cur_dt_row
+                curIdx = 0
+                for button in self.buttons:
+                    if curIdx <= activeBtnIdx:
+                        self.disable_enable_buttons('enable', self.buttons[curIdx])
+                    else:
+                        self.disable_enable_buttons('disable', self.buttons[curIdx])
+                    curIdx+=1
+
+                '''i_max = 0
                 for i in self.idxs:
                     if i != 6:
                         if 'com' not in self.buttons[i].text().lower():
                             self.disable_enable_buttons('disable', self.buttons[i])
                         if i_max < i:
                             i_max = i
-                self.disable_enable_buttons('enable', self.buttons[i_max + 1])
-        else:
-            # disable all event buttons, including com
-            self.disable_enable_buttons('disable', 'events')
-            #self.disable_enable_buttons('disable', self.pb_com)
-            # disable abort, net dimensions, and done
-            self.disable_enable_buttons('disable')
+                self.disable_enable_buttons('enable', self.buttons[i_max + 1])'''
 
     def disable_enable_buttons(self, action, btn=None):
         """
@@ -417,9 +412,14 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         ev_sql = ("SELECT event_parameter, to_char(to_timestamp(parameter_value,'MMDDYYYY HH24:MI:SS.FF3')) AS times "
                   "FROM " + self.schema + ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey +
                   " AND event_id=" + self.activeEvent + " AND partition='MainTrawl' AND event_parameter IN "
-                                                        "('NIW', 'SD', 'TD', 'HB', 'DU', 'NOD', 'COM01', 'COM02', "
-                                                        "'COM03', 'COM04', 'COM05', 'COM06', 'COM07', 'COM08', 'COM09',"
-                                                        " 'COM10', 'COM11', 'COM12', 'COM14', 'COM14', 'COM15') "
+                                                        "('"  + 
+                                                        Events.StartMM.value + "', '" +
+                                                        Events.NIW.value + "', '" +
+                                                        Events.EQ.value + "', '" +
+                                                        Events.HB.value + "', '" +
+                                                        Events.NOD.value + "', '" +
+                                                        Events.StopMM.value +
+                                                        "')"
                                                         "ORDER BY times ASC")
         ev_query = self.db.dbQuery(ev_sql)
 
@@ -459,51 +459,47 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 self.dataTable.setItem(row, 2, QTableWidgetItem(buttonValues[0]))
                 self.dataTable.setItem(row, 3, QTableWidgetItem(buttonValues[1]))
                 self.dataTable.setItem(row, 4, QTableWidgetItem(buttonValues[2]))
-                if 'com' not in btn_txt.lower():
-                    self.buttons[ind].setPalette(self.green)
-                else:
-                    self.buttons[ind].setPalette(self.yellow)
+                self.buttons[ind].setPalette(self.yellow)
 
-                if param == 'NIW':
+                if param == Events.NIW.value:
                     # get elapsed seconds since NIW was pressed
                     self.niw_time = self.btnTimes[row]
                     overall_elapsed = self.btnTimes[row].secsTo(QDateTime().currentDateTime())
-                elif param == 'NOD':
+                elif param == Events.NOD.value:
                     # get the time NOD was pressed
                     self.nod_time = self.btnTimes[row]
-                elif param == 'TD':
+                elif param == Events.EQ.value:
                     # get elapsed seconds since TD was pressed
                     self.td_time = self.btnTimes[row]
                     td_elapsed = self.btnTimes[row].secsTo(QDateTime().currentDateTime())
-                elif param == 'HB':
+                elif param == Events.HB.value:
                     # get the time HB was pressed
                     self.hb_time = self.btnTimes[row]
             row += 1
             self.cur_dt_row = row
 
         #  set timers to display the elapsed time
-        if overall_elapsed > 0 and 'NOD' in self.button_order:
+        if overall_elapsed > 0 and Events.NOD.value in self.button_order:
             tot_time = self.niw_time.secsTo(self.nod_time)
             self.event_time = self.event_time.addSecs(tot_time)
             self.display_time('overall', True)
-        elif 'NIW' in self.button_order:
+        elif Events.NIW.value in self.button_order:
             self.event_time = self.event_time.addSecs(overall_elapsed)
             self.event_timer.timeout.connect(lambda: self.display_time('overall'))
             self.event_timer.start(1000)
         # if HB is pressed, get elapsed time
-        if td_elapsed > 0 and 'HB' in self.button_order:
+        if td_elapsed > 0 and Events.HB.value in self.button_order:
             at_depth_time = self.td_time.secsTo(self.hb_time)
             self.tow_time = self.tow_time.addSecs(at_depth_time)
-            self.display_time('td', True)
-        elif 'TD' in self.button_order:
+            self.display_time(Events.EQ.value, True)
+        elif Events.EQ.value in self.button_order:
             self.tow_time = self.tow_time.addSecs(td_elapsed)
             self.td_timer.timeout.connect(lambda: self.display_time('td'))
             self.td_timer.start(1000)
 
         self.dataTable.resizeColumnsToContents()
 
-        if 'NOD' in self.button_order:
-            print('here')
+        if Events.NOD.value in self.button_order:
             self.recording = False
             self.doneBtn.setEnabled(True)
         else:
@@ -513,14 +509,14 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         #  check if this event has been completed. Completed is defined as having NIW and NOD
         #  data. Once an event is completed, we only allow editing and do not collect stream data.
-        if 'TD' not in self.button_order or 'HB' not in self.button_order:
+        if Events.EQ.value not in self.button_order or Events.HB.value not in self.button_order:
             #  one of them is not complete - ask if we should consider this a live event
             reply = QMessageBox.question(self, 'Achtung!', "<font size = 14>This haul was not completed. " +
                                          "Is this event still taking place?</font>", QMessageBox.StandardButton.Yes,
                                          QMessageBox.StandardButton.No)
             if reply == QMessageBox.StandardButton.Yes:
                 #  determine what SCS logging rate we should use
-                if 'TD' not in self.button_order:
+                if Events.EQ.value not in self.button_order:
                     #  EQ has not been pressed yet
                     self.SCSLogInterval = self.streamSlowLogInterval
                     self.fishingFlag = False
@@ -533,7 +529,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 #  this is not a live event - treat this as an edit after the fact
                 self.recordStream = False
         # check if NIW and NOD have both been pressed; if so, it is completed and can only edit
-        if 'NIW' in self.button_order and 'NOD' in self.button_order:
+        if Events.NIW.value in self.button_order and Events.NOD.value in self.button_order:
             QMessageBox.information(self, 'Kipaumbele!', "<font size=14>This haul appears to have been completed. " +
                                     "You can only edit it. New time values must be within the original "
                                     "time span of the event. " +
@@ -545,29 +541,16 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         :return:
         """
-        required_exists = 3
+        required_exists = 1
         tot_exists = 0
         # check for gear and fisher
-        gear_sql = ("SELECT gear FROM " + self.schema + ".events WHERE ship=" + self.ship +
-                    " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
-        gear_query = self.db.dbQuery(gear_sql)
-        gear, = gear_query.first()
-        if gear != self.gear:
-            tot_exists += 1
         fish_sql = ("SELECT scientist FROM " + self.schema + ".events WHERE ship=" + self.ship +
                     " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
         fish_query = self.db.dbQuery(fish_sql)
         sci, = fish_query.first()
-        if sci != self.scientist:
+        if sci:
             tot_exists += 1
         # check for transect
-        trans_sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship=" + self.ship +
-                     " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) +
-                     " AND partition='MainTrawl' AND event_parameter='Transect'")
-        trans_query = self.db.dbQuery(trans_sql)
-        trans, = trans_query.first()
-        if trans:
-            tot_exists += 1
         if tot_exists == required_exists:
             return 1
         else:
@@ -655,32 +638,35 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         # get the text of the button
         self.cur_btn_txt = self.sender().text()
 
-        if 'COM' not in self.cur_btn_txt:
-            self.button_order.append(self.cur_btn_txt)
-        else:
-            cur_com_num = 0
-            com_ct = 0
-            for b in self.button_order:
-                if 'com' in b.lower():
-                    com_ct += 1
-                    # get the number
-                    cur_num = int(b[-2])
-                    if cur_num >= cur_com_num:
-                        cur_com_num = cur_num
-            self.cur_btn_txt = 'COM' + str(cur_com_num + 1)
-          #  if com_ct == 8:
-               # self.disable_enable_buttons('disable', self.pb_com)
+        self.button_order.append(self.cur_btn_txt)
 
         # save in DB
         # get the current timestamp
         self.cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
-        event_sql = ("INSERT INTO " + self.schema +
+
+        # Checks whether an entry exists in event_data table
+        # if so, update value if not, create new row.
+        event_sql = ("SELECT * FROM " + self.schema + ".event_data where " + 
+                     "ship=" + self.ship +
+                     " and survey=" + self.survey + 
+                     " and event_id=" + self.activeEvent + 
+                     " and event_parameter='" + self.cur_btn_txt + "'")
+        query = self.db.dbQuery(event_sql)
+        val = query.first()
+        if val[0]:
+            event_sql =("UPDATE " + self.schema + 
+                        ".event_data set parameter_value='" + self.cur_time + "' WHERE ship=" + 
+                        self.ship + " and survey=" + self.survey + " and event_id=" + self.activeEvent +
+                        " and event_parameter='" + self.cur_btn_txt + "'")
+            self.db.dbExec(event_sql)
+        else:
+            event_sql = ("INSERT INTO " + self.schema +
                      ".event_data (ship, survey, event_id, partition, event_parameter, parameter_value) "
                      "VALUES (" + self.ship + ", " + self.survey + ", " + self.activeEvent + ", 'MainTrawl', '"
                      + self.cur_btn_txt + "', '" + self.cur_time + "')")
-        event_query = self.db.dbQuery(event_sql)
-        if not event_query:
-            return
+            event_query = self.db.dbQuery(event_sql)
+            if not event_query:
+                return
 
         # get the current row that is empty in the data table
         if self.cur_dt_row > 9:
@@ -698,20 +684,20 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.dataTable.resizeColumnsToContents()
 
         # deal with the timers and buttons
-        if 'TD' in self.cur_btn_txt:
+        if Events.EQ.value in self.cur_btn_txt:
             # set the timer
             self.td_timer.timeout.connect(lambda: self.display_time('td'))
             self.td_timer.start(1000)
             # if TD is pressed, send up net dimensions
-            self.net_btn = 'TD'
+            self.net_btn = Events.EQ.value
             self.get_net_dims()
-        elif 'HB' in self.cur_btn_txt:
+        elif Events.HB.value in self.cur_btn_txt:
             # stop the timer
             self.td_timer.stop()
             # if HB is pressed, send up net dimensions
-            self.net_btn = 'HB'
+            self.net_btn = Events.HB.value
             self.get_net_dims()
-        elif 'NIW' in self.cur_btn_txt:
+        elif Events.NIW.value in self.cur_btn_txt:
             # if NIW is pressed, start recording and enable the abort button
             self.recording = True
             self.disable_enable_buttons('enable', self.pb_abort)
@@ -719,18 +705,14 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             # set the timer
             self.event_timer.timeout.connect(lambda: self.display_time('overall'))
             self.event_timer.start(1000)
-        elif 'NOD' in self.cur_btn_txt:
+        elif Events.NOD.value in self.cur_btn_txt:
             # if NOD is pressed, enable the done button, turn off the recording of SCS data, and stop overall timer
             self.disable_enable_buttons('enable', self.doneBtn)
             self.recording = False
             self.event_timer.stop()
-        elif 'COM' in self.cur_btn_txt:
-            # if COM is pressed, send up net dimensions
-            self.net_btn = 'COM'
-            self.get_net_dims()
 
-        # set next button enabled if the current button isn't a com
-        if 'COM' not in self.cur_btn_txt:
+        # set next button enabled if the current button isn't stop MM watch
+        if Events.StopMM.value not in self.cur_btn_txt:
             self.disable_enable_buttons('disable', self.buttons[ind])
             self.disable_enable_buttons('enable', self.buttons[ind + 1])
 
@@ -822,7 +804,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         popup for entering the performance of the operation and allowing to check/enter comments
         :return:
         """
-        if 'NOD' in self.button_order:
+        if Events.NOD.value in self.button_order:
             # stop recording
             self.recording = False
             # set up the finish dialog
@@ -845,7 +827,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.netdlg.reload_data(self.net_btn, self.cur_time)
 
         # set the text for the button
-        self.netdlg.addRecordBtn.setText("Add\nRecord")
+#        self.netdlg.addRecordBtn.setText("Add\nRecord")
 
         # display the dialog
         self.netdlg.exec()
@@ -860,7 +842,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.cur_time = self.dataTable.item(self.dataTable.currentRow(), 1).text()
         self.net_btn = self.dataTable.item(self.dataTable.currentRow(), 0).text()
         self.netdlg.reload_data(self.net_btn, self.cur_time)
-        if self.net_btn in ['TD', 'HB'] or 'COM' in self.net_btn:
+        if self.net_btn in [Events.EQ.value, Events.HB.value] or 'COM' in self.net_btn:
             # display the dialog
             if self.netdlg.exec():
                 self.dataTable.blockSignals(True)
@@ -928,8 +910,8 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 self.disable_enable_buttons('disable', 'events')
                 if not self.button_order:
                     # enable the niw and com buttons
-                    self.disable_enable_buttons('enable', self.pb_niw)
-                   # self.disable_enable_buttons('enable', self.pb_com)
+                    self.disable_enable_buttons('enable', self.pb_startmmw)
+                    # self.disable_enable_buttons('enable', self.pb_com)
                 else:
                     i_max = 0
                     for i in self.idxs:
@@ -950,14 +932,12 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                               " AND partition='MainTrawl' AND event_parameter='" + p + "'")
             query = self.db.dbQuery(sql)
             val, = query.first()
-            if 'trawl' in p.lower():
+            if 'fisher' in p.lower():
                 self.l_fisher.setText(val)
-            elif 'depth' in p.lower():
-                self.l_td.setText(val)
-            elif 'lat' in p.lower():
-                self.l_tdLat.setText(val)
-            elif 'lon' in p.lower():
-                self.l_tdLon.setText(val)
+            elif 'col' in p.lower():
+                self.l_collection.setText(val)
+            elif 'mode' in p.lower():
+                self.l_fishingMode.setText(val)
 
     def abort_operation(self):
         """
@@ -965,7 +945,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         :return:
         """
         # open dialog only if NIW has already been pressed
-        if 'NIW' in self.button_order:
+        if Events.NIW.value in self.button_order:
             # stop recording
             self.recording = False
             # set up the abort dialog
