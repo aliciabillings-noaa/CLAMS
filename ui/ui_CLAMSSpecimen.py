@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260\CLAMS\ui\CLAMSSpecimen.ui'
+# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS_WPy64-31260\CLAMS\ui\CLAMSSpecimen.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -334,7 +334,7 @@ class Ui_clamsSpecimen(object):
         self.measureView = QtWidgets.QTableView(parent=clamsSpecimen)
         font = QtGui.QFont()
         font.setFamily("Arial Black")
-        font.setPointSize(9)
+        font.setPointSize(18)
         self.measureView.setFont(font)
         self.measureView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.measureView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)

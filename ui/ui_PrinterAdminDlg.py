@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS\ui\PrinterAdminDlg.ui'
+# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS_WPy64-31260\CLAMS\ui\PrinterAdminDlg.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -20,6 +20,11 @@ class Ui_printerAdminDlg(object):
         self.textEdit = QtWidgets.QTextEdit(parent=printerAdminDlg)
         self.textEdit.setEnabled(True)
         self.textEdit.setMaximumSize(QtCore.QSize(1000, 1000))
+        font = QtGui.QFont()
+        font.setFamily("Arial Black")
+        font.setBold(True)
+        font.setWeight(75)
+        self.textEdit.setFont(font)
         self.textEdit.setAcceptDrops(False)
         self.textEdit.setUndoRedoEnabled(False)
         self.textEdit.setReadOnly(True)
@@ -29,21 +34,30 @@ class Ui_printerAdminDlg(object):
         self.detectMediaBtn = QtWidgets.QPushButton(parent=printerAdminDlg)
         self.detectMediaBtn.setMinimumSize(QtCore.QSize(165, 35))
         font = QtGui.QFont()
+        font.setFamily("Arial Black")
         font.setPointSize(14)
+        font.setBold(True)
+        font.setWeight(75)
         self.detectMediaBtn.setFont(font)
         self.detectMediaBtn.setObjectName("detectMediaBtn")
         self.verticalLayout_4.addWidget(self.detectMediaBtn)
         self.testFormat1Btn = QtWidgets.QPushButton(parent=printerAdminDlg)
         self.testFormat1Btn.setMinimumSize(QtCore.QSize(165, 35))
         font = QtGui.QFont()
+        font.setFamily("Arial Black")
         font.setPointSize(14)
+        font.setBold(True)
+        font.setWeight(75)
         self.testFormat1Btn.setFont(font)
         self.testFormat1Btn.setObjectName("testFormat1Btn")
         self.verticalLayout_4.addWidget(self.testFormat1Btn)
         self.testFormat2Btn = QtWidgets.QPushButton(parent=printerAdminDlg)
         self.testFormat2Btn.setMinimumSize(QtCore.QSize(165, 35))
         font = QtGui.QFont()
+        font.setFamily("Arial Black")
         font.setPointSize(14)
+        font.setBold(True)
+        font.setWeight(75)
         self.testFormat2Btn.setFont(font)
         self.testFormat2Btn.setObjectName("testFormat2Btn")
         self.verticalLayout_4.addWidget(self.testFormat2Btn)
@@ -58,12 +72,12 @@ class Ui_printerAdminDlg(object):
         self.textEdit.setHtml(_translate("printerAdminDlg", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:\'MS Shell Dlg 2\'; font-size:8.25pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:14pt; font-weight:600;\">Zebra Label Printer Maintenance</span></p>\n"
-"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:14pt; font-weight:600;\"><br /></p>\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:12pt;\">After loading labels or ink you must run the autodetect media routine so the printer can detect the media breaks. This may also be required after the printer lid has been opened. Use this method sparingly since it will feed out 5 or 6 labels.</span></p>\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:12pt;\"><br /></p>\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:12pt;\">You can use the &quot;Test Label&quot; buttons to print test labels to verify the printer is working correctly.</span></p></body></html>"))
+"</style></head><body style=\" font-family:\'Arial Black\'; font-size:8.25pt; font-weight:600; font-style:normal;\">\n"
+"<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Arial Black\'; font-size:14pt;\">Zebra Label Printer Maintenance</span></p>\n"
+"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'Arial Black\'; font-size:14pt;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Arial\'; font-size:12pt; font-weight:200;\">After loading labels or ink you must run the autodetect media routine so the printer can detect the media breaks. This may also be required after the printer lid has been opened. Use this method sparingly since it will feed out 5 or 6 labels.</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'Arial\'; font-size:12pt; font-weight:200;\"><br /></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Arial\'; font-size:12pt; font-weight:200;\">You can use the &quot;Test Label&quot; buttons to print test labels to verify the printer is working correctly.</span></p></body></html>"))
         self.detectMediaBtn.setText(_translate("printerAdminDlg", "Autodetect Media"))
         self.testFormat1Btn.setText(_translate("printerAdminDlg", "Print Test Label: Format 1"))
         self.testFormat2Btn.setText(_translate("printerAdminDlg", "Print Test Label: Format 2"))
