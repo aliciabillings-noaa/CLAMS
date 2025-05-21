@@ -127,7 +127,7 @@ class AbortDlg(QDialog, ui_AbortDlg.Ui_abortDlg):
                 fin_coms = "ABORT COMS: " + self.te_comment.toPlainText()
             # update
             update_sql = ("UPDATE " + self.schema + ".events SET performance_code = " + str(code) +
-                          " AND comments = '" + fin_coms + "' WHERE ship=" + self.ship +
+                          ", comments = '" + fin_coms + "' WHERE ship=" + self.ship +
                           " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
 
             self.db.dbQuery(update_sql)
