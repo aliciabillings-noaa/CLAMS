@@ -381,7 +381,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         """
         populates the form, metadata, and net dimensions with whatever data exists in the database for this event
         """
-        print('reload data')
         # deal with all buttons
         self.deal_with_buttons()
         # check if the metadata to entered
@@ -495,7 +494,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.dataTable.resizeColumnsToContents()
 
         if Events.NetOnDeck.name in self.button_order:
-            print('enable done button')
             self.recording = False
             self.doneBtn.setEnabled(True)
         else:
