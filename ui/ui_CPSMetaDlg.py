@@ -254,7 +254,7 @@ class Ui_metaDlg(object):
         self.verticalLayout.addLayout(self.horizontalLayout)
 
         self.retranslateUi(metaDlg)
-        self.tab.setCurrentIndex(2)
+        self.tab.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(metaDlg)
 
     def retranslateUi(self, metaDlg):
