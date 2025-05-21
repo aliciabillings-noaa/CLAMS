@@ -79,14 +79,14 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
                     'Country': [self.cb_country, 'ed'],
                     'Gear': [self.cb_gear, 'ed'],
                     'FishingMode': [self.cb_fishing_mode, 'ed'],
-                    'ArcedTow': [self.cb_arced_tow, 'ga'],
-                    'SeaCondition': [self.cb_sea_cond, 'ga'],
-                    'Clouds': [self.cb_clouds, 'ga']}
+                    'ArcedTow': [self.cb_arced_tow, 'ed'],
+                    'SeaCondition': [self.cb_sea_cond, 'ed'],
+                    'Clouds': [self.cb_clouds, 'ed']}
         self.tf = {'DownswellTow': [self.tf_downswell_tow, 'ed'],
-                    'HeadropeTDR': [self.tf_headrope, 'ed'],
-                    'FootropeTDR': [self.tf_footrope, 'ed'],
-                    'Camera': [self.tf_camera, 'ed'],
-                    'Pingers': [self.tf_pingers, 'ed']}
+                    'HeadropeTDR': [self.tf_headrope, 'ga'],
+                    'FootropeTDR': [self.tf_footrope, 'ga'],
+                    'Camera': [self.tf_camera, 'ga'],
+                    'Pingers': [self.tf_pingers, 'ga']}
         
         # set up numpad ane keypad
         self.numpad = numpad.NumPad(self)
@@ -103,6 +103,7 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         populates the widgets with data loaded from the database
         :return: none
         """
+        startingEventNum = 4791
         # refill any buttons
         for param, pb_lst in self.pbs.items():
             pb, table, np = pb_lst
@@ -111,6 +112,10 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
             # set text if so
             if exists != 0:
                 pb.setText(exists)
+            # init collection number to 4791 + event num
+            elif param == 'Collection':
+                currEvent = startingEventNum + int(self.activeEvent)
+                pb.setText(str(currEvent))
         # refill any drop downs
         for param, cb_lst in self.cbs.items():
             cb, table = cb_lst
@@ -169,7 +174,9 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
             if btn_name == btn.objectName():
                 np_name = np
 
-        if np_name == 'np':
+        if txt != 'Collection':
+            return
+        elif np_name == 'np':
             self.numpad.msgLabel.setText("Enter value")
             if not self.numpad.exec():
                 return
