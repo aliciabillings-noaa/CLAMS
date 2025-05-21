@@ -335,11 +335,8 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         if btn == 'events':
             # got through all event buttons, except for COM
             for btn in self.buttons:
-                if btn.text().lower() != 'com':
-                    if action == 'disable':
-                        btn.setEnabled(False)
-                    else:
-                        btn.setEnabled(True)
+                if action == 'disable':
+                    btn.setEnabled(False)
                 else:
                     btn.setEnabled(True)
         elif btn:
@@ -920,7 +917,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         :return:
         """
         # open dialog only if NIW has already been pressed
-        if Events.NetInWater.value in self.button_order:
+        if Events.NetInWater.name in self.button_order:
             # stop recording
             self.recording = False
             # set up the abort dialog

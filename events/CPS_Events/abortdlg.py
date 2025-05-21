@@ -80,6 +80,19 @@ class AbortDlg(QDialog, ui_AbortDlg.Ui_abortDlg):
         self.pb_done.clicked.connect(self.save)
         self.pb_cancel.clicked.connect(self.cancel)
 
+        # populate abort dialog with saved values in events table
+        sql = ("SELECT e.performance_code, e.comments, ep.description, e.event_id FROM " + self.schema + 
+               ".events e INNER JOIN " + self.schema + 
+               ".event_performance ep on ep.performance_code=e.performance_code WHERE e.ship=" +
+               self.ship +
+               " AND e.survey=" + self.survey + 
+               " AND e.event_id=" + str(self.activeEvent))
+        query = self.db.dbQuery(sql)
+        code, comments, desc, id = query.first()
+        if code != '0':
+            self.cb_perf.setCurrentText(code + " - " + desc)
+        self.te_comment.setText(comments)
+
     def display_keypad(self):
         """
         displays the keypad in case the user doesn't have a keyboard (although keyboard works as well)
@@ -120,6 +133,7 @@ class AbortDlg(QDialog, ui_AbortDlg.Ui_abortDlg):
                        " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
             com_query = self.db.dbQuery(com_sql)
             comments, = com_query.first()
+            print(comments)
             if comments not in ['', None]:
                 # add to comments
                 fin_coms = comments + "; ABORT COMS: " + self.te_comment.toPlainText()
