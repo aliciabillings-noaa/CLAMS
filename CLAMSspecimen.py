@@ -614,21 +614,36 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
             #  check if this is a manually entered value or from a device
             if (self.manualFlag):
-                #  this value is entered manually - display the number pad
-                self.numpad.msgLabel.setText("Enter " + self.label[i])
-                if not self.numpad.exec():
-                    #  user cancelled action
-                    return
-                #  get the number from the numpad and unset manualFlag value
-                val = self.numpad.value
-                #  check that we didn't get a 0 weight
-                if (val == '0'):
-                    self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
-                        "for the basket weight which is not allowed. If your sample is too small to register " +
-                        "on the scale, you should enter 0.001", 'info')
-                    self.message.exec()
-                    return
-                self.manualFlag = False
+                if (self.measureType[i] == 'alpha_barcode'):
+                    #  this value is entered manually - display the key pad
+                    keyDialog = keypad.KeyPad('', self)
+                    keyDialog.infoLabel.setText("Enter " + self.measureType[i])
+                    keyDialog.exec()
+                    if keyDialog.okFlag:
+                        #  get the text from the keypad and unset manualFlag value
+                        val = keyDialog.dispEdit.toPlainText()
+
+                    self.manualFlag = False
+                else:
+                    #  this value is entered manually - display the number pad
+                    self.numpad.msgLabel.setText("Enter " + self.label[i])
+                    if not self.numpad.exec():
+                        #  user cancelled action
+                        return
+                    #  get the number from the numpad and unset manualFlag value
+                    val = self.numpad.value
+                    #  check that we didn't get a 0 weight
+                    if (val == '0'):
+                        self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
+                            "for the basket weight which is not allowed. If your sample is too small to register " +
+                            "on the scale, you should enter 0.001", 'info')
+                        self.message.exec()
+                        return
+                    if (not val):
+                        self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You did not enter a value", 'info')
+                        self.message.exec()
+                        return
+                    self.manualFlag = False
 
             elif not (self.serialValue == None):
                 # value coming from serial device
@@ -699,8 +714,9 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                         self.scientist + "','" + missing_validation_text + "')")
                 self.db.dbExec(sql)
 
-        self.values[i]=val
-        self.writeMeasurement(i, True)
+        if val:
+            self.values[i]=val
+            self.writeMeasurement(i, True)
 
 
     def outCycle(self, i):
@@ -743,19 +759,36 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         else:
             #  check if this is a manually entered value or from a device
             if self.manualFlag:
-                #  this value is entered manually
-                self.numpad.msgLabel.setText("Enter " + self.label[i])
-                if not self.numpad.exec():
-                    return
-                val = self.numpad.value
-                #  check that we didn't get a 0 weight
-                if (val == '0'):
-                    self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
-                        "for the basket weight which is not allowed. If your sample is too small to register " +
-                        "on the scale, you should enter 0.001", 'info')
-                    self.message.exec()
-                    return
-                self.manualFlag = False
+                if (self.measureType[i] == 'alpha_barcode'):
+                    #  this value is entered manually - display the key pad
+                    keyDialog = keypad.KeyPad('', self)
+                    keyDialog.infoLabel.setText("Enter " + self.measureType[i])
+                    keyDialog.exec()
+                    if keyDialog.okFlag:
+                        #  get the text from the keypad and unset manualFlag value
+                        val = keyDialog.dispEdit.toPlainText()
+
+                    self.manualFlag = False
+                else:
+                    #  this value is entered manually - display the number pad
+                    self.numpad.msgLabel.setText("Enter " + self.label[i])
+                    if not self.numpad.exec():
+                        #  user cancelled action
+                        return
+                    #  get the number from the numpad and unset manualFlag value
+                    val = self.numpad.value
+                    #  check that we didn't get a 0 weight
+                    if (val == '0'):
+                        self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have entered 0 (zero) "
+                            "for the basket weight which is not allowed. If your sample is too small to register " +
+                            "on the scale, you should enter 0.001", 'info')
+                        self.message.exec()
+                        return
+                    if (not val):
+                        self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "You have not entered a value", 'info')
+                        self.message.exec()
+                        return
+                    self.manualFlag = False
 
             elif not self.serialValue == None:
                 # value coming from serial device
@@ -825,8 +858,9 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                         self.scientist + "','" + missing_validation_text + "')")
                 self.db.dbExec(sql)
 
-        self.values[i]=val
-        self.writeMeasurement(i, False)
+        if val:
+            self.values[i]=val
+            self.writeMeasurement(i, False)
 
 
     def writeMeasurement(self, i, keepGoing):
