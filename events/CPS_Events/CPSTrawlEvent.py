@@ -319,15 +319,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                         self.disable_enable_buttons('disable', self.buttons[curIdx])
                     curIdx+=1
 
-                '''i_max = 0
-                for i in self.idxs:
-                    if i != 6:
-                        if 'com' not in self.buttons[i].text().lower():
-                            self.disable_enable_buttons('disable', self.buttons[i])
-                        if i_max < i:
-                            i_max = i
-                self.disable_enable_buttons('enable', self.buttons[i_max + 1])'''
-
     def disable_enable_buttons(self, action, btn=None):
         """
         disables/enables buttons depending on passed action; used when the metadata information is
@@ -707,7 +698,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         # set next button enabled if the current button isn't stop MM watch
         if Events.NetOnDeck.name not in paramName:
-            self.disable_enable_buttons('disable', self.buttons[ind])
             self.disable_enable_buttons('enable', self.buttons[ind + 1])
 
         # move current row ahead one
