@@ -76,6 +76,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.setupUi(self)
 
         gearTypeDefault = "MFT"
+        self.abortPrefix = 'ABORT COMS: '
 
         # copy some properties from our parent
         self.db = parent.db
@@ -298,14 +299,17 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         :return:
         """
         self.disable_enable_buttons('disable', self.doneBtn)
+        self.disable_enable_buttons('disable', self.pb_abort)
+
+        # disable all event buttons (except com)
+        self.disable_enable_buttons('disable', 'events')
         if self.meta_entered:
-            # disable all event buttons (except com)
-            self.disable_enable_buttons('disable', 'events')
             # if there are no event buttons that are pressed yet (and therefore in self.button_order),
             if not self.button_order:
                 # enable the start mmw button
                 self.disable_enable_buttons('enable', self.pb_niw)
             else:
+                self.disable_enable_buttons('enable', self.pb_abort)
                 activeBtnIdx = self.cur_dt_row
                 curIdx = 0
                 for button in self.buttons:
@@ -532,17 +536,12 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         :return:
         """
-        required_exists = 1
-        tot_exists = 0
-        # check for gear and fisher
+        # check for operator
         fish_sql = ("SELECT scientist FROM " + self.schema + ".events WHERE ship=" + self.ship +
                     " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
         fish_query = self.db.dbQuery(fish_sql)
         sci, = fish_query.first()
         if sci:
-            tot_exists += 1
-        # check for transect
-        if tot_exists == required_exists:
             return 1
         else:
             return 0
@@ -599,21 +598,24 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         :return:
         """
         # get any comments already in database
+        # and parse them to only display comment before ABORT xxxx
         com_sql = ("SELECT comments FROM " + self.schema + ".events WHERE ship=" + self.ship +
                    " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
         com_query = self.db.dbQuery(com_sql)
         comments, = com_query.first()
+        parsedComment = comments.split(self.abortPrefix) if comments else ''
 
         # send up keypad and set space with comments
-        if comments:
-            keyDialog = keypad.KeyPad(comments, self)
+        if len(parsedComment) > 0:
+            keyDialog = keypad.KeyPad(parsedComment[0], self)
         else:
             keyDialog = keypad.KeyPad('', self)
         keyDialog.exec()
         if keyDialog.okFlag:
             text = keyDialog.dispEdit.toPlainText()
+            formattedComment = text + " " + self.abortPrefix + parsedComment[1] if len(parsedComment) > 1 else text 
             # update comments in database
-            update_sql = ("UPDATE " + self.schema + ".events SET comments ='" + text + "' WHERE ship=" + self.ship +
+            update_sql = ("UPDATE " + self.schema + ".events SET comments ='" + formattedComment + "' WHERE ship=" + self.ship +
                           " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
             self.db.dbQuery(update_sql)
 
@@ -646,11 +648,17 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         query = self.db.dbQuery(event_sql)
         val = query.first()
         if val[0]:
-            event_sql =("UPDATE " + self.schema + 
+            # Verify user actually wants to update before updating value in database
+            self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
+                                    'Are you sure you want to update event?', 'choice')
+            if self.message.exec():
+                event_sql =("UPDATE " + self.schema + 
                         ".event_data set parameter_value='" + self.cur_time + "' WHERE ship=" + 
                         self.ship + " and survey=" + self.survey + " and event_id=" + self.activeEvent +
                         " and event_parameter='" + paramName + "'")
-            self.db.dbExec(event_sql)
+                self.db.dbExec(event_sql)
+            else:
+                return
         else:
             event_sql = ("INSERT INTO " + self.schema +
                      ".event_data (ship, survey, event_id, partition, event_parameter, parameter_value) "
@@ -888,10 +896,12 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         if result:
             # check if meta actually entered - this is a double-check since it should be entered if we got this far
             temp = self.check_for_required_meta()
-            if temp == 1:
+            if temp:
                 self.meta_entered = True
                 self.enter_meta_info()
                 self.event_entered = True
+                # deal with buttons
+                self.deal_with_buttons()
 
     def enter_meta_info(self):
         """

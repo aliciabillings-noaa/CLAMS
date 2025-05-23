@@ -67,6 +67,8 @@ class SexSelDlg(QDialog, ui_SexSelDlg.Ui_sexselDlg):
         self.noneBtn.setEnabled(unsexFlag)
 
     def setup(self, parent):
+        print('start sex dial')
+        print(parent.measureType)
         if 'maturity' in parent.measureType:
             self.noneBtn.setEnabled(False)
 
