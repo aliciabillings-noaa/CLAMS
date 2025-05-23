@@ -205,7 +205,6 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
                 sql = ("INSERT INTO " + self.schema + ".events (ship, survey, event_id, gear, event_type, " +
                         "performance_code, scientist, comments) VALUES (" + self.ship + "," + self.survey + "," +
                     str(self.activeEvent) + ",'" + self.gear + "', 17, 0, '" + self.cb_operator.currentText() + "', '')")
-                print(sql)
                 self.db.dbExec(sql)
                 # set the flag to true that the event was entered
                 self.event_entered = True
