@@ -201,12 +201,14 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         if not exists[0]:
             # Write record to events table
             # SW will only use event type 17 (Standard surface tow), so hardcoding it here.
-            sql = ("INSERT INTO " + self.schema + ".events (ship, survey, event_id, gear, event_type, " +
-                    "performance_code, scientist, comments) VALUES (" + self.ship + "," + self.survey + "," +
-                str(self.activeEvent) + ",'" + self.gear + "', 17, 0, '" + self.cb_operator.currentText() + "', '')")
-            self.db.dbExec(sql)
-            # set the flag to true that the event was entered
-            self.event_entered = True
+            if self.cb_operator.currentText():
+                sql = ("INSERT INTO " + self.schema + ".events (ship, survey, event_id, gear, event_type, " +
+                        "performance_code, scientist, comments) VALUES (" + self.ship + "," + self.survey + "," +
+                    str(self.activeEvent) + ",'" + self.gear + "', 17, 0, '" + self.cb_operator.currentText() + "', '')")
+                self.db.dbExec(sql)
+                # set the flag to true that the event was entered
+                self.event_entered = True
+                return
 
     def save(self):
         """
