@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>368</width>
+    <width>396</width>
     <height>386</height>
    </rect>
   </property>
@@ -36,7 +36,9 @@
      </property>
      <property name="font">
       <font>
+       <family>Arial Black</family>
        <pointsize>12</pointsize>
+       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -63,7 +65,9 @@
           <widget class="QComboBox" name="cb_sci">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -73,7 +77,9 @@
           <widget class="QLabel" name="l_sci">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -86,7 +92,9 @@
           <widget class="QLabel" name="l_td">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -99,7 +107,9 @@
           <widget class="QLabel" name="l_tdlon">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -112,7 +122,9 @@
           <widget class="QLabel" name="l_tdlat">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -125,7 +137,9 @@
           <widget class="QLabel" name="l_transect">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -149,13 +163,6 @@
          </item>
          <item row="0" column="1">
           <widget class="QPushButton" name="pb_transect">
-           <property name="font">
-            <font>
-             <family>Calibri</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
            <property name="text">
             <string/>
            </property>
@@ -163,13 +170,6 @@
          </item>
          <item row="2" column="1">
           <widget class="QPushButton" name="pb_td">
-           <property name="font">
-            <font>
-             <family>Calibri</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
            <property name="text">
             <string/>
            </property>
@@ -177,13 +177,6 @@
          </item>
          <item row="3" column="1">
           <widget class="QPushButton" name="pb_tdlat">
-           <property name="font">
-            <font>
-             <family>Calibri</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
            <property name="text">
             <string/>
            </property>
@@ -191,13 +184,6 @@
          </item>
          <item row="4" column="1">
           <widget class="QPushButton" name="pb_tdlon">
-           <property name="font">
-            <font>
-             <family>Calibri</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
            <property name="text">
             <string/>
            </property>
@@ -218,7 +204,9 @@
           <widget class="QLabel" name="l_toms">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -231,7 +219,9 @@
           <widget class="QComboBox" name="cb_toms">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -241,7 +231,9 @@
           <widget class="QLabel" name="l_gear">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -254,7 +246,9 @@
           <widget class="QComboBox" name="cb_gear">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -288,7 +282,9 @@
           <widget class="QComboBox" name="cb_cam_type">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -298,7 +294,9 @@
           <widget class="QLabel" name="l_head_sbe">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -311,7 +309,9 @@
           <widget class="QComboBox" name="cb_cam_view">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -321,7 +321,9 @@
           <widget class="QComboBox" name="cb_cam_sbe">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -331,7 +333,9 @@
           <widget class="QLabel" name="l_cam_view">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -344,7 +348,9 @@
           <widget class="QLabel" name="l_foot_sbe">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -357,7 +363,9 @@
           <widget class="QLabel" name="l_cam_sbe">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -370,7 +378,9 @@
           <widget class="QComboBox" name="cb_foot_sbe">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -380,7 +390,9 @@
           <widget class="QComboBox" name="cb_head_sbe">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -390,7 +402,9 @@
           <widget class="QLabel" name="l_cam_type">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -427,7 +441,9 @@
           <widget class="QLabel" name="l_wind_waves">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -440,7 +456,9 @@
           <widget class="QLabel" name="l_swell_h">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -453,7 +471,9 @@
           <widget class="QLabel" name="l_wind_dir">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -466,7 +486,9 @@
           <widget class="QLabel" name="l_wind_spd">
            <property name="font">
             <font>
+             <family>Arial Black</family>
              <pointsize>14</pointsize>
+             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -490,13 +512,6 @@
          </item>
          <item row="0" column="1">
           <widget class="QPushButton" name="pb_wind_spd">
-           <property name="font">
-            <font>
-             <family>Calibri</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
            <property name="text">
             <string/>
            </property>
@@ -504,13 +519,6 @@
          </item>
          <item row="1" column="1">
           <widget class="QPushButton" name="pb_wind_dir">
-           <property name="font">
-            <font>
-             <family>Calibri</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
            <property name="text">
             <string/>
            </property>
@@ -518,13 +526,6 @@
          </item>
          <item row="2" column="1">
           <widget class="QPushButton" name="pb_swell_h">
-           <property name="font">
-            <font>
-             <family>Calibri</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
            <property name="text">
             <string/>
            </property>
@@ -532,13 +533,6 @@
          </item>
          <item row="3" column="1">
           <widget class="QPushButton" name="pb_wind_waves">
-           <property name="font">
-            <font>
-             <family>Calibri</family>
-             <pointsize>16</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
            <property name="text">
             <string/>
            </property>
@@ -563,6 +557,7 @@
        <property name="font">
         <font>
          <pointsize>16</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -582,6 +577,7 @@
        <property name="font">
         <font>
          <pointsize>16</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>

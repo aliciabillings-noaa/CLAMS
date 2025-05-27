@@ -20,7 +20,9 @@
       <widget class="QLabel" name="label">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -45,7 +47,9 @@
        </property>
        <property name="font">
         <font>
+         <family>MS Shell Dlg 2</family>
          <pointsize>12</pointsize>
+         <weight>50</weight>
          <italic>false</italic>
          <bold>false</bold>
         </font>
@@ -61,6 +65,13 @@ font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
      </item>
      <item>
       <spacer name="verticalSpacer">
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
@@ -88,7 +99,10 @@ font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>18</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -98,6 +112,13 @@ font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
      </item>
      <item>
       <spacer name="verticalSpacer_2">
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
@@ -125,7 +146,10 @@ font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>18</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">

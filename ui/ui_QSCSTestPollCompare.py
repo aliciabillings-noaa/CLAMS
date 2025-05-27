@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS\ui\QSCSTestPollCompare.ui'
+# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS_WPy64-31260\CLAMS\ui\QSCSTestPollCompare.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -21,9 +21,19 @@ class Ui_QSCSTestPollCompare(object):
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.compareButton = QtWidgets.QPushButton(parent=self.centralwidget)
         self.compareButton.setMinimumSize(QtCore.QSize(165, 35))
+        font = QtGui.QFont()
+        font.setFamily("Arial Black")
+        font.setBold(True)
+        font.setWeight(75)
+        self.compareButton.setFont(font)
         self.compareButton.setObjectName("compareButton")
         self.verticalLayout_3.addWidget(self.compareButton)
         self.label_2 = QtWidgets.QLabel(parent=self.centralwidget)
+        font = QtGui.QFont()
+        font.setFamily("Arial Black")
+        font.setBold(True)
+        font.setWeight(75)
+        self.label_2.setFont(font)
         self.label_2.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label_2.setObjectName("label_2")
         self.verticalLayout_3.addWidget(self.label_2)

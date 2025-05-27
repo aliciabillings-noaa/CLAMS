@@ -99,7 +99,7 @@ class FEATProjectDlg(QDialog):
 
         # add the instruction label
         instruction_label = QLabel()
-        instruction_label.setStyleSheet("color: rgb(0, 0, 127); font: 14pt 'Calibri';")
+        instruction_label.setStyleSheet("color: rgb(0, 0, 127); font: 12pt 'Arial Black';")
         instruction_label.setText("Choose project to print label for...")
         self.overall_layout.addWidget(instruction_label)
 

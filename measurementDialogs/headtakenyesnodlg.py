@@ -62,7 +62,7 @@ class HeadTakenYesNoDlg(QDialog, ui_YesNoDlg.Ui_YesNoDlg):
         self.noBtn.clicked.connect(self.getResponse)
 
         #  set the caption
-        self.setCaption('Frozen Sample Taken?')
+        self.setCaption('Head Taken?')
 
     def setup(self, parent):
         """

@@ -26,7 +26,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -41,7 +44,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -59,7 +65,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -71,7 +80,10 @@
       <widget class="QLabel" name="label_5">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -89,7 +101,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -107,7 +122,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -122,7 +140,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -140,7 +161,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -149,7 +173,10 @@
       <widget class="QLabel" name="label_7">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -167,7 +194,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -185,7 +215,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -203,7 +236,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -221,7 +257,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
       </widget>
@@ -230,7 +269,10 @@
       <widget class="QLabel" name="label">
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -248,7 +290,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -257,7 +302,15 @@
       </widget>
      </item>
      <item row="5" column="2" rowspan="5" colspan="4">
-      <widget class="QTableView" name="dataView"/>
+      <widget class="QTableView" name="dataView">
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

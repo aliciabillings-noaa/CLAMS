@@ -39,6 +39,7 @@
 import sys
 import os
 import functools
+import socket
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -292,8 +293,11 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
             self.close()
             return
 
-        #  determine our hostname and query database for workstation number
-        computerName = os.getenv("COMPUTERNAME")
+        #  determine our hostname and query database for workstation number. Changed to
+        #  use socket.gethostname() since os.getenv("COMPUTERNAME") was only returning
+        #  15 char NETBIOS name and some workstations were exceeding the 15 char limit.
+        #computerName = os.getenv("COMPUTERNAME")
+        computerName = socket.gethostname()
         sql = ("SELECT workstation_id FROM " + self.schema +
                 ".workstations WHERE hostname ='" + computerName + "'")
         query = self.db.dbQuery(sql)

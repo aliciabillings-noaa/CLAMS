@@ -142,8 +142,10 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.updateSpecies()
 
         # set up tables for data display
-        font = QFont('helvetica', 14, -1, False)
+        font = QFont('Arial Black', 14, -1, False)
         self.measureView.setFont(font)
+        self.measureView.horizontalHeader().setStyleSheet("QHeaderView::section { font-size: 8pt; font-family: 'Arial Black'; }")
+        self.measureView.verticalHeader().setStyleSheet("QHeaderView::section { font-size: 8pt; font-family: 'Arial Black'; }")
         self.measureModel = QtSql.QSqlQueryModel() #TODO: change this to a QTableView using QtDesigner, following ~ line of ClamsCatch
         self.measureView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.measureView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)

@@ -194,8 +194,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.samplingMethodBox.setCurrentIndex(self.samplingMethodBox.findText('random'))
 
         # set up our QTableView
-        font = QFont('helvetica', 12, -1, False)
+        font = QFont('Arial Black', 10, -1, False)
         self.measureView.setFont(font)
+        self.measureView.horizontalHeader().setStyleSheet("QHeaderView::section { font-size: 8pt; font-family: 'Arial Black'; }")
+        self.measureView.verticalHeader().setStyleSheet("QHeaderView::section { font-size: 8pt; font-family: 'Arial Black'; }")
         #TODO: change this to a QTableView using QtDesigner, following ~ line 107 of ClamsCatch
         self.measureModel = QtSql.QSqlQueryModel()
         self.measureView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -1498,6 +1500,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         if val:
             self.comment = val
 
+        self.samplingMethodBox.setEnabled(False)
+
 
     def checkOrder(self, i):
         '''checkOrder enforces the protocol order.
@@ -1572,8 +1576,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     #  user wants to print a label anyways
                     break
 
+
         if 'nwfsc' in self.settings['OrganizationName'].lower():
             code = str(self.survey) + str(self.ship) + str(self.activeHaul).zfill(3) + str(self.specimenKey)
+
             lengthType = str(self.lengthTypeBox.currentText())
             lw_sql = ("SELECT " + lengthType + ", organism_weight FROM " + self.schema
                       + ".v_specimen_measurements WHERE survey=" + self.survey + " AND ship = " + self.ship
@@ -1716,8 +1722,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
     def editSamplingMethod(self):
         # user toggles in sample flag - have to update data
         if self.editStateFlag:
-            sql = ("UPDATE specimen SET sampling_method =" + self.samplingMethodBox.currentText() +
-                    " WHERE ship="+self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+
+            sql = ("UPDATE specimen SET sampling_method ='" + self.samplingMethodBox.currentText() +
+                    "' WHERE ship="+self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND specimen_id = "+self.specimenKey)
             self.db.dbExec(sql)
 

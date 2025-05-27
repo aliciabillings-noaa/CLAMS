@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260\CLAMS\ui\CLAMSHaul.ui'
+# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS_WPy64-31260\CLAMS\ui\CLAMSHaul.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -13,7 +13,7 @@ class Ui_clamsHaul(object):
     def setupUi(self, clamsHaul):
         clamsHaul.setObjectName("clamsHaul")
         clamsHaul.setEnabled(True)
-        clamsHaul.resize(889, 737)
+        clamsHaul.resize(897, 737)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -150,7 +150,10 @@ class Ui_clamsHaul(object):
         self.picLabel.setSizePolicy(sizePolicy)
         self.picLabel.setMinimumSize(QtCore.QSize(300, 300))
         font = QtGui.QFont()
+        font.setFamily("Arial Black")
         font.setPointSize(12)
+        font.setBold(True)
+        font.setWeight(75)
         self.picLabel.setFont(font)
         self.picLabel.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.picLabel.setFrameShadow(QtWidgets.QFrame.Shadow.Plain)

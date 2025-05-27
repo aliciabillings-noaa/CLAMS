@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260\CLAMS\ui\ABLImMatSalmonSpecialStudiesDlg.ui'
+# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS_WPy64-31260\CLAMS\ui\ABLImMatSalmonSpecialStudiesDlg.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -21,7 +21,7 @@ class Ui_ablimmatsalmonspeciesstudiesDlg(object):
         self.label_3 = QtWidgets.QLabel(parent=ablimmatsalmonspeciesstudiesDlg)
         font = QtGui.QFont()
         font.setFamily("Arial Black")
-        font.setPointSize(16)
+        font.setPointSize(14)
         font.setBold(True)
         font.setWeight(75)
         self.label_3.setFont(font)

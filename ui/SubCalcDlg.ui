@@ -18,6 +18,7 @@
     <widget class="QLabel" name="label_3">
      <property name="font">
       <font>
+       <family>Arial Black</family>
        <pointsize>12</pointsize>
        <weight>75</weight>
        <bold>true</bold>
@@ -40,7 +41,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -58,7 +62,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -76,7 +83,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>18</pointsize>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="autoFillBackground">
@@ -100,7 +110,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -118,7 +131,10 @@
        </property>
        <property name="font">
         <font>
+         <family>Arial Black</family>
          <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -136,7 +152,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>18</pointsize>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="autoFillBackground">
@@ -160,7 +179,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>18</pointsize>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="autoFillBackground">
@@ -184,7 +206,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>18</pointsize>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="autoFillBackground">
@@ -206,7 +231,10 @@
       <widget class="QLabel" name="label_2">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -218,7 +246,10 @@
       <widget class="QLabel" name="label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -236,7 +267,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>20</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="autoFillBackground">
@@ -260,7 +294,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -282,7 +319,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -300,7 +340,10 @@
        </property>
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <family>Arial Black</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
