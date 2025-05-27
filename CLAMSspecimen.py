@@ -53,6 +53,7 @@ import keypad
 import messagedlg
 import collectionsdlg
 import ZebraLabelPrinter
+import FEATZebraPrinter
 
 
 class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
@@ -84,6 +85,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.deviceData = parent.deviceData
         self.sqlLengthIndex = None
         self.freeze=False
+        self.schema = parent.schema
 
         if not self.db.db.isOpen():
             self.db.dbOpen()
@@ -136,9 +138,24 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         # if there is a printer set up, initialize the printer and add the sound
         if 'Label_Printer' in self.deviceData:
-            #  initialize the Label Printer
-            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor,
-                    self.deviceData['Label_Printer']['id'])
+            if 'nwfsc' in self.settings['OrganizationName'].lower():
+                # get the ip and port
+                printer_sql = ("SELECT device_parameter, parameter_value "
+                               "FROM " + self.schema + ".device_configuration WHERE device_id = "
+                               + self.deviceData['Label_Printer']['id'])
+                print_query = self.db.dbQuery(printer_sql)
+                ip = None
+                port = None
+                for param, val in print_query:
+                    if param.lower() == 'networkaddress':
+                        ip = val
+                    elif param.lower() == 'networkport':
+                        port = val
+                self.printer = FEATZebraPrinter.PrintLabel(self.ship, self.survey, ip, port)
+            else:
+                #  initialize the Label Printer
+                self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor,
+                        self.deviceData['Label_Printer']['id'])
 
             sound_file = self.deviceData['Label_Printer']['soundeffect']
             if sound_file:
@@ -1284,9 +1301,20 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         self.iterator = range(len(self.measureType))
         # collections - this will be done though DB in the future
-        self.activeCollections = ['Stomach', 'Ovary']
-        self.collectionMeasurementTypes = ['stomach_taken', 'ovary_taken']# also temporary for now
-        self.collectionDevices = ['5', '7']# also temporary for now
+        potential_collections = ['Stomach', 'Diet', 'Ovary', 'Gonad', 'Collected']
+        self.activeCollections = [c for c in potential_collections if c in self.label]
+        # get the collection measurement_types and collection device_id
+        for c in self.activeCollections:
+            type_sql = ("SELECT measurement_type FROM " + self.schema
+                        + ".protocol_definitions WHERE protocol_name='" + self.protocol + "' AND label='" + c + "'")
+            type_query = self.db.dbQuery(type_sql)
+            meas_type, = type_query.first()
+            self.collectionMeasurementTypes.append(meas_type)
+            dev_sql = ("SELECT device_id FROM " + self.schema + ".measurement_setup WHERE workstation_id="
+                       + self.workStation + " AND measurement_type='" + meas_type + "' AND gui_module='Specimen'")
+            dev_query = self.db.dbQuery(dev_sql)
+            device_id, = dev_query.first()
+            self.collectionDevices.append(device_id)
 
         self.resetColors()
         self.editStateFlag=False
@@ -1506,13 +1534,16 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             # iterate though boxes and get checked ones - non-visible boxes default to uncecked
             for i, box in enumerate(collectionDialog.checkboxes):
                 if box.isChecked():
-                    # insert measurement
-                    sql=("INSERT INTO measurements (ship,survey,event_id,sample_id,specimen_id," +
-                            "measurement_type,device_id,measurement_value) VALUES ("+self.ship+","+
-                            self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey + ",'" +
-                            self.collectionMeasurementTypes[i] + "'," + self.collectionDevices[i] + ",'Yes')")
-                    self.db.dbExec(sql)
-                    self.printLabel()
+                    if 'nwfsc' in self.settings['OrganizationName'].lower():
+                        self.printLabel()
+                    else:
+                        # insert measurement
+                        sql=("INSERT INTO measurements (ship,survey,event_id,sample_id,specimen_id," +
+                                "measurement_type,device_id,measurement_value) VALUES ("+self.ship+","+
+                                self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey + ",'" +
+                                self.collectionMeasurementTypes[i] + "'," + self.collectionDevices[i] + ",'Yes')")
+                        self.db.dbExec(sql)
+                        self.printLabel()
 
 
 
@@ -1529,7 +1560,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             self.message.exec()
             return
 
-        #  check that all requried measurements have been obtained
+        #  check that all required measurements have been obtained
         for i in self.iterator:
             btn = self.buttons[i]
             if (self.values[i] == None) and (self.forcing[i] == '1') and (btn.isEnabled()):
@@ -1545,103 +1576,117 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     #  user wants to print a label anyways
                     break
 
-        #  get data from db - query everything *BUT* length
-        sql = ("SELECT ship, survey, event_id, specimen_id, species_code, common_name, "+
-                "organism_weight, sex, maturity, scientist, barcode FROM v_specimen_measurements WHERE "+
-                "survey=" + self.survey +" AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
-        query = self.db.dbQuery(sql)
-        data = query.first()
-        vessel = data[0]
-        survey = data[1]
-        haul = data[2]
-        spec_id = data[3]
-        code = data[4]
-        name = data[5]
-        weight = data[6]
-        sex = data[7]
-        maturity = data[8]
-        scientist = data[9]
-        barcode =  data[10]
 
-        #  with the latest version of the CLAMS schema, we have a "is_length" column in the
-        #  measurements table that is set to 1 for "length" measurements which allows us
-        #  to query all of the length measurements regardless of their name. First we build
-        #  a list of all length types.
-        len_list = []
-        sql = ("SELECT measurement_type FROM measurement_types WHERE " +
-                "is_length=1")
-        query = self.db.dbQuery(sql)
-        for type, in query:
-            len_list.append(type)
+        if 'nwfsc' in self.settings['OrganizationName'].lower():
+            code = str(self.survey) + str(self.ship) + str(self.activeHaul).zfill(3) + str(self.specimenKey)
 
-        # When the length type is changed in the combo box, only the specimens with that
-        # length type are shown in the table, therefore, the only option for length type
-        #  selected is the one currently active in the combo box- query using that type
-        if self.lengthTypeBox.isEnabled():
             lengthType = str(self.lengthTypeBox.currentText())
-
-            sql = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
-                "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
-                " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
-            query = self.db.dbQuery(sql)
-            data  = query.first()
-            length=data[1]
-
-            #  now build the length string to print
-            if lengthType in len_list:
-                ind=lengthType.find('_')+1
-                if ind != 0:
-                    lt = lengthType[0].upper()+lengthType[ind].upper()
-                else:
-                    # This case is for length types without an underscore, which doesn't happen now but might in the future
-                    lt = lengthType[0].upper()+lengthType[1].upper()
+            lw_sql = ("SELECT " + lengthType + ", organism_weight FROM " + self.schema
+                      + ".v_specimen_measurements WHERE survey=" + self.survey + " AND ship = " + self.ship
+                      + " AND event_id=" + self.activeHaul + " AND specimen_id = " + self.specimenKey)
+            lw_query = self.db.dbQuery(lw_sql)
+            length, weight = lw_query.first()
+            print(length, weight)
+            self.printer.print_label(self.protocol, self.activeSpcName, self.activeSpcCode, self.activeHaul,
+                                     code, self.specimenKey, length, weight)
         else:
-            # Just stick the first length type (from protocol) value on the label in the length section, if it exists (if not, NaN)
-            length='NaN'
-            for lengthType in self.measureType:
+            #  get data from db - query everything *BUT* length
+            sql = ("SELECT ship, survey, event_id, specimen_id, species_code, common_name, "+
+                    "organism_weight, sex, maturity, scientist, barcode FROM v_specimen_measurements WHERE "+
+                    "survey=" + self.survey +" AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
+            query = self.db.dbQuery(sql)
+            data = query.first()
+            vessel = data[0]
+            survey = data[1]
+            haul = data[2]
+            spec_id = data[3]
+            code = data[4]
+            name = data[5]
+            weight = data[6]
+            sex = data[7]
+            maturity = data[8]
+            scientist = data[9]
+            barcode =  data[10]
+
+            #  with the latest version of the CLAMS schema, we have a "is_length" column in the
+            #  measurements table that is set to 1 for "length" measurements which allows us
+            #  to query all of the length measurements regardless of their name. First we build
+            #  a list of all length types.
+            len_list = []
+            sql = ("SELECT measurement_type FROM measurement_types WHERE " +
+                    "is_length=1")
+            query = self.db.dbQuery(sql)
+            for type, in query:
+                len_list.append(type)
+
+            # When the length type is changed in the combo box, only the specimens with that
+            # length type are shown in the table, therefore, the only option for length type
+            #  selected is the one currently active in the combo box- query using that type
+            if self.lengthTypeBox.isEnabled():
+                lengthType = str(self.lengthTypeBox.currentText())
+
+                sql = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
+                    "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
+                    " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
+                query = self.db.dbQuery(sql)
+                data  = query.first()
+                length=data[1]
+
+                #  now build the length string to print
                 if lengthType in len_list:
-                    lengthType = str(lengthType)
-                    sql = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
-                        "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
-                        " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
-                    query = self.db.dbQuery(sql)
-                    data  = query.first()
-                    length = data[1]
-                    ind = lengthType.find('_')+1
+                    ind=lengthType.find('_')+1
                     if ind != 0:
                         lt = lengthType[0].upper()+lengthType[ind].upper()
                     else:
                         # This case is for length types without an underscore, which doesn't happen now but might in the future
-                        # Just take first two letter of length type word
                         lt = lengthType[0].upper()+lengthType[1].upper()
-                    break
+            else:
+                # Just stick the first length type (from protocol) value on the label in the length section, if it exists (if not, NaN)
+                length='NaN'
+                for lengthType in self.measureType:
+                    if lengthType in len_list:
+                        lengthType = str(lengthType)
+                        sql = ("SELECT lower(measurement_type), measurement_value from measurements WHERE " +
+                            "measurement_type = '"+lengthType+"' AND survey=" + self.survey +
+                            " AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
+                        query = self.db.dbQuery(sql)
+                        data  = query.first()
+                        length = data[1]
+                        ind = lengthType.find('_')+1
+                        if ind != 0:
+                            lt = lengthType[0].upper()+lengthType[ind].upper()
+                        else:
+                            # This case is for length types without an underscore, which doesn't happen now but might in the future
+                            # Just take first two letter of length type word
+                            lt = lengthType[0].upper()+lengthType[1].upper()
+                        break
 
 
-        length = length + ' ' + lt
+            length = length + ' ' + lt
 
-        #create dictionary
-        data={'title':'NOAA/AFSC/RACE/MACE',
-              'ship':vessel,
-              'survey':survey,
-              'haul':haul,
-              'specimen_id':spec_id,
-              'species_code':code,
-              'common_name':name,
-              'length':length,
-              'weight':weight,
-              'sex':sex,
-              'maturity_table':self.maturityTable,
-              'maturity_key':maturity,
-              'scientist':scientist,
-              'otolith':barcode
-              }
+            #create dictionary
+            data={'title':'NOAA/AFSC/RACE/MACE',
+                  'ship':vessel,
+                  'survey':survey,
+                  'haul':haul,
+                  'specimen_id':spec_id,
+                  'species_code':code,
+                  'common_name':name,
+                  'length':length,
+                  'weight':weight,
+                  'sex':sex,
+                  'maturity_table':self.maturityTable,
+                  'maturity_key':maturity,
+                  'scientist':scientist,
+                  'otolith':barcode
+                  }
 
-        #  print the label
-        self.printer.printSpecialSampleLabel1(data)
+            #  print the label
+            self.printer.printSpecialSampleLabel1(data)
 
-        # print sound
-        if self.printSound:
-            self.printSound.play()
+            # print sound
+            if self.printSound:
+                self.printSound.play()
 
 
     def getComment(self):
