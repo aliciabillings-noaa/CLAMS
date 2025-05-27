@@ -22,3 +22,4 @@ __pycache__/
 *.py[cod]
 .vs/*
 [Vv]env/*
+clams_swfsc.ini

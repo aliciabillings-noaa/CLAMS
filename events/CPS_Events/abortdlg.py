@@ -62,6 +62,7 @@ class AbortDlg(QDialog, ui_AbortDlg.Ui_abortDlg):
         self.final = False
 
         self.message = messagedlg.MessageDlg(self)
+        self.abortPrefix = parent.abortPrefix
 
         # set up performance box
         # fill the performance dialog
@@ -79,6 +80,23 @@ class AbortDlg(QDialog, ui_AbortDlg.Ui_abortDlg):
         self.te_comment.selectionChanged.connect(self.display_keypad)
         self.pb_done.clicked.connect(self.save)
         self.pb_cancel.clicked.connect(self.cancel)
+
+        # populate abort dialog with saved values in events table
+        sql = ("SELECT e.performance_code, e.comments, ep.description, e.event_id FROM " + self.schema + 
+               ".events e INNER JOIN " + self.schema + 
+               ".event_performance ep on ep.performance_code=e.performance_code WHERE e.ship=" +
+               self.ship +
+               " AND e.survey=" + self.survey + 
+               " AND e.event_id=" + str(self.activeEvent))
+        query = self.db.dbQuery(sql)
+        code, comments, desc, id = query.first()
+        if code != '0':
+            self.cb_perf.setCurrentText(code + " - " + desc)
+        # Get second part of comment that starts with ABORT: xxxx and set that as text
+        # in text box
+        parsedComment = comments.split(self.abortPrefix) if comments else ''
+        abortComment = parsedComment[1] if len(parsedComment) > 1 else ''
+        self.te_comment.setText(abortComment)
 
     def display_keypad(self):
         """
@@ -114,20 +132,24 @@ class AbortDlg(QDialog, ui_AbortDlg.Ui_abortDlg):
             self.message.show()
         else:
             # get the performance code from the cb text
-            code, desc = self.cb_perf.currentText().split(" - ")
+            code = self.cb_perf.currentText().split(" - ")
             # get current comments
             com_sql = ("SELECT comments FROM " + self.schema + ".events WHERE ship=" + self.ship +
                        " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
             com_query = self.db.dbQuery(com_sql)
             comments, = com_query.first()
-            if comments not in ['', None]:
-                # add to comments
-                fin_coms = comments + "; ABORT COMS: " + self.te_comment.toPlainText()
+
+            # Appends abort comment to the end of the general comment.
+            parsedComment = comments.split(self.abortPrefix) if comments else ''
+            formattedComment = ''
+            if (len(parsedComment) >= 1):
+                formattedComment = parsedComment[0] + " " + self.abortPrefix + self.te_comment.toPlainText()
             else:
-                fin_coms = "ABORT COMS: " + self.te_comment.toPlainText()
+                formattedComment = self.abortPrefix + self.te_comment.toPlainText()
+            
             # update
-            update_sql = ("UPDATE " + self.schema + ".events SET performance_code = " + str(code) +
-                          " AND comments = '" + fin_coms + "' WHERE ship=" + self.ship +
+            update_sql = ("UPDATE " + self.schema + ".events SET performance_code = " + str(code[0]) +
+                          ", comments = '" + formattedComment + "' WHERE ship=" + self.ship +
                           " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
 
             self.db.dbQuery(update_sql)

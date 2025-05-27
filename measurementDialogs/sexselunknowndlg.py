@@ -60,7 +60,6 @@ class SexSelUnknownDlg(QDialog, ui_SexSelUnknownDlg.Ui_sexUnknownDlg):
         self.maleBtn.clicked.connect(self.getSex)
         self.femaleBtn.clicked.connect(self.getSex)
         self.unsexedBtn.clicked.connect(self.getSex)
-        self.unknownBtn.clicked.connect(self.getSex)
         # todo: add not determined button for nwfsc
 
     def setup(self, parent):

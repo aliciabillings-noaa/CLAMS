@@ -73,6 +73,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.workStation=parent.workStation
         self.errorSounds=parent.errorSounds
         self.errorIcons=parent.errorIcons
+        self.schema = parent.schema
         self.testing=parent.testing
         self.partitions=[]
         self.activePartition=None
