@@ -89,7 +89,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="unsexedBtn">
+     <widget class="QPushButton" name="unknownBtn">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
@@ -109,7 +109,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Unsexed</string>
+       <string>Unknown</string>
       </property>
      </widget>
     </item>

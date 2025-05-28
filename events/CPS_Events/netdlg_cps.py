@@ -62,37 +62,42 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
         self.numpad = numpad.NumPad(self)
         numpadDeviceId = 3
 
+        # holds door spread and foot rope depth value
+        self.values = {}
+
         #  set up signals
         for btn in self.buttons:
             btn.clicked.connect(self.get_value)
             btn.setText('')
         self.cancelBtn.clicked.connect(self.doneClicked)
         self.saveButton.clicked.connect(self.add_record)
+    
+    def setTime(self, time):
+        self.cur_time = time
 
-    def reload_data(self, btn=None, cur_time=None):
+    def reload_data(self, cur_time=None):
         """
         populates with existing data. This is used when
         an event is reloaded and the dialog state has to be updated from the db.
         """
-        cur_btn = self.sender()
-
-        if btn:
-            self.net_btn = btn
-
+        self.pb_door_spread.setText('')
+        self.pb_fr.setText('')
         # get the current time, if sent
         if cur_time:
             self.cur_time = cur_time
 
-            sql = ("SELECT measurement_value FROM EVENT_STREAM_DATA WHERE" +
+            sql = ("SELECT measurement_type, measurement_value FROM EVENT_STREAM_DATA WHERE" +
                 " SHIP=" + self.ship + 
                 " and survey=" + self.survey +
                 " and event_id=" + self.activeEvent +
                 " and time_stamp=to_timestamp('" + self.cur_time + "', 'MMDDYYYY HH24:MI:SS.FF3')" +
-                " and measurement_type='" + self.net_btn + "'")
+                " and measurement_type in ('DoorSpread', 'Footrope')")
             query = self.db.dbQuery(sql)
-            value, = query.first()
-            if value:
-                cur_btn.setText(value)
+            for val in query:
+                if val[0] == 'DoorSpread':
+                    self.pb_door_spread.setText(val[1])
+                else:
+                    self.pb_fr.setText(val[1])
 
     def edit_data(self):
         """
@@ -110,21 +115,41 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
         self.numpad.msgLabel.setText("Enter value")
         if not self.numpad.exec():
             return
-        
-        # Enter data into event_stream_data table
-        sql = ("INSERT INTO " + self.schema + ".event_stream_data (ship,survey, " +
-                                "event_id, device_id, time_stamp, measurement_type, measurement_value) " +
-                                "VALUES (" + self.ship + ", " + self.survey + ", " + self.activeEvent +
-                                ", 3, to_timestamp('" + self.cur_time + "', 'MMDDYYYY HH24:MI:SS.FF3'), '"
-                               + measurementType + "', '" + self.numpad.value+"')")
-        self.db.dbExec(sql)
-        cur_btn.setText(self.numpad.value)
+
+        val = self.numpad.value
+        if val:
+            self.values[measurementType] = self.numpad.value
+            cur_btn.setText(self.numpad.value)
 
     def add_record(self):
         """
         adds a total record to the database or updates if it is flagged for editing
         :return:
         """
+        for key in self.values:
+            if self.values[key]:
+                sql = ("SELECT * FROM " + self.schema + ".event_stream_data WHERE" + 
+                       " event_id=" + self.activeEvent + 
+                       " AND measurement_type='" + key + 
+                       "' AND time_stamp=to_timestamp('" + self.cur_time + 
+                       "', 'MMDDYYYY HH24:MI:SS.FF3')")
+                query = self.db.dbQuery(sql)
+                val = query.first()
+                if val[0] != None and len(val) > 0:
+                    sql = ("UPDATE " + self.schema + ".event_stream_data" + 
+                           " SET measurement_value=" + self.values[key] +
+                           " WHERE event_id=" + self.activeEvent + 
+                           " AND measurement_type='" + key +
+                           "' AND time_stamp=to_timestamp('" + self.cur_time + "', 'MMDDYYYY HH24:MI:SS.FF3')")
+                    self.db.dbExec(sql)
+                else:
+                    # Enter data into event_stream_data table
+                    sql = ("INSERT INTO " + self.schema + ".event_stream_data (ship,survey, " +
+                                            "event_id, device_id, time_stamp, measurement_type, measurement_value) " +
+                                            "VALUES (" + self.ship + ", " + self.survey + ", " + self.activeEvent +
+                                            ", 3, to_timestamp('" + self.cur_time + "', 'MMDDYYYY HH24:MI:SS.FF3'), '" +
+                                            key + "', '" + self.values[key] +"')")
+                    self.db.dbExec(sql)
         self.close()
 
     def doneClicked(self):

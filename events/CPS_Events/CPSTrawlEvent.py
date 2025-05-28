@@ -64,6 +64,8 @@ class Events(Enum):
     EQ = 'Equilibrium'
     Haulback = 'Haul Back'
     NetOnDeck = 'Net On Deck'
+    EQ10Min = 'EQ10Min'
+    EQ20Min = 'EQ20Min'
 
 # noinspection PyArgumentList,PyCallByClass,PyTypeChecker
 class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
@@ -162,13 +164,13 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         # set up the timers
         self.event_timer = QTimer(self)
         self.td_timer = QTimer(self)
+        self.eqTimerCount = 0
 
         # set slots
         self.pb_metadata.clicked.connect(self.enter_metadata)
         self.pb_abort.clicked.connect(self.abort_operation)
         self.commentBtn.clicked.connect(self.add_comment)
         self.doneBtn.clicked.connect(self.finish_event)
-        # self.netDimBtn.clicked.connect(self.get_net_dims)
         self.dataTable.itemSelectionChanged.connect(self.edit_dims)
         for b in self.buttons:
             b.clicked.connect(self.set_event)
@@ -406,6 +408,8 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                                                         "('"  + 
                                                         Events.NetInWater.name + "', '" +
                                                         Events.EQ.name + "', '" +
+                                                        Events.EQ10Min.name + "', '" +
+                                                        Events.EQ20Min.name + "', '" +
                                                         Events.Haulback.name + "', '" +
                                                         Events.NetOnDeck.name +
                                                         "')"
@@ -425,7 +429,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             for b in self.buttons:
                 if b.text() == btn_txt:
                     ind = self.buttons.index(b)
-            self.idxs.append(ind)
+                    self.idxs.append(ind)
 
             #  first check for event_data parameters
             sql = ("SELECT event_parameter, parameter_value FROM " + self.schema + ".event_data WHERE ship=" +
@@ -445,7 +449,9 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 self.dataTable.setItem(row, 2, QTableWidgetItem(buttonValues[0]))
                 self.dataTable.setItem(row, 3, QTableWidgetItem(buttonValues[1]))
                 self.dataTable.setItem(row, 4, QTableWidgetItem(buttonValues[2]))
-                self.buttons[ind].setPalette(self.yellow)
+
+                if ind != None:
+                    self.buttons[ind].setPalette(self.yellow)
 
                 if param == Events.NetInWater.name:
                     # get elapsed seconds since NIW was pressed
@@ -627,25 +633,28 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         # save in DB
         # get the current timestamp
-        self.cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
+        cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
 
         # Checks whether an entry exists in event_data table
         # if so, update value if not, create new row.
-        event_sql = ("SELECT * FROM " + self.schema + ".event_data where " + 
+        event_sql = ("SELECT PARAMETER_VALUE FROM " + self.schema + ".event_data where " + 
                      "ship=" + self.ship +
                      " and survey=" + self.survey + 
                      " and event_id=" + self.activeEvent + 
                      " and event_parameter='" + paramName + "'")
         query = self.db.dbQuery(event_sql)
         val = query.first()
+        self.cur_time = val[0] if val[0] else cur_time
         if val[0]:
             # Verify user actually wants to update before updating value in database
             self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                                     'Are you sure you want to update event?', 'choice')
             if self.message.exec():
                 event_sql =("UPDATE " + self.schema + 
-                        ".event_data set parameter_value='" + self.cur_time + "' WHERE ship=" + 
-                        self.ship + " and survey=" + self.survey + " and event_id=" + self.activeEvent +
+                        ".event_data set parameter_value='" + self.cur_time + 
+                        "' WHERE ship=" + self.ship + 
+                        " and survey=" + self.survey + 
+                        " and event_id=" + self.activeEvent +
                         " and event_parameter='" + paramName + "'")
                 self.db.dbExec(event_sql)
             else:
@@ -660,12 +669,14 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 return
 
         self.buttons[ind].setPalette(self.green)
-        self.dataTable.setItem(ind, 0, QTableWidgetItem(paramName))
-        self.dataTable.setItem(ind, 1, QTableWidgetItem(self.cur_time))
+        # skip two rows if haul back or net on deck
+        tableIdx = ind + 2 if ind > 1 else ind
+        self.dataTable.setItem(tableIdx, 0, QTableWidgetItem(paramName))
+        self.dataTable.setItem(tableIdx, 1, QTableWidgetItem(self.cur_time))
         if self.dispVector:
-            self.dataTable.setItem(ind, 2, QTableWidgetItem(self.dispVector[0]))
-            self.dataTable.setItem(ind, 3, QTableWidgetItem(self.dispVector[1]))
-            self.dataTable.setItem(ind, 4, QTableWidgetItem(self.dispVector[2]))
+            self.dataTable.setItem(tableIdx, 2, QTableWidgetItem(self.dispVector[0]))
+            self.dataTable.setItem(tableIdx, 3, QTableWidgetItem(self.dispVector[1]))
+            self.dataTable.setItem(tableIdx, 4, QTableWidgetItem(self.dispVector[2]))
         self.dataTable.resizeColumnsToContents()
 
         # deal with the timers and buttons
@@ -676,6 +687,9 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             # if TD is pressed, send up net dimensions
             self.net_btn = Events.EQ.name
             self.get_net_dims()
+            # Every 10 minutes, show net mensuration dialog
+            self.td_timer.setInterval(10000)
+            self.td_timer.timeout.connect(lambda: self.timerSet())
         elif Events.Haulback.name in paramName:
             # stop the timer
             self.td_timer.stop()
@@ -696,8 +710,8 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.recording = False
             self.event_timer.stop()
 
-        # set next button enabled if the current button isn't stop MM watch
-        if Events.NetOnDeck.name not in paramName:
+        # set next button enabled as long as current button is not Net on Deck
+        if paramName not in (Events.EQ.name, Events.NetOnDeck.name):
             self.disable_enable_buttons('enable', self.buttons[ind + 1])
 
         # move current row ahead one
@@ -800,18 +814,62 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             if result == QDialog.DialogCode.Accepted:
                 self.accept()
 
+    def timerSet(self):
+        """
+        Called 10 and 20 minutes after EQ. Sets EQ10Min and EQ20Min rows
+        """
+        # After 30 mins, automatically presses haul back and exit
+        if self.eqTimerCount > 1:
+            self.pb_hb.click()
+            self.eqTimerCount = 0
+            return
+        
+        self.cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
+
+        param = 'EQ10Min' if self.eqTimerCount == 0 else 'EQ20Min'
+
+        sql = ("SELECT PARAMETER_VALUE FROM " + self.schema + ".EVENT_DATA WHERE SHIP=" + self.ship +
+            " AND SURVEY=" + self.survey +
+            " AND EVENT_ID=" + str(self.activeEvent) + 
+            " AND EVENT_PARAMETER='" + param + "'")
+        query = self.db.dbQuery(sql)
+        val, = query.first()
+        if val == None:
+            val = self.cur_time
+            sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, " +
+                            "event_id, partition, event_parameter, parameter_value) " +
+                            "VALUES (" + self.ship + "," + self.survey + "," + str(self.activeEvent) + 
+                            ", 'MainTrawl', '" + param + "', '" + self.cur_time + "')")
+            self.db.dbExec(sql)
+        else:
+            sql = ("UPDATE " + self.schema + ".event_data SET parameter_value ='" + self.cur_time + "' WHERE ship=" + self.ship +
+                        " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) + 
+                        " AND EVENT_PARAMETER='" + param + "'")
+            self.db.dbExec(sql)
+
+        # Populate table rows 2 & 3 with EQ10Min and EQ20Min events
+        index = self.eqTimerCount + 2
+        self.dataTable.setItem(index, 0, QTableWidgetItem(param))
+        self.dataTable.setItem(index, 1, QTableWidgetItem(self.cur_time))
+
+        self.netdlg.reload_data(val)
+        
+        self.netdlg.exec()
+        if self.eqTimerCount == 1:
+            self.disable_enable_buttons('enable', self.pb_hb)
+        self.eqTimerCount = self.eqTimerCount + 1
+
+    
     def get_net_dims(self):
         """
-        called when the user hits TD, HB, COM or the NetDims button. This presents
-        a simple dialog for entering the net opening width and height and the amount of wire out.
+        called when the user hits EQ, HB. This presents
+        a simple dialog for entering door spread and foot rope depth.
         """
         self.net_btn = self.sender().text()
+        self.netdlg.setTime(self.cur_time)
 
         # reload the net dimension values
-        self.netdlg.reload_data(self.net_btn, self.cur_time)
-
-        # set the text for the button
-#        self.netdlg.addRecordBtn.setText("Add\nRecord")
+        self.netdlg.reload_data(self.cur_time)
 
         # display the dialog
         self.netdlg.exec()
@@ -825,13 +883,22 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         # get the timestamp
         self.cur_time = self.dataTable.item(self.dataTable.currentRow(), 1).text()
         self.net_btn = self.dataTable.item(self.dataTable.currentRow(), 0).text()
-        self.netdlg.reload_data(self.net_btn, self.cur_time)
-        if self.net_btn in [Events.EQ.value, Events.Haulback.value] or 'COM' in self.net_btn:
+
+        if self.net_btn in [Events.EQ.name, 
+                            Events.Haulback.name, 
+                            Events.EQ10Min.name, 
+                            Events.EQ20Min.name]:
             # display the dialog
-            if self.netdlg.exec():
-                self.dataTable.blockSignals(True)
-                self.dataTable.clearSelection()
-                self.dataTable.blockSignals(False)
+            self.netdlg.setTime(self.cur_time)
+
+            # reload the net dimension values
+            self.netdlg.reload_data(self.cur_time)
+
+            # display the dialog
+            self.netdlg.exec()
+            self.dataTable.blockSignals(True)
+            self.dataTable.clearSelection()
+            self.dataTable.blockSignals(False)
 
     @pyqtSlot(str, object)
     def device_error(self, deviceID, obj):
