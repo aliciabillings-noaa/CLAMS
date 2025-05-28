@@ -1,0 +1,48 @@
+Goal - enable mapping of multiple devices to a measurement.
+
+Use Case - allow for specific "Software" measurement dialogs to be displayed when manually
+           entering a serial/network based measurement. Currently serial/network measurements
+           are hard coded to display the numpad when editing/manually entering the values.
+           This *mostly* works, but fails for alphanumeric barcodes.
+           
+           Default to numpad when a software based dialog is not linked to a serial/network
+           measurement
+
+
+Change specimen to use the new devices module. Rework the current collection of lists that
+are based on measurement order to use the deviceData dict. Will need to create a dict to
+map measurement order to device (one->many.) 
+
+
+PK on measurement_setup must be modified to add device_id to allow multiple measurement+device
+mappings: 
+
+ALTER TABLE measurement_setup
+DROP CONSTRAINT m_setup_pk;
+
+DROP INDEX m_setup_pk;
+
+ALTER TABLE measurement_setup
+ADD CONSTRAINT m_setup_pk PRIMARY KEY (workstation_id, measurement_type, device_id, gui_module);
+
+
+
+
+
+
+
+SELECT PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE, MEASUREMENT_SETUP.DEVICE_ID,
+DEVICES.DEVICE_INTERFACE,PROTOCOL_DEFINITIONS.FORCE_MEASUREMENT,
+PROTOCOL_DEFINITIONS.FORCE_ORDER,PROTOCOL_DEFINITIONS.LABEL 
+FROM MEASUREMENT_SETUP JOIN PROTOCOL_DEFINITIONS 
+ON PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE=MEASUREMENT_SETUP.MEASUREMENT_TYPE 
+JOIN DEVICES ON DEVICES.DEVICE_ID=MEASUREMENT_SETUP.DEVICE_ID 
+WHERE PROTOCOL_DEFINITIONS.PROTOCOL_NAME='Pollock_LW_GSI_Oto_fin_gill' AND 
+MEASUREMENT_SETUP.WORKSTATION_ID=25 AND  
+MEASUREMENT_SETUP.GUI_MODULE='Specimen' 
+ORDER BY PROTOCOL_DEFINITIONS.MEASUREMENT_ORDER ASC
+
+
+
+
+25	barcode	16	Specimen
