@@ -30,34 +30,14 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="dispBox">
+    <widget class="QTextEdit" name="dispEdit">
      <property name="font">
       <font>
        <family>Arial Black</family>
-       <pointsize>36</pointsize>
+       <pointsize>14</pointsize>
        <weight>75</weight>
        <bold>true</bold>
       </font>
-     </property>
-     <property name="autoFillBackground">
-      <bool>false</bool>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QWidget {
-    background-color: white;
-}</string>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::WinPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Plain</enum>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
    </item>
@@ -362,7 +342,7 @@
        </widget>
       </item>
       <item row="4" column="2">
-       <widget class="QPushButton" name="pBtnClr_2">
+       <widget class="QPushButton" name="pBtnBsp">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
           <horstretch>0</horstretch>

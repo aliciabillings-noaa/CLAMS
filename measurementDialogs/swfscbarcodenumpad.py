@@ -57,26 +57,29 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import QEvent, Qt, QObject
 from ui import ui_SWFSCBCNumPad
-#from sys import argv
+import messagedlg
+import re
 
 
 class SWFSCBarcodeNumpad(QDialog, ui_SWFSCBCNumPad.Ui_SWFSCBCNumPad):
 
-    def __init__(self, parent=None):
+    def __init__(self, message, parent=None):
         super(SWFSCBarcodeNumpad, self).__init__(parent)
         self.setupUi(self)
+        self.dispEdit.setText(message)
 
         # variable declarations
-        self.value = None
-        self.msgLabel.setText('Enter Barcode Number')
-        self.result = ()
-        self.vial = ''
+        self.msgLabel.setText('')
+        self.errorSounds=parent.errorSounds
+        self.errorIcons=parent.errorIcons
 
         #  create the enter key filter
         enterEater = EnterFilter(self.Enter, parent=self)
 
+        self.message = messagedlg.MessageDlg(self)
+
         #  set the background color of the textbox
-        self.dispBox.palette().setColor(self.dispBox.backgroundRole(), QColor(255, 255, 255))
+        # self.dispEdit.palette().setColor(self.dispEdit.backgroundRole(), QColor(255, 255, 255))
 
         # connect the signals and install the event filters on the digit keys
         self.pBtn1.clicked.connect(self.getDigit)
@@ -101,9 +104,9 @@ class SWFSCBarcodeNumpad(QDialog, ui_SWFSCBCNumPad.Ui_SWFSCBCNumPad):
         self.pBtn0.installEventFilter(enterEater)
         self.pBtnA.clicked.connect(self.getDigit)
         self.pBtnA.installEventFilter(enterEater)
-        self.pBtnB.clicked.connect(self.getDigit)
-        self.pBtnB.installEventFilter(enterEater)
-        self.pBtnBsp.clicked.connect(self.getDigit)
+        self.pBtnG.clicked.connect(self.getDigit)
+        self.pBtnG.installEventFilter(enterEater)
+        self.pBtnBsp.clicked.connect(self.bkSpace)
         self.pBtnBsp.installEventFilter(enterEater)
         self.pBtnClr.clicked.connect(self.Clear)
         self.pBtnClr.installEventFilter(enterEater)
@@ -114,42 +117,26 @@ class SWFSCBarcodeNumpad(QDialog, ui_SWFSCBCNumPad.Ui_SWFSCBCNumPad):
         pass
 
 
-    def getDigit(self, keyVal=None):
-        """
-        gets the passed digit and adds it to the display
-        :param keyVal: value of the key as the digit
-        :return: none
-        """
+    def getDigit(self, keyVal: None):
+        if keyVal:
+            self.dispEdit.insertPlainText(keyVal)
+        elif self.sender().text():
+            self.dispEdit.insertPlainText(self.sender().text())
 
-        #  NEED TO ADD BACKSPACE FUNCTIONALITY IF THAT IS DESIRED
-        #    If not, key can be removed/hidden from UI
-        #  NEED TO ADD ENABLE/DISABLE KEYS CODE TO ENSURE CORRECT FORMAT
-        #    Initially, only "A" and "G" are enabled, once a single
-        #    character is entered, then "A" and "G" are disabled and
-        #    numbers are enabled. Maybe then disable numbers after 12
-        #    chars in total have been entered.
 
-        if not keyVal:
-            button = self.sender()
-            s = button.text()
+    def bkSpace(self):
+        cursor = self.dispEdit.textCursor()
+        if cursor.hasSelection():
+            cursor.removeSelectedText()
         else:
-            s = keyVal
-
-        p = self.dispBox.text()
-
-        # if there is already a decimal and s=='.', don't allow it
-        if '.' in p and s == '.':
-            pass
-        else:
-            self.dispBox.setText(p + str(s))
-
+            cursor.deletePreviousChar()
 
     def Clear(self):
         """
         clears the display (sets it to empty string)
         :return: none
         """
-        self.dispBox.setText("")
+        self.dispEdit.setText("")
 
 
     def Enter(self):
@@ -164,12 +151,12 @@ class SWFSCBarcodeNumpad(QDialog, ui_SWFSCBCNumPad.Ui_SWFSCBCNumPad):
         #  TO VALIDATE SERIAL/NETWORK INPUT TOO
         #
         #
-
-        self.vial = self.dispBox.text()
-        self.dispBox.setText("")
-        self.result = (True, self.vial)
-        self.accept()
-
+        if len(self.dispEdit.toPlainText()) == 12 and re.search(r'^.\d+$', self.dispEdit.toPlainText()):
+            self.done(1)
+        else:
+            self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "Alpha Barcode must start with A or G, followed only by numbers, and must be 12 characters long", 'info')
+            self.message.exec()
+            return
 
     def closeEvent(self, event=None):
         """
