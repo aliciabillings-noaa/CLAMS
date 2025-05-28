@@ -633,25 +633,28 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         # save in DB
         # get the current timestamp
-        self.cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
+        cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
 
         # Checks whether an entry exists in event_data table
         # if so, update value if not, create new row.
-        event_sql = ("SELECT * FROM " + self.schema + ".event_data where " + 
+        event_sql = ("SELECT PARAMETER_VALUE FROM " + self.schema + ".event_data where " + 
                      "ship=" + self.ship +
                      " and survey=" + self.survey + 
                      " and event_id=" + self.activeEvent + 
                      " and event_parameter='" + paramName + "'")
         query = self.db.dbQuery(event_sql)
         val = query.first()
+        self.cur_time = val[0] if val[0] else cur_time
         if val[0]:
             # Verify user actually wants to update before updating value in database
             self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                                     'Are you sure you want to update event?', 'choice')
             if self.message.exec():
                 event_sql =("UPDATE " + self.schema + 
-                        ".event_data set parameter_value='" + self.cur_time + "' WHERE ship=" + 
-                        self.ship + " and survey=" + self.survey + " and event_id=" + self.activeEvent +
+                        ".event_data set parameter_value='" + self.cur_time + 
+                        "' WHERE ship=" + self.ship + 
+                        " and survey=" + self.survey + 
+                        " and event_id=" + self.activeEvent +
                         " and event_parameter='" + paramName + "'")
                 self.db.dbExec(event_sql)
             else:
@@ -813,7 +816,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
     def timerSet(self):
         """
-        Called 10 and 20 minutes after EQ. Sets EQ10Min and EQ20 Min rows
+        Called 10 and 20 minutes after EQ. Sets EQ10Min and EQ20Min rows
         """
         # After 30 mins, automatically presses haul back and exit
         if self.eqTimerCount > 1:
@@ -821,9 +824,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.eqTimerCount = 0
             return
         
-        datetime = QDateTime.currentDateTime()
-        time = str(datetime.toString('MMddyyyy hh:mm:ss.zzz'))
-        self.cur_time = time
+        self.cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
 
         param = 'EQ10Min' if self.eqTimerCount == 0 else 'EQ20Min'
 
@@ -834,14 +835,14 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         query = self.db.dbQuery(sql)
         val, = query.first()
         if val == None:
-            val = time
+            val = self.cur_time
             sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, " +
                             "event_id, partition, event_parameter, parameter_value) " +
                             "VALUES (" + self.ship + "," + self.survey + "," + str(self.activeEvent) + 
-                            ", 'MainTrawl', '" + param + "', '" + time + "')")
+                            ", 'MainTrawl', '" + param + "', '" + self.cur_time + "')")
             self.db.dbExec(sql)
         else:
-            sql = ("UPDATE " + self.schema + ".event_data SET parameter_value ='" + time + "' WHERE ship=" + self.ship +
+            sql = ("UPDATE " + self.schema + ".event_data SET parameter_value ='" + self.cur_time + "' WHERE ship=" + self.ship +
                         " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) + 
                         " AND EVENT_PARAMETER='" + param + "'")
             self.db.dbExec(sql)
@@ -849,7 +850,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         # Populate table rows 2 & 3 with EQ10Min and EQ20Min events
         index = self.eqTimerCount + 2
         self.dataTable.setItem(index, 0, QTableWidgetItem(param))
-        self.dataTable.setItem(index, 1, QTableWidgetItem(time))
+        self.dataTable.setItem(index, 1, QTableWidgetItem(self.cur_time))
 
         self.netdlg.reload_data(val)
         
@@ -865,12 +866,10 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         a simple dialog for entering door spread and foot rope depth.
         """
         self.net_btn = self.sender().text()
+        self.netdlg.setTime(self.cur_time)
 
         # reload the net dimension values
         self.netdlg.reload_data(self.cur_time)
-
-        # set the text for the button
-#        self.netdlg.addRecordBtn.setText("Add\nRecord")
 
         # display the dialog
         self.netdlg.exec()
@@ -884,13 +883,22 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         # get the timestamp
         self.cur_time = self.dataTable.item(self.dataTable.currentRow(), 1).text()
         self.net_btn = self.dataTable.item(self.dataTable.currentRow(), 0).text()
-        self.netdlg.reload_data(self.cur_time)
-        if self.net_btn in [Events.EQ.value, Events.Haulback.value] or 'COM' in self.net_btn:
+
+        if self.net_btn in [Events.EQ.name, 
+                            Events.Haulback.name, 
+                            Events.EQ10Min.name, 
+                            Events.EQ20Min.name]:
             # display the dialog
-            if self.netdlg.exec():
-                self.dataTable.blockSignals(True)
-                self.dataTable.clearSelection()
-                self.dataTable.blockSignals(False)
+            self.netdlg.setTime(self.cur_time)
+
+            # reload the net dimension values
+            self.netdlg.reload_data(self.cur_time)
+
+            # display the dialog
+            self.netdlg.exec()
+            self.dataTable.blockSignals(True)
+            self.dataTable.clearSelection()
+            self.dataTable.blockSignals(False)
 
     @pyqtSlot(str, object)
     def device_error(self, deviceID, obj):
