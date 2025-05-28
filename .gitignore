@@ -3,6 +3,8 @@
 *.db
 clams.ini
 clamsABL.ini
+clams_NWFSC.ini
+clams_swfsc.ini
 *.log
 *.bak
 *.wav
@@ -18,6 +20,6 @@ clamsABL.ini
 #[Ii]cons/*
 __pycache__/
 *.py[cod]
-clams_NWFSC.ini
 .vs/*
 [Vv]env/*
+clams_swfsc.ini

@@ -71,20 +71,26 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
                     "FROM " + self.schema + ".event_performance ORDER BY event_performance.performance_code DESC")
         perf_query = self.db.dbQuery(perf_sql)
         i = 0
+
+        # get overall comments and performance code from db to display
+        query = ("SELECT performance_code, comments FROM " + self.schema + ".events WHERE ship=" +
+                   self.ship + " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
+        result_query = self.db.dbQuery(query)
+        val = result_query.first()
+
+        # set comment to db comment
+        self.te_comment.setText(val[1])
+
+        # init reason
+        self.cb_perf.setCurrentIndex(-1)
+        
+        # init reason options and set current reason
         for perfCode, desc in perf_query:
             perf_txt = str(perfCode) + " - " + desc
             self.cb_perf.addItem(perf_txt)
-            if str(perfCode) == '0':
+            if val[0] == perfCode:
                 self.cb_perf.setCurrentIndex(i)
-            self.cb_perf.setCurrentIndex(-1)
             i += 1
-
-        # get the overall comments already entered to display
-        com_sql = ("SELECT comments FROM " + self.schema + ".events WHERE ship=" +
-                   self.ship + " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
-        com_query = self.db.dbQuery(com_sql)
-        self.cur_coms, = com_query.first()
-        self.te_comment.setText(self.cur_coms)
 
         # set signals and slots
         self.te_comment.selectionChanged.connect(self.display_keypad)
@@ -115,9 +121,9 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
             self.message.show()
         else:
             # get the performance code from the cb text
-            comments = self.cur_coms if self.cur_coms else ''
-            code, desc = self.cb_perf.currentText().split(" - ")
-            update_sql = ("UPDATE " + self.schema + ".events SET performance_code = " + str(code) +
+            comments = self.te_comment.toPlainText() if self.te_comment.toPlainText() else ''
+            code = self.cb_perf.currentText().split(" - ")
+            update_sql = ("UPDATE " + self.schema + ".events SET performance_code = " + str(code[0]) +
                           ", comments = '" + comments + "' WHERE ship=" + self.ship + " AND survey="
                           + self.survey + " AND event_id=" + str(self.activeEvent))
             self.db.dbQuery(update_sql)

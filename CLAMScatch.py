@@ -54,6 +54,8 @@ import transferdlg
 import messagedlg
 import ZebraLabelPrinter
 import addspecdlg
+import FEATZebraPrinter
+import measurementDialogs.FEATProjectDlg as project
 
 
 class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
@@ -77,6 +79,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.errorIcons = parent.errorIcons
         self.scientist = parent.scientist
         self.deviceData = parent.deviceData
+        self.schema = parent.schema
 
         # initialize variables
         self.addspec_flag = True
@@ -92,6 +95,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.whHaulFlag = False
         self.devices = {}
         self.sounds = {}
+        self.speciesProtos = {}
         self.basketTypes = []
         self.subcategories = []
         self.manualDevice ='0'
@@ -249,12 +253,25 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         printerId, printerName = query.first()
         if printerId:
             #  initialize the Label Printer
-            self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, printerName)
+            if 'nwfsc' in self.settings['OrganizationName'].lower():
+                # get the ip and port
+                printer_sql = ("SELECT device_parameter, parameter_value "
+                               "FROM " + self.schema + ".device_configuration WHERE device_id = " + printerId)
+                print_query = self.db.dbQuery(printer_sql)
+                ip = None
+                port = None
+                for param, val in print_query:
+                    if param.lower() == 'networkaddress':
+                        ip = val
+                    elif param.lower() == 'networkport':
+                        port = val
+                self.printer = FEATZebraPrinter.PrintLabel(self.ship, self.survey, ip, port)
+            else:
+                self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, printerName)
         else:
             #  no printer configured
             self.printer = None
             self.printBtn.setEnabled(False)
-
         #  set up the printer sound.
         sql = ("select a.parameter_value from device_configuration a," +
                 "devices b where a.device_id=b.device_id " +
@@ -1587,6 +1604,20 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             else:
                 sampleWeight = str(sampleWeight)
             self.speciesList.setItem(nSamples, 3, QTableWidgetItem(sampleWeight))
+
+            # change the background color if the species is in the protocol map
+            if 'DisplayProtoSp' in self.settings:
+                if self.settings['DisplayProtoSp'] == 'True':
+                    # check if species is in the protocol_map table as Active
+                    proto_sql = ("SELECT protocol_name, species_code FROM " +
+                                 self.schema + ".protocol_map WHERE species_code=" + spCode)
+                    proto_query = self.db.dbQuery(proto_sql)
+                    sp_protos = ['BagNTag']
+                    for protocol, sp_code in proto_query:
+                        sp_protos.append(protocol)
+                        self.speciesList.item(nSamples, 0).setBackground(QColor(127, 255, 212))
+                    self.speciesProtos[spCode] = sp_protos
+
             nSamples += 1
             self.speciesDict.update({species:spCode})
         self.speciesList.resizeColumnsToContents()
@@ -1611,47 +1642,53 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.message.exec()
             return
         else:
-
-            #  get species code
-            speciesCode = self.activeSpcCode=self.speciesDict[self.activeSpcName]
-
-            #  get the EQ time
-            sql = ("SELECT event_data.PARAMETER_VALUE FROM event_data  WHERE " +
-                "(event_data.SHIP="+self.ship+") AND (event_data.SURVEY="+self.survey+
-                ") AND (event_data.event_id="+self.activeHaul+") AND "+
-                "(event_data.PARTITION='"+self.activePartition+"') AND "+
-                "(event_data.event_parameter='EQ')")
-            query = self.db.dbQuery(sql)
-            eqTime, = query.first()
-            if eqTime:
-                EQDate = eqTime.split(' ')[0]
+            if 'nwfsc' in self.settings['OrganizationName'].lower():
+                # get the project to apply the sample to for the species
+                selected_project = project.FEATProjectDlg(self)
+                if selected_project.result() == 1:
+                    self.printer.print_label(selected_project.project_name, self.activeSpcName, self.activeSpcCode,
+                                             self.activeHaul, selected_project.code, self.activeSampleKey)
             else:
-                EQDate = ''
+                #  get species code
+                speciesCode = self.activeSpcCode=self.speciesDict[self.activeSpcName]
 
-            #  ask how many fish are being frozen
-            self.numpad.msgLabel.setText("How many " + self.activeSpcName + " are you freezing?")
-            if not self.numpad.exec():
-                return
-            number = self.numpad.value
+                #  get the EQ time
+                sql = ("SELECT event_data.PARAMETER_VALUE FROM event_data  WHERE " +
+                    "(event_data.SHIP="+self.ship+") AND (event_data.SURVEY="+self.survey+
+                    ") AND (event_data.event_id="+self.activeHaul+") AND "+
+                    "(event_data.PARTITION='"+self.activePartition+"') AND "+
+                    "(event_data.event_parameter='EQ')")
+                query = self.db.dbQuery(sql)
+                eqTime, = query.first()
+                if eqTime:
+                    EQDate = eqTime.split(' ')[0]
+                else:
+                    EQDate = ''
 
-            data={'title':self.settings['OrganizationName'],
-                  'ship':self.ship,
-                  'survey':self.survey,
-                  'haul':self.activeHaul,
-                  'species_code':speciesCode,
-                  'common_name':self.activeSpcName,
-                  'date':EQDate,
-                  'sample_type':'whole fish',
-                  'count':number,
-                  'scientist':self.scientist
-                 }
+                #  ask how many fish are being frozen
+                self.numpad.msgLabel.setText("How many " + self.activeSpcName + " are you freezing?")
+                if not self.numpad.exec():
+                    return
+                number = self.numpad.value
 
-            #  print the label
-            self.printer.printSpecialSampleLabel2(data)
+                data={'title':self.settings['OrganizationName'],
+                      'ship':self.ship,
+                      'survey':self.survey,
+                      'haul':self.activeHaul,
+                      'species_code':speciesCode,
+                      'common_name':self.activeSpcName,
+                      'date':EQDate,
+                      'sample_type':'whole fish',
+                      'count':number,
+                      'scientist':self.scientist
+                     }
 
-            # print sound
-            if self.printSound:
-                self.printSound.play()
+                #  print the label
+                self.printer.printSpecialSampleLabel2(data)
+
+                # print sound
+                if self.printSound:
+                    self.printSound.play()
 
 
     def getComment(self):
