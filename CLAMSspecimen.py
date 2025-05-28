@@ -50,6 +50,7 @@ import importlib
 import listseldialog
 import numpad
 import keypad
+from measurementDialogs import swfscbarcodenumpad
 import messagedlg
 import collectionsdlg
 import ZebraLabelPrinter
@@ -632,13 +633,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             #  check if this is a manually entered value or from a device
             if (self.manualFlag):
                 if (self.measureType[i] == 'alpha_barcode'):
-                    #  this value is entered manually - display the key pad
-                    keyDialog = keypad.KeyPad('', self)
-                    keyDialog.infoLabel.setText("Enter " + self.measureType[i])
+                    #  this value is entered manually - display the swfsc number pad
+                    keyDialog = swfscbarcodenumpad.SWFSCBarcodeNumpad(self.values[i], self)
+                    keyDialog.msgLabel.setText("Enter " + self.measureType[i])
                     keyDialog.exec()
-                    if keyDialog.okFlag:
-                        #  get the text from the keypad and unset manualFlag value
-                        val = keyDialog.dispEdit.toPlainText()
+
+                    #  get the text from the keypad and unset manualFlag value
+                    val = keyDialog.dispEdit.toPlainText()
 
                     self.manualFlag = False
                 else:
@@ -777,13 +778,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             #  check if this is a manually entered value or from a device
             if self.manualFlag:
                 if (self.measureType[i] == 'alpha_barcode'):
-                    #  this value is entered manually - display the key pad
-                    keyDialog = keypad.KeyPad('', self)
-                    keyDialog.infoLabel.setText("Enter " + self.measureType[i])
+                    #  this value is entered manually - display the swfsc number pad
+                    keyDialog = swfscbarcodenumpad.SWFSCBarcodeNumpad(self.values[i], self)
+                    keyDialog.msgLabel.setText("Enter " + self.measureType[i])
                     keyDialog.exec()
-                    if keyDialog.okFlag:
-                        #  get the text from the keypad and unset manualFlag value
-                        val = keyDialog.dispEdit.toPlainText()
+
+                    #  get the text from the keypad and unset manualFlag value
+                    val = keyDialog.dispEdit.toPlainText()
 
                     self.manualFlag = False
                 else:
