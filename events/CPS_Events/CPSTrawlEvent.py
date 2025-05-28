@@ -688,7 +688,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.net_btn = Events.EQ.name
             self.get_net_dims()
             # Every 10 minutes, show net mensuration dialog
-            self.td_timer.setInterval(10000)
+            self.td_timer.setInterval(30000)
             self.td_timer.timeout.connect(lambda: self.timerSet())
         elif Events.Haulback.name in paramName:
             # stop the timer
