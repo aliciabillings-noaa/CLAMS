@@ -163,8 +163,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         # set up the timers
         self.event_timer = QTimer(self)
-        # timer that goes off every 10 minutes after eq
-        #self.td_timer_interval = QTimer(self)
         # timer that runs continuously after eq
         self.td_timer = QTimer(self)
 
@@ -488,7 +486,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.display_time(Events.EQ.name, True)
         elif Events.EQ.name in self.button_order:
             self.tow_time = self.tow_time.addSecs(td_elapsed)
-            #self.td_timer_interval.start(1000)
             self.td_timer.timeout.connect(lambda: self.display_time('td'))
             self.td_timer.start(1000)
 
@@ -681,22 +678,18 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.dataTable.resizeColumnsToContents()
 
         # deal with the timers and buttons
-        if Events.EQ.name in paramName:
+        if Events.EQ.name == paramName:
             self.td_timer.timeout.connect(lambda: self.display_time('td'))
             self.td_timer.start(1000)
             # if TD is pressed, send up net dimensions
             self.net_btn = Events.EQ.name
             self.get_net_dims()
-            # Every 10 minutes, show net mensuration dialog
-            #self.td_timer_interval.start(1000)
-            #self.td_timer_interval.setInterval(600000)
-            #self.td_timer_interval.timeout.connect(lambda: self.timerSet())
+            self.disable_enable_buttons('enable', self.pb_hb)
         elif paramName in (Events.EQ10Min.name, Events.EQ20Min.name):
             self.net_btn = paramName
             self.get_net_dims()
         elif Events.Haulback.name in paramName:
             # stop the timer
-            #self.td_timer_interval.stop()
             self.td_timer.stop()
             # if HB is pressed, send up net dimensions
             self.net_btn = Events.Haulback.name
