@@ -104,6 +104,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2'}
         self.wholeHaulKey = None
         self.headerFont = QFont("Arial Black", 11, -1, False)
+        self.activeSampleType = None
 
         #  set the basket precision - basket weights will be rounded to this many
         #  digits after the decimal. Note that currently the database supports
@@ -1095,7 +1096,12 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         """
 
         #  just return if nothing is selected
-        if self.activeSampleKey == None:
+        if self.activeSampleKey is None:
+            #  no species selected - show error dialog
+            self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                                    "Please pick a sample to print a label for, " +
+                                    self.firstName + ".", 'info')
+            self.message.exec()
             return
 
         #  initialize some variables
@@ -1300,16 +1306,14 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         self.freeze=False
 
-
     def editTable(self):
         '''editTable is called when the "Edit" button is pressed. This will present
         the Edit Basket dialog which allows the user to edit a specific basket.
         '''
-
         self.freeze=True
 
         # turn off count sample type for mixes
-        if 'mix' in self.activeSampleType.lower():
+        if self.activeSampleType and 'mix' in self.activeSampleType.lower():
             self.validList[self.basketTypes.index('Count')] = 0
         else:
             self.validList[self.basketTypes.index('Count')] = 1
@@ -1363,7 +1367,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.freeze=False
 
         self.updateTables()
-
 
     def exitValidation(self):
         '''exitValidation checks for mixes and if found will check if the
@@ -1642,7 +1645,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.message.exec()
             return
         else:
-            if 'nwfsc' in self.settings['OrganizationName'].lower():
+            if 'nwfsc' in self.settings['OrganizationName'].lower() \
+                    or 'swfsc' in self.settings['OrganizationName'].lower():
                 # get the project to apply the sample to for the species
                 selected_project = project.FEATProjectDlg(self)
                 if selected_project.result() == 1:
@@ -1690,7 +1694,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 if self.printSound:
                     self.printSound.play()
 
-
     def getComment(self):
         '''getComment is called when the user clicks the "Comment"
         button and displays the keybaord dialog with the existing comment
@@ -1716,8 +1719,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     " AND sample_id = "+self.activeSampleKey)
             self.db.dbExec(sql)
 
-
-
     def closeEvent(self, event):
         '''closeEvent is called when the form is closed. It performs some
         validations then exits.
@@ -1741,7 +1742,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.appSettings.setValue('winposition', self.pos())
             self.appSettings.setValue('winsize', self.size())
 
-
     def resizeEvent(self, event):
 
         #  resize the sample picture
@@ -1752,7 +1752,6 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.picLabel.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         super().resizeEvent(event)
-
 
     def checkWindowLocation(self, position, size, padding=[5, 25]):
         '''

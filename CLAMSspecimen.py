@@ -1576,8 +1576,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     #  user wants to print a label anyways
                     break
 
-
-        if 'nwfsc' in self.settings['OrganizationName'].lower():
+        if 'nwfsc' in self.settings['OrganizationName'].lower() or 'swfsc' in self.settings['OrganizationName'].lower():
             code = str(self.survey) + str(self.ship) + str(self.activeHaul).zfill(3) + str(self.specimenKey)
 
             lengthType = str(self.lengthTypeBox.currentText())
