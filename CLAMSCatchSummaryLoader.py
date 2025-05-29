@@ -18,6 +18,7 @@ import functools
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
+import connectdlg
 import dbConnection
 import Clamsbase2Functions
 from ui import ui_CatchSummaryLoader
@@ -31,8 +32,7 @@ class CLAMSCatchSummaryLoader(QMainWindow, ui_CatchSummaryLoader.Ui_MainWindow):
 
         #  Initialize variables and define constants
         self.initializing = True
-
-        #  connection parameters
+        self.db = None
         self.schema = user
         self.dbName = dataSource
         self.dbUser = user

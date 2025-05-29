@@ -41,7 +41,7 @@
 
 from PyQt6.QtWidgets import QDialog, QApplication
 from PyQt6.QtCore import pyqtSignal
-from ui import ui_sbeSetInterval
+from .ui import ui_sbeSetInterval
 
 class sbeSetInterval(QDialog, ui_sbeSetInterval.Ui_sbeSetInterval):
 
@@ -58,7 +58,6 @@ class sbeSetInterval(QDialog, ui_sbeSetInterval.Ui_sbeSetInterval):
         self.spinInterval.valueChanged[int].connect(self.spinChanged)
         self.pbOK.clicked.connect(self.okClicked)
         self.pbCancel.clicked.connect(self.cancelClicked)
-        self.sbeSetIntervalSignal.connect(self.okClicked)
 
 
     def setInterval(self, interval, rto):

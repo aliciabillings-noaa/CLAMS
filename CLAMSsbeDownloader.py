@@ -15,20 +15,25 @@ parameter doesn't exist for the active event, it will use a default value of 56.
 import os
 import sys
 import math
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+import socket
+import functools
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
+from PyQt6.QtMultimedia import QSoundEffect
 from ui import ui_CLAMSsbeDownloader
-import sbeSetInterval
+import connectdlg
 import sbeSetLocation
-from acquisition.serial import sbe39
-from acquisition.serial import sbeProgressDialog
-from acquisition.serial import selectWinPortDialog
+from acquisition.seabird import sbe39
+from acquisition.seabird import sbeSetInterval
+from acquisition.seabird import sbeProgressDialog
+from acquisition.SensorMonitor import selectWinPortDialog
 import dbConnection
 
 
 class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
-    def __init__(self, dataSource, schema, user, password, parent=None):
+    def __init__(self, dataSource, user, password, settings, parent=None):
         super(CLAMSsbeDownloader, self).__init__(parent)
         self.setupUi(self)
 
@@ -36,75 +41,84 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.dataTextBuffer = []
         self.connecting = False
         self.serialNumber = ''
-        self.__maxDataTextLines = 500
+        self.maxDataTextLines = 500
         self.downloadErrors = 0
         self.maxDownloadErrors = 25
+        self.db = None
+        self.schema = user
+        self.dbName = dataSource
+        self.dbUser = user
+        self.dbPassword = password
+        self.settings = settings
 
-        #  connection parameters
-        self.dbName  = dataSource
-        self.schema = schema
-        self.userID  = user
-        self.pswd  =  password
-
-        #  create an instance of our dbConnection class
-        self.db = dbConnection.dbConnection(self.dbName, self.userID, self.pswd)
+        #  this is the default latitude used when converting SBE pressure to depth
+        #  when the 'SBEConversionLat' parameter is not in the application_configuration
+        #  table, or if the value provided there is not a float.
+        self.defaultEQLatitude = 56.0
 
         #  restore the application state
-        self.appSettings = QSettings('afsc.noaa.gov', 'CLAMSsbeDownloader')
-        size = self.appSettings.value('winsize', QSize(690,700)).toSize()
-        self.resize(size)
-        position = self.appSettings.value('winposition', QPoint(5,5)).toPoint()
-        self.move(position)
-        self.__dataDir = self.appSettings.value('datadir', QDir.home().path()).toString()
-        self.comPort  = str(self.appSettings.value('comport', 'COM4').toString())
-        baud  = self.appSettings.value('baud', 9600).toInt()
-        if (baud[1]):
-            self.baud  = baud[0]
-        else:
+        self.appSettings = QSettings('CLAMS', 'CLAMSCatchSummaryLoader')
+        size = self.appSettings.value('winsize', QSize(690,560))
+        position = self.appSettings.value('winposition', QPoint(10,10))
+        self.comPort  = self.appSettings.value('comport', 'COM4')
+        baud  = self.appSettings.value('baud', 9600)
+        try:
+            self.baud  = int(baud)
+        except:
             self.baud  = 9600
+
+        #  check the current position and size to make sure the app is on the screen
+        position, size = self.checkWindowLocation(position, size)
+
+        #  now move and resize the window
+        self.move(position)
+        self.resize(size)
 
         #  add the COM port settings display in the status bar
         self.COMSettingsLabel = QLabel('')
         self.statusbar.addPermanentWidget(self.COMSettingsLabel)
         self.COMSettingsLabel.setText('COM Settings: ' + self.comPort + ', ' + str(self.baud))
 
+        #  update the database user label
+        self.userLabel.setText(self.dbUser)
+
         #  create an instance of the set interval dialog
-        self.sbeIntervalDlg = sbeSetInterval.sbeSetInterval()
+        self.sbeIntervalDlg = sbeSetInterval.sbeSetInterval(parent=self)
 
         #  connect the dialog's sbeSetInterval signal - emitted when the user clicks o.k.
         #  on the sbeSetInterval dialog
-        self.connect(self.sbeIntervalDlg, SIGNAL("sbeSetInterval"), self.intervalSet)
+        self.sbeIntervalDlg.sbeSetIntervalSignal.connect(self.intervalSet)
 
-        #  create an instance of the SBE39 class and connect siganls
+        #  create an instance of the SBE39 class
         self.sbe = sbe39.sbe39(self.comPort, baud=self.baud)
 
         #  connect the SBE39 signals
-        self.connect(self.sbe, SIGNAL("SBEConnected"), self.connected)
-        self.connect(self.sbe, SIGNAL("SBETimeout"), self.sbeTimeout)
-        self.connect(self.sbe, SIGNAL("SBEData"), self.showSBEData)
-        self.connect(self.sbe, SIGNAL("SBEStatus"), self.sbeStatusUpdate)
-        self.connect(self.sbe, SIGNAL("SBEProgress"), self.showProgress)
-        self.connect(self.sbe, SIGNAL("SBEDownloadComplete"), self.downloadComplete)
-        self.connect(self.sbe, SIGNAL("SBEDownloadData"), self.downloadingData)
-        self.connect(self.sbe, SIGNAL("SBEAbort"), self.downloadAbort)
+        self.sbe.SBEStatus.connect(self.sbeStatusUpdate)
+        self.sbe.SBEConnected.connect(self.connected)
+        self.sbe.SBETimeout.connect(self.sbeTimeout)
+        self.sbe.SBEData.connect(self.showSBEData)
+        self.sbe.SBEProgress.connect(self.showProgress)
+        self.sbe.SBEDownloadComplete.connect(self.downloadingData)
+        self.sbe.SBEDownloadData.connect(self.downloadingData)
+        self.sbe.SBEAbort.connect(self.downloadAbort)
 
         #  connect this GUI's button signals
-        self.connect(self.actionExit, SIGNAL("triggered()"), SLOT('close()'))
-        self.connect(self.actionSetInterval, SIGNAL("triggered()"), self.setInterval)
-        self.connect(self.actionSetComPort, SIGNAL("triggered()"), self.configureComPort)
-        self.connect(self.statusButton, SIGNAL("clicked()"), self.getStatus)
-        self.connect(self.downloadButton, SIGNAL("clicked()"), self.startDownload)
-        self.connect(self.doneBtn, SIGNAL("clicked()"), self.close)
-        self.connect(self.connectButton, SIGNAL("clicked()"), self.connectToSBE)
-        self.connect(self.startButton, SIGNAL("clicked()"), self.startLogging)
-        self.connect(self.stopButton, SIGNAL("clicked()"), self.stopLogging)
+        self.actionExit.triggered.connect(self.close)
+        self.actionSetInterval.triggered.connect(self.setInterval)
+        self.actionSetComPort.triggered.connect(self.configureComPort)
+        self.statusButton.clicked.connect(self.getStatus)
+        self.downloadButton.clicked.connect(self.startDownload)
+        self.doneBtn.clicked.connect(self.close)
+        self.connectButton.clicked.connect(self.connectToSBE)
+        self.startButton.clicked.connect(self.startLogging)
+        self.stopButton.clicked.connect(self.stopLogging)
 
         #  set up the button states
         self.setGUIButtons(False)
 
         #  set the base directory path - this is the full path to this application
-        self.baseDir = reduce(lambda l,r: l + os.path.sep + r,
-                              os.path.dirname(os.path.realpath(__file__)).split(os.path.sep))
+        self.baseDir = functools.reduce(lambda l,r: l + os.path.sep + r,
+                os.path.dirname(os.path.realpath(__file__)).split(os.path.sep))
         #  set the window icon
         try:
             self.setWindowIcon(QIcon(self.baseDir + os.sep + 'icons/giant_clam.png'))
@@ -119,11 +133,59 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         #  start a timer event to connect to the database
         startTimer = QTimer(self)
         startTimer.setSingleShot(True)
-        self.connect(startTimer, SIGNAL("timeout()"), self.startApplication)
+        startTimer.timeout.connect(self.startApplication)
         startTimer.start(0)
 
 
     def startApplication(self):
+
+        #  determine if we're connecting to an Oracle, postgres, or "other"
+        #  database. Since the Oracle driver does not ship compiled with
+        #  Qt, we use ODBC for Oracle. Postgres uses the Qt "native" postgres
+        #  driver. Other uses ODBC.
+        if self.settings['Database'].lower() == 'oracle':
+            isOracle = True
+            driver = 'QODBC'
+        elif self.settings['Database'].lower() == 'postgres':
+            #  use the native Qt Postgres driver
+            isOracle = False
+            driver = 'QPSQL'
+        else:
+            #  for everything else just use ODBC
+            isOracle = False
+            driver = 'QODBC'
+
+        #  clean up and check our paths if any fail, try to fallback to local folders
+        if 'ImageDir' in self.settings:
+            self.settings['ImageDir'], exists = self.checkPath(self.settings['ImageDir'], 'images')
+        else:
+            self.settings['ImageDir'], exists = self.checkPath(None, 'images')
+        if 'IconDir' in self.settings:
+            self.settings['IconDir'], exists = self.checkPath(self.settings['IconDir'], 'icons')
+        else:
+            self.settings['IconDir'], exists = self.checkPath(None, 'icons')
+        if 'SoundsDir' in self.settings:
+            self.settings['SoundsDir'], exists = self.checkPath(self.settings['SoundsDir'], 'sounds')
+        else:
+            self.settings['SoundsDir'], exists = self.checkPath(None, 'sounds')
+
+        #  if we're missing any credentials, get them from the user
+        if self.dbName == '' or self.dbUser == '' or self.dbPassword == '':
+            connectionDialog = connectdlg.ConnectDlg(self.dbName, self.dbUser,
+                    self.dbPassword, createConnection=False, parent=self)
+            ok = connectionDialog.exec()
+            if not ok:
+                self.close()
+                return
+            self.dbName = connectionDialog.getSource()
+            self.dbUser = connectionDialog.getUsername()
+            self.dbPassword = connectionDialog.getPassword()
+
+        #  create an instance of our dbConnection
+        self.db = dbConnection.dbConnection(self.dbName, self.dbUser,
+                self.dbPassword, label=self.schema, isOracle=isOracle,
+                driver=driver)
+        self.db.bioSchema = self.schema
 
         try:
             self.db.dbOpen()
@@ -132,84 +194,101 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             self.close()
             return
 
-        #  determine our hostname and query database for workstation number
-        computerName = os.getenv("COMPUTERNAME")
-        query = self.db.dbQuery("SELECT workstation_id FROM " + self.schema + ".workstations WHERE hostname ='" +
-                                computerName + "'")
-        query_val= query.first()
-        if not query_val:
-            iconPath, hasIconPath = checkPath(None, 'icons')
-            soundsPath, hasSoundsPath = checkPath(None, 'sounds')
-        else:
-            #  read in workstation specific settings
-            self.workStation, = query_val
+        #  determine our hostname and query database for workstation number. Changed to
+        #  use socket.gethostname() since os.getenv("COMPUTERNAME") was only returning
+        #  15 char NETBIOS name and some workstations were exceeding the 15 char limit.
+        #computerName = os.getenv("COMPUTERNAME")
+        computerName = socket.gethostname()
+        query = self.db.dbQuery("SELECT workstation_id FROM " + self.schema +
+                ".workstations WHERE hostname ='" + computerName + "'")
+        self.workStation, = query.first()
 
-            #  get the icon dir
-            query = self.db.dbQuery("SELECT parameter_value FROM " + self.schema + ".workstation_configuration " +
-                                "WHERE workstation_ID = " + self.workStation + " AND parameter='IconDir'")
-            query_val = query.first()
-            if not query_val:
-                iconPath, hasIconPath = self.checkPath(None, 'icons')
-            else:
-                path, = query_val
-                iconPath, hasIconPath = self.checkPath(path, 'icons')
-
-            #  get the sounds dir
-            query = self.db.dbQuery("SELECT parameter_value FROM " + self.schema + ".workstation_configuration " +
-                                "WHERE workstation_ID = " + self.workStation + " AND parameter='SoundsDir'")
-            query_val = query.first()
-            if not query_val:
-                soundsPath, hasSoundsPath = self.checkPath(None, 'sounds')
-            else:
-                path, = query_val
-                soundsPath, hasSoundsPath = self.checkPath(path, 'sounds')
-
-        #  load icons and sounds
-        if (hasIconPath):
-            icon = QImage(iconPath + "plankton.png")
-            icon = icon.scaledToHeight(self.imgLabel.height(), Qt.SmoothTransformation)
-            self.imgLabel.setPixmap(QPixmap.fromImage(icon.mirrored(horizontal=True,
-                    vertical=False)))
-        if (hasSoundsPath):
-            self.completeSound = QSound(soundsPath + 'dp_starwars_yahoo.wav')
-
-        # populate from active ship, survey, and event stuff
-        query = self.db.dbQuery("SELECT parameter_value FROM application_configuration WHERE parameter='ActiveShip'")
-        ship, = query.first()
-        self.shipLabel.setText(ship)
-        query = self.db.dbQuery("SELECT parameter_value FROM application_configuration WHERE parameter='ActiveSurvey'")
-        survey, = query.first()
-        self.surveyLabel.setText(survey)
-        query = self.db.dbQuery("SELECT parameter_value FROM application_configuration WHERE parameter='ActiveEvent'")
-        query_val = query.first()
-        if (not query_val):
-            QMessageBox.critical(self,"ERROR", "No active event. I cannot download data without an active event.")
+        if self.workStation is None:
+            QMessageBox.critical(self, "ERROR", "<font size = 12> Unable to find this " +
+                    "computer name (" + computerName + ") in the workstations table. " +
+                    "This workstation must be added to and configured in the database " +
+                    "before you can run CLAMS on it.")
             self.close()
             return
-        else:
-            event, = query_val
-            self.haulLabel.setText(event)
 
-        #  get the latitude of this event
-        query = self.db.dbQuery("SELECT parameter_value FROM event_data WHERE ship = " + ship + " and survey =" + survey +
-                " and event_id =" + event + " and event_parameter = 'EQLatitude'")
-        query_val = query.first()
-        if (not query_val):
-            #  event doesn't have an EQ entry, use default value
-            self.haulLat = 56.0
+        #  load plankton icon
+        if not QDir().exists(self.settings['IconDir']):
+            QMessageBox.critical(self, "ERROR", "<font size = 12>Icon directory not found. ")
         else:
-            try:
-                self.haulLat = float(query_val[0])
-            except:
-                #  value couldn't be converted to a float - use default value
-                self.haulLat = 56.0
+            icon = QImage(self.settings['IconDir'] + "plankton.png")
+            icon = icon.scaledToHeight(self.imgLabel.height(),
+                    Qt.TransformationMode.SmoothTransformation)
+            self.imgLabel.setPixmap(QPixmap.fromImage(icon.mirrored(horizontal=True,
+                    vertical=False)))
+
+        #  load sound effect
+        if not QDir().exists(self.settings['SoundsDir']):
+            QMessageBox.warning(self, "ERROR", "<font size = 12>Sound directory not found. " +
+                    "SBE Downloader will operate without sound.")
+        else:
+            #  we use a single sound to indicate download is complete
+            self.completeSound = QSoundEffect()
+            self.completeSound.setSource(QUrl.fromLocalFile(self.settings['SoundsDir'] +
+                    'dp_starwars_yahoo.wav'))
+
+        #  read in general application settings
+        sql = ("SELECT parameter, parameter_value FROM " + self.schema +
+                ".application_configuration ")
+        query = self.db.dbQuery(sql)
+        for parameter, parameter_value in query:
+            self.settings.update({parameter:parameter_value})
+
+        # populate from active ship, survey, and event stuff
+        try:
+            self.shipLabel.setText(self.settings['ActiveShip'])
+            self.surveyLabel.setText(self.settings['ActiveSurvey'])
+        except:
+            QMessageBox.critical(self,"ERROR", "ActiveEvent and/or ActiveSurvey are not in the " +
+                    "application_configuration table. Something is not right. Ask your CLAMS " +
+                    "database administrator.")
+            self.db.dbClose()
+            self.close()
+            return
+
+        try:
+            event = self.settings['ActiveEvent']
+            if int(event) < 1:
+                QMessageBox.critical(self,"ERROR", "There is currently no active event. I cannot download data " +
+                        "without an active event.")
+                self.db.dbClose()
+                self.close()
+                return
+            self.haulLabel.setText(event)
+        except:
+            QMessageBox.critical(self,"ERROR", "ActiveEvent is missing from the application_configuration " +
+                    "table. Something is not right. Ask your CLAMS database administrator.")
+            self.db.dbClose()
+            self.close()
+            return
+
+        #  get the latitude of this event - first we try to get it from the event_data table
+        query = self.db.dbQuery("SELECT parameter_value FROM event_data WHERE ship = " + self.settings['ActiveShip'] +
+                " and survey =" + self.settings['ActiveSurvey'] + " and event_id =" + event +
+                " and event_parameter = 'EQLatitude'")
+        eqLatitude, = query.first()
+        if eqLatitude is None:
+            #  event doesn't have an EQ entry, use default value
+            if 'SBEConversionLat' in self.settings:
+                eqLatitude = self.settings['SBEConversionLat']
+            else:
+                eqLatitude = self.defaultEQLatitude
+        try:
+            self.haulLat = float(eqLatitude)
+        except:
+            #  value couldn't be converted to a float - use default value
+            self.haulLat = self.defaultEQLatitude
 
 
     def configureComPort(self):
 
         dialog = selectWinPortDialog.selectWinPortDialog(defaultPort=self.comPort,
                     defaultBaud=self.baud)
-        ok = dialog.exec_()
+        ok = dialog.exec()
         if (ok):
             #  update the serial params
             self.comPort = dialog.port
@@ -238,7 +317,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.sbeProgress.reset()
 
         #  reconnect the SBEData signal
-        self.connect(self.sbe, SIGNAL("SBEData"), self.showSBEData)
+        self.sbe.SBEData.connect(self.showSBEData)
 
         #  report our results
         if nDownloaded > 2:
@@ -263,7 +342,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.sbeProgress.reset()
 
         #  reconnect the SBEData signal
-        self.connect(self.sbe, SIGNAL("SBEData"), self.showSBEData)
+        self.sbe.SBEData.connect(self.showSBEData)
 
         #  show a temporary message on the status bar
         self.statusbar.showMessage('Downloading aborted.', 5000)
@@ -271,43 +350,34 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
     def downloadingData(self, device, line):
 
-        try:
-            #  build the time string
-            mdy = '{:02d}/{:02d}/{:04d}'.format(line[0].month, line[0].day, line[0].year)
-            hms = '{:02d}:{:02d}:{:02d}'.format(line[0].hour, line[0].minute, line[0].second +
-                                                    int(round(line[0].microsecond/1000000.)))
-            time = mdy + " " + hms
+        #try:
+        #  build the time string
+        mdy = '{:02d}/{:02d}/{:04d}'.format(line[0].month, line[0].day, line[0].year)
+        hms = '{:02d}:{:02d}:{:02d}'.format(line[0].hour, line[0].minute, line[0].second +
+                int(round(line[0].microsecond/1000000.)))
+        time = mdy + " " + hms
 
-            #  calculate depth from pressure
-            depth = round(self.pressureToDepth(line[2], self.haulLat), 3)
+        #  calculate depth from pressure
+        depth = round(self.pressureToDepth(line[2], self.haulLat), 3)
 
-            #  insert data into database
-            sql = ("INSERT INTO clamsbase2.event_stream_data (ship, survey, event_id, device_id, " +
-                    "time_stamp, measurement_type, measurement_value) VALUES (" + self.shipLabel.text() +
-                    "," + self.surveyLabel.text() + "," + self.haulLabel.text() + "," + self.device_id +
-                    ",TO_TIMESTAMP('" + time + "','MM/DD/YYYY HH24:MI:SS.FF'),'SBETemperature','" +
-                    str(line[1]) + "')")
-            self.db.dbExec(sql)
-            sql =("INSERT INTO clamsbase2.event_stream_data (ship, survey, event_id, device_id, " +
-                    "time_stamp, measurement_type, measurement_value) VALUES ("+self.shipLabel.text() +
-                    "," + self.surveyLabel.text() + "," + self.haulLabel.text() + "," + self.device_id +
-                    ",TO_TIMESTAMP('"+time+"','MM/DD/YYYY HH24:MI:SS.FF'),'SBEDepth','"+str(depth)+"')")
-            self.db.dbExec(sql)
+        #  insert data into database
+        sql = ("INSERT INTO clamsbase2.event_stream_data (ship, survey, event_id, device_id, " +
+                "time_stamp, measurement_type, measurement_value) VALUES (" + self.shipLabel.text() +
+                "," + self.surveyLabel.text() + "," + self.haulLabel.text() + "," + self.device_id +
+                ",TO_TIMESTAMP('" + time + "','MM/DD/YYYY HH24:MI:SS.FF'),'SBETemperature','" +
+                str(line[1]) + "')")
+        self.db.dbExec(sql)
+        sql =("INSERT INTO clamsbase2.event_stream_data (ship, survey, event_id, device_id, " +
+                "time_stamp, measurement_type, measurement_value) VALUES ("+self.shipLabel.text() +
+                "," + self.surveyLabel.text() + "," + self.haulLabel.text() + "," + self.device_id +
+                ",TO_TIMESTAMP('"+time+"','MM/DD/YYYY HH24:MI:SS.FF'),'SBEDepth','"+str(depth)+"')")
+        self.db.dbExec(sql)
 
-    #  As of Winter 2016 we are no longer inserting pressure into the event_stream_data table
-    #  to minimize the volume of data going into the table.
-    #            sql =("INSERT INTO clamsbase2.event_stream_data (ship, survey, event_id, device_id, " +
-    #                    "time_stamp, measurement_type, measurement_value) VALUES (" + self.shipLabel.text() +
-    #                    "," + self.surveyLabel.text() + "," + self.haulLabel.text() + "," + self.device_id +
-    #                    ",TO_TIMESTAMP('" + time + "','MM/DD/YYYY HH24:MI:SS.FF'),'SBEPressure','" +
-    #                    str(line[2]) + "')")
-    #            self.db.dbExec(sql)
-
-        except Exception, e:
-            #  there was an error
-           self.sbe.abort()
-           self.downloadAbort()
-           QMessageBox.critical(self, 'Download Aborted', 'Unable to insert data into database.' + str(e))
+#        except Exception as e:
+#            #  there was an error
+#           self.sbe.abort()
+#           self.downloadAbort()
+#           QMessageBox.critical(self, 'Download Failed', 'Error inserting data into database.' + str(e))
 
 
     def connectToSBE(self):
@@ -399,8 +469,8 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
     def startLogging(self):
         ok = QMessageBox.question(self, 'Start Logging', 'Reset the sample number to 0 and start logging? \n' +
-                                      'Existing data will be overwritten!', QMessageBox.Ok | QMessageBox.Cancel)
-        if (ok == QMessageBox.Ok):
+                'Existing data will be overwritten!', QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        if (ok == QMessageBox.StandardButton.Ok):
             # set the sample number to 0
             self.sbe.setSampleNumber(0)
 
@@ -430,7 +500,8 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
     def sbeTimeout(self):
 
         #  issue an error
-        QMessageBox.critical(self, 'Error', 'Unable to connect or lost connection to SBE on ' + str(self.comPort))
+        QMessageBox.critical(self, 'Error', 'Unable to connect or lost connection to SBE on ' +
+                str(self.comPort))
 
         #  disconnect the SBE
         self.sbe.disconnect()
@@ -462,7 +533,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
         #  set the values in the dialog and show
         self.sbeIntervalDlg.setInterval(interval, rto)
-        self.sbeIntervalDlg.show()
+        self.sbeIntervalDlg.exec()
 
 
     def setGUIButtons(self, state):
@@ -500,9 +571,8 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         and then tells the SBE class to download.
         '''
 
-        #  7-26-18 - RHT: Added a dialog which gets the SBE mounting location and
-        #  create an instance of the set location dialog
-        sbeLocationlDlg = sbeSetLocation.sbeSetLocation()
+        #  create an instance of the set location dialog to get the mounting location
+        sbeLocationlDlg = sbeSetLocation.sbeSetLocation(parent=self)
         sbeLocationlDlg.exec()
 
         #  make sure that the user specified a location
@@ -514,19 +584,6 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.sbeLocation = sbeLocationlDlg.location
 
         try:
-
-#  8-6-18: RHT - Added SBE location to haul_data. Location is the first thing to be
-#                inserted when downloading and it is possible that location gets inserted
-#                but no data downloaded so we have to look for location to determine if
-#                data has already been downloaded.
-#
-#            # check for existing data for this haul
-#            query = self.db.dbQuery("SELECT measurement_value FROM event_stream_data WHERE ship=" +
-#                    self.shipLabel.text() + " AND survey="+self.surveyLabel.text() + " AND event_id=" +
-#                    self.haulLabel.text() + " AND device_id=" + self.device_id + " AND " +
-#                    "(measurement_type='SBEPressure' OR measurement_type='SBETemperature' OR measurement_type='SBEDepth')")
-#            data, = query.first()
-#
             #  determine if this data has already been downloaded
             sql = ("SELECT event_parameter FROM event_data WHERE ship=" + self.shipLabel.text() +
                     " AND survey=" + self.surveyLabel.text() + " AND event_id=" + self.haulLabel.text() +
@@ -537,8 +594,8 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             if (mountingLoc != None):
                 reply = QMessageBox.question(self, 'Warning!',"<font size = 14> You already downloaded SBE " +
                         "data for this haul and SBE device.  Do you want to overwrite? </font>",
-                        QMessageBox.Yes, QMessageBox.No)
-                if (reply == QMessageBox.Yes):
+                        QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                if (reply == QMessageBox.StandardButton.Yes):
 
                     #  get the parameters names for the previous mounting location
                     avgDepthParam, avgTempParam = self.getAveragesParamNames(mountingLoc)
@@ -579,7 +636,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
             #  disconnect the SBEData signal since displaying the data during
             #  download slows the download down significantly.
-            self.disconnect(self.sbe, SIGNAL("SBEData"), self.showSBEData)
+            self.sbe.SBEData.disconnect(self.showSBEData)
 
             #  download all samples for previous logging session - calling download with
             #  no arguments will download all samples from 0 to the current sample.
@@ -601,7 +658,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
                 #  xml based real time display. That's not that big of a deal
                 text = '<text style="color:' + color + '>' + val + '<br />'
                 self.dataTextBuffer.append(text)
-                if len(self.dataTextBuffer) > self.__maxDataTextLines:
+                if len(self.dataTextBuffer) > self.maxDataTextLines:
                     self.dataTextBuffer.pop(0)
                 text = ''.join(self.dataTextBuffer)
                 text = QString('<html><body><p>' + text + '</p></body></html>')
@@ -609,7 +666,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             else:
                 #  Display the output in plain text
                 self.dataTextBuffer.append(val)
-                if len(self.dataTextBuffer) > self.__maxDataTextLines:
+                if len(self.dataTextBuffer) > self.maxDataTextLines:
                     self.dataTextBuffer.pop(0)
                 text = '\n'.join(self.dataTextBuffer)
                 self.dataText.setPlainText(text)
@@ -625,7 +682,6 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             self.db.dbClose()
         self.appSettings.setValue('winposition', self.pos())
         self.appSettings.setValue('winsize', self.size())
-        self.appSettings.setValue('datadir', self.__dataDir)
         self.appSettings.setValue('comport',self.comPort)
         self.appSettings.setValue('baud',self.baud)
 
@@ -706,7 +762,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
                         " time_stamp between to_timestamp('"+eqTime[0]+"','MMDDYYYY HH24:MI:SS.FF3')" +
                         " and to_timestamp('"+hbTime[0]+"','MMDDYYYY HH24:MI:SS:FF3') AND " +
                         " device_id=" + self.device_id + " AND measurement_type='SBETemperature'")
-        
+
         query_val =query.first()
         if query_val:
             cumVal = 0.
@@ -733,7 +789,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
                 avgDepth = cumVal / nVals
 
         # Insert averages into event_data table
-        if str(avgTemp)<>'nan':
+        if not math.isnan(avgTemp):
             self.db.dbQuery("INSERT INTO event_data (ship, survey, event_id, partition, " +
                     "event_parameter, parameter_value) VALUES("+ ship+","+survey+","+haul+",'"+
                     p+"','" + avgTempParam + "',"+str(avgTemp)+")")
@@ -757,12 +813,12 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         #  set the default path
         defaultPath =  '.' + os.sep + default + os.sep
 
-        if path <> None:
+        if path is not None:
             #  path provided - normalize the path
             path = os.path.normpath(str(path))
 
             #  make sure there is a trailing slash
-            if (path[-1] <> '/') or (path[-1] <> '\\'):
+            if (path[-1] != '/') or (path[-1] != '\\'):
                 path = path + os.sep
         else:
             path = defaultPath
@@ -777,6 +833,75 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             return (path, True)
 
 
+    def checkWindowLocation(self, position, size, padding=[5, 25]):
+        '''
+        checkWindowLocation accepts a window position (QPoint) and size (QSize)
+        and returns a potentially new position and size if the window is currently
+        positioned off the screen.
+
+        This function uses QScreen.availableVirtualGeometry() which returns the full
+        available desktop space *not* including taskbar. For all single and "typical"
+        multi-monitor setups this should work reasonably well. But for multi-monitor
+        setups where the monitors may be different resolutions, have different
+        orientations or different scaling factors, the app may still fall partially
+        or totally offscreen. A more thorough check gets complicated, so hopefully
+        those cases are very rare.
+
+        If the user is holding the <shift> key while this method is run, the
+        application will be forced to the primary monitor.
+        '''
+
+        #  create a QRect that represents the app window
+        appRect = QRect(position, size)
+
+        #  check for the shift key which we use to force a move to the primary screem
+        resetPosition = QGuiApplication.queryKeyboardModifiers() == Qt.KeyboardModifier.ShiftModifier
+        if resetPosition:
+            position = QPoint(padding[0], padding[0])
+
+        #  get a reference to the primary system screen - If the app is off the screen, we
+        #  will restore it to the primary screen
+        primaryScreen = QGuiApplication.primaryScreen()
+
+        #  assume the new and old positions are the same
+        newPosition = position
+        newSize = size
+
+        #  Get the desktop geometry. We'll use availableVirtualGeometry to get the full
+        #  desktop rect but note that if the monitors are different resolutions or have
+        #  different scaling, some parts of this rect can still be offscreen.
+        screenGeometry = primaryScreen.availableVirtualGeometry()
+
+        #  if the app is partially or totally off screen or we're force resetting
+        if resetPosition or not screenGeometry.contains(appRect):
+
+            #  check if the upper left corner of the window is off the left side of the screen
+            if position.x() < screenGeometry.x():
+                newPosition.setX(screenGeometry.x() + padding[0])
+            #  check if the upper right is off the right side of the screen
+            if position.x() + size.width() >= screenGeometry.width():
+                p = screenGeometry.width() - size.width() - padding[0]
+                if p < padding[0]:
+                    p = padding[0]
+                newPosition.setX(p)
+            #  check if the top of the window is off the top/bottom of the screen
+            if position.y() < screenGeometry.y():
+                newPosition.setY(screenGeometry.y() + padding[0])
+            if position.y() + size.height() >= screenGeometry.height():
+                p = screenGeometry.height() - size.height() - padding[1]
+                if p < padding[0]:
+                    p = padding[0]
+                newPosition.setY(p)
+
+            #  now make sure the lower right (resize handle) is on the screen
+            if (newPosition.x() + newSize.width()) > screenGeometry.width():
+                newSize.setWidth(screenGeometry.width() - newPosition.x() - padding[0])
+            if (newPosition.y() + newSize.height()) > screenGeometry.height():
+                newSize.setHeight(screenGeometry.height() - newPosition.y() - padding[1])
+
+        return [newPosition, newSize]
+
+
 if __name__ == "__main__":
 
     #  see if the ini file path was passed in
@@ -788,16 +913,31 @@ if __name__ == "__main__":
         iniFile = 'clams.ini'
 
     #  create an instance of QSettings to load fundamental CLAMS settings
-    initSettings = QSettings(iniFile, QSettings.IniFormat)
+    initSettings = QSettings(iniFile, QSettings.Format.IniFormat)
 
     #  extract connection parameters
-    dataSource = str(initSettings.value('ODBC_Data_Source', 'NULL').toString())
-    user = str(initSettings.value('User', 'NULL').toString())
-    password = str(initSettings.value('Password', 'NULL').toString())
-    schema = str(initSettings.value('Schema', 'NULL').toString())
+    dataSource = initSettings.value('ODBC_Data_Source', '')
+    user = initSettings.value('User', '')
+    password = initSettings.value('Password', '')
 
-    #  create an instance of QApplication, our form, and then start
+    #  extract the application paths and settings
+    settings = {}
+    settings['LoggingDir'] = initSettings.value('LoggingDir', './sql_logs')
+    settings['ImageDir'] = initSettings.value('ImageDir', './images')
+    settings['SoundsDir'] = initSettings.value('SoundsDir', './sounds')
+    settings['IconDir'] = initSettings.value('IconDir', './icons')
+    settings['Database'] = initSettings.value('Database', 'Oracle')
+    settings['GUI-ScrollBar-Width'] = initSettings.value('GUI-ScrollBar-Width', 40)
+    settings['HomeScreenImg'] = initSettings.value('HomeScreenImg', 'default.jpg')
+
+    #  create an instance of QApplication
     app = QApplication(sys.argv)
-    form = CLAMSsbeDownloader(dataSource, schema, user, password)
+
+    #  create an instance of the CLAMSsbeDownloader form
+    form = CLAMSsbeDownloader(dataSource, user, password, settings)
+
+    #  show it
     form.show()
-    app.exec_()
+
+    #  and start the application...
+    app.exec()
