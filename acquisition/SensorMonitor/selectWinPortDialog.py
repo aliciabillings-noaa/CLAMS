@@ -25,6 +25,7 @@ class selectWinPortDialog(QDialog, ui_SelectWinPortDialog.Ui_SelectWinPortDialog
             self.titleLabel.setText(title)
 
         #  get the list of COM ports
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         for port, desc, hwid in sorted(serial_scanwin.comports(not showAll)):
              # test open to determine port status
             try:
@@ -52,6 +53,8 @@ class selectWinPortDialog(QDialog, ui_SelectWinPortDialog.Ui_SelectWinPortDialog
         self.cbPorts.currentTextChanged.connect(self.portSelected)
         self.pbCancel.clicked.connect(self.cancelClicked)
         self.pbOK.clicked.connect(self.okClicked)
+
+        QApplication.restoreOverrideCursor()
 
 
     def portSelected(self, portName):

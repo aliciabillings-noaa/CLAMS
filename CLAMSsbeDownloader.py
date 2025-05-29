@@ -57,7 +57,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.defaultEQLatitude = 56.0
 
         #  restore the application state
-        self.appSettings = QSettings('CLAMS', 'CLAMSCatchSummaryLoader')
+        self.appSettings = QSettings('CLAMS', 'CLAMSsbeDownloader')
         size = self.appSettings.value('winsize', QSize(690,560))
         position = self.appSettings.value('winposition', QPoint(10,10))
         self.comPort  = self.appSettings.value('comport', 'COM4')
@@ -252,12 +252,6 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
         try:
             event = self.settings['ActiveEvent']
-            if int(event) < 1:
-                QMessageBox.critical(self,"ERROR", "There is currently no active event. I cannot download data " +
-                        "without an active event.")
-                self.db.dbClose()
-                self.close()
-                return
             self.haulLabel.setText(event)
         except:
             QMessageBox.critical(self,"ERROR", "ActiveEvent is missing from the application_configuration " +
@@ -287,7 +281,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
     def configureComPort(self):
 
         dialog = selectWinPortDialog.selectWinPortDialog(defaultPort=self.comPort,
-                    defaultBaud=self.baud)
+                    defaultBaud=self.baud, parent=self)
         ok = dialog.exec()
         if (ok):
             #  update the serial params
