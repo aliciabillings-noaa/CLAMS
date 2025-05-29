@@ -208,6 +208,10 @@ class CLAMSHaul(QDialog, ui_CLAMSHaul.Ui_clamsHaul):
             self.planktonNet()
         elif self.gearType.lower() == 'multicodendtrawl':
             self.multiCodendTrawl()
+        else:
+            self.message.setMessage(self.errorIcons[2], self.errorSounds[1],
+                                    "This gear type, " + self.gearType + ", is not supported at this time", 'info')
+            self.message.exec()
 
         #  populate Haul Info
         for i, partition  in enumerate(self.partitions):

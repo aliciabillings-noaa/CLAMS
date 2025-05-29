@@ -16,17 +16,21 @@
 """
 .. module:: FEATTrawlEvent
 
-    :synopsis: This will allow for the user to enter the trawl (event)
-               number directly, bypassing the need for a trawl form. It
-               is intended to phase this out by 2026. Written by Alicia
-               Billings <alicia.billings@noaa.gov>
+    :synopsis: FEATTrawlEvent implements the trawl event form used by the
+               FEAT group to collect metadata associated with a fishing
+               operation. The form and code define the data to be collected
+               and how and when it is collected.
+
+               Events that retain catch (such as a trawl event) are the first
+               step in collecting data with CLAMS.
+    : created by: Alicia Billings <alicia.billings@noaa.gov>
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
 | National Marine Fisheries Service (NMFS)
 | Alaska Fisheries Science Center (AFSC)
-| Midwater Assessment and Conservation Engineering Group (MACE)
+| Midwater Assesment and Conservation Engineering Group (MACE)
 |
 | Author:
 |       Rick Towler   <rick.towler@noaa.gov>
@@ -36,32 +40,37 @@
 |       Kresimir Williams   <kresimir.williams@noaa.gov>
 |       Mike Levine   <mike.levine@noaa.gov>
 |       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
-|       Alicia Billings <alicia.billings@noaa.gov>
 """
 
-#  import
+# imports
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from ui import ui_FEATTrawlEvent
-from ui import ui_FEATEventNum
-from ui import ui_FEATEventParams
+import devices
 import numpad
+import keypad
 import messagedlg
-from datetime import datetime as dt
+import timedlg
+from events.FEAT_Events import netdlg_feat
+from events.FEAT_Events import metadlg
+from events.FEAT_Events import abortdlg
+from events.FEAT_Events import donedlg
+from ui import ui_DuplicateDlg
+from acquisition.SensorMonitor import SensorMonitor
 
 
-class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
-    def __init__(self, parent=None):
-        """
-        The CLAMS Trawl event dialog initialization method. Gets basic information
-        and sets up the haul selection form for FEAT
-        """
-        #  call superclass init methods and GUI form setup method
-        super(FEATTrawlEvent, self).__init__(parent)
+# noinspection PyArgumentList,PyCallByClass,PyTypeChecker
+class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
+    def __init__(self, eventID, parent=None):
+        # call superclass init methods and GUI form setup method
+        super(Event, self).__init__(parent)
         self.setupUi(self)
 
-        #  copy some properties from our parent
+        # copy some properties from our parent
         self.db = parent.db
         self.schema = parent.schema
+        self.activeEvent = eventID
         self.survey = parent.survey
         self.ship = parent.ship
         self.settings = parent.settings
@@ -70,352 +79,980 @@ class FEATTrawlEvent(QDialog, ui_FEATTrawlEvent.Ui_Dialog):
         self.workStation = parent.workStation
         self.testing = parent.testing
 
-        # todo: get the current event out of the database
-        self.activeEvent = 0
-        #  setup reoccurring dialogs
+        # declare other variables
+        self.meta_entered = False
+        self.scientist = "Unknown"
+        self.gear = "MFT"
+        self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth']
+        self.meta_info = ['TrawlScientist', 'TargetDepth', 'TDLatitude', 'TDLongitude']
+        self.streamEQHBLogInterval = None
+        self.streamSlowLogInterval = None
+        self.reloaded = False
+        self.aborted = False
+        self.comment = None
+        self.sensorMonitor = None
+        self.SCSisActive = False
+        self.scsRetries = None
+        self.sensorsStopping = None
+        self.sensorsClosed = False
+        self.deviceData = None
+        self.lastSCSWriteTime = {}
+        self.recordStream = True
+        self.recording = False
+        self.dispVector = {}
+        self.cur_dt_row = 0
+        self.btnTimes = {}
+        self.cur_btn_txt = ''
+        self.cur_time = None
+        self.idxs = []
+        self.net_btn = None
+        self.fishingFlag = False
+        self.event_entered = False
+        self.edit_flag = False
+        self.prev_ts = None
+
+        # set up the time to display for the timer
+        self.niw_time = QTime(0, 0, 0)
+        self.td_time = QTime(0, 0, 0)
+        self.hb_time = QTime(0, 0, 0)
+        self.nod_time = QTime(0, 0, 0)
+        self.event_time = QTime(0, 0, 0)
+        self.tow_time = QTime(0, 0, 0)
+
+        # setup recurring dialogs
         self.numpad = numpad.NumPad(self)
         self.message = messagedlg.MessageDlg(self)
+        self.timeDlg = timedlg.TimeDlg()
+        self.timeDlg.enableGetTimeButton(False)
+        self.netdlg = netdlg_feat.NetDlgFEAT(self)
 
-        # set choose event to disabled
-        self.pb_choose.setEnabled(False)
-        self.pb_edit.setEnabled(False)
+        # create a status bar to display the status of SCS
+        self.statusBar = QStatusBar(self)
+        self.statusLayout.addWidget(self.statusBar)
 
-        # set up other variables
-        self.gear = ""
-        self.event_type = ""
-        self.sci = ""
-        self.active_partition = ""
-        self.active = False
-        self.check_active()
+        # declare buttons
+        self.buttons = [self.pb_niw, self.pb_sd, self.pb_td, self.pb_hb, self.pb_du,
+                        self.pb_nod, self.pb_com]
+        self.button_order = []
 
-        # set slots
-        self.lw_events.currentTextChanged.connect(self.check_events)
-        self.pb_choose.clicked.connect(self.choose_event)
-        self.pb_add.clicked.connect(self.add_event)
-        self.pb_cancel.clicked.connect(self.reject)
-        self.cb_active.clicked.connect(self.check_active)
-        self.pb_edit.clicked.connect(self.edit_event_num)
+        self.streamWindowSeconds = 5
 
-    def set_cur_event(self):
-        """
-        fills the event table and sets the current event text
-        :return:
-        """
-        # set current event
-        if self.activeEvent != '0':
-            self.l_current.setText("Current Event: " + str(self.activeEvent))
-        else:
-            self.l_current.setText("Current Event: NONE")
+        # set the SCS logging rate default values
+        self.streamEQHBLogInterval = 2
+        self.streamSlowLogInterval = 5
+        self.SCSLogInterval = self.streamSlowLogInterval
 
-        # get the events and performance out of the database
-        if not self.active:
-            event_sql = ("SELECT event_id, performance_code FROM " + self.schema + ".events WHERE survey="
-                         + self.survey + " AND ship=" + self.ship + " ORDER BY event_id")
-        else:
-            event_sql = ("SELECT event_id, performance_code FROM " + self.schema + ".events WHERE survey="
-                         + self.survey + " AND ship=" + self.ship + " AND performance_code != 0 ORDER BY event_id")
-        event_query = self.db.dbQuery(event_sql)
-        # clear the events from the list
-        self.lw_events.clear()
+        # set up color palettes
+        self.red = QPalette()
+        self.red.setColor(QPalette.ColorRole.ButtonText, QColor(230, 0, 0))
+        self.green = QPalette()
+        self.green.setColor(QPalette.ColorRole.ButtonText, QColor(0, 230, 0))
+        self.yellow = QPalette()
+        self.yellow.setColor(QPalette.ColorRole.ButtonText, QColor(180, 180, 0))
 
-        for cur_ev, perf in event_query:
-            if self.activeEvent == cur_ev:
-                lst_item = QListWidgetItem(cur_ev + "\tCurrent")
-            elif perf == '0':
-                lst_item = QListWidgetItem(cur_ev + "\tClosed")
-            else:
-                # check if already has data
-                sample_sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE event_id=" + cur_ev)
-                samp_query = self.db.dbQuery(sample_sql)
-                query_size = 0
-                for samp in samp_query:
-                    query_size += 1
-                if query_size > 0:
-                    lst_item = QListWidgetItem(cur_ev + "\tStarted")
-                else:
-                    lst_item = QListWidgetItem(cur_ev + "\tEmpty")
-            self.lw_events.addItem(lst_item)
-            if self.activeEvent == cur_ev:
-                self.lw_events.setCurrentItem(lst_item)
-                self.pb_choose.setEnabled(True)
-                # check to see if samples exist
-                sample_sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE event_id=" + cur_ev)
-                samp_query = self.db.dbQuery(sample_sql)
-                if samp_query.first():
-                    self.pb_edit.setEnabled(False)
-                else:
-                    self.pb_edit.setEnabled(True)
-
-    def check_events(self):
-        """
-        checks to enable the edit number button if there are no samples associated with the
-        event and enables the choose button
-        :return:
-        """
-        try:
-            if self.lw_events.currentItem().text().contains("Empty"):
-                self.pb_edit.setEnabled(True)
-            elif self.lw_events.currentItem().text().contains("Current"):
-                # check to see if samples exist
-                temp_event = self.lw_events.currentItem().text().split("\t")[0]
-                query = self.db.dbQuery("SELECT * FROM Samples WHERE event_id = " + str(temp_event))
-                if query.first():
-                    self.pb_edit.setEnabled(False)
-                else:
-                    self.pb_edit.setEnabled(True)
-            else:
-                self.pb_edit.setEnabled(False)
-        except:
-            self.pb_edit.setEnabled(False)
-        self.pb_choose.setEnabled(True)
-
-    def choose_event(self):
-        """
-        sets the currently selected event from the list as the tow to use and updates the application_configuration
-        and the events table
-        :return:
-        """
-        temp_event = self.lw_events.currentItem().text().split("\t")
-        self.activeEvent = temp_event[0]
-        update_ac_sql = ("UPDATE " + self.schema + ".application_configuration SET parameter_value='"
-                         + str(self.activeEvent) + "' WHERE parameter='ActiveEvent'")
-        self.db.dbQuery(update_ac_sql)
-        update_ev_sql = ("UPDATE " + self.schema + ".events SET performance_code=-99 WHERE event_id="
-                         + self.activeEvent)
-        self.db.dbQuery(update_ev_sql)
-        self.accept()
-
-    def add_event(self):
-        """
-        adds an event to the database without associated data to get CLAMS going - NC data will be added later
-        :return:
-        """
-        new_event = AddEvent(self.numpad)
-        if new_event.result() == 1:
-            self.activeEvent = new_event.activeEvent
-            other_params = AddParams(self)
-            self.gear = other_params.gear
-            self.event_type = other_params.event_type
-            self.sci = other_params.sci
-            cont = 0
-
-            # check if event already exists in database for this gear and survey
-            dup_sql = ("SELECT event_id FROM " + self.schema + ".events WHERE survey=" + self.survey + " AND ship="
-                       + self.ship + " AND event_id=" + self.activeEvent + " AND gear='" + self.gear + "'")
-            dup_query = self.db.dbQuery(dup_sql)
-            pres, = dup_query.first()
-            if not pres:
-                cont = 1
-                values = "(" + self.ship + "," + self.survey + "," + self.activeEvent + ",'" + self.gear + "'," \
-                         + self.event_type + ",-99,'" + self.sci + "','')"
-                insert_sql = ("INSERT INTO " + self.schema + ".events (ship, survey, event_id, gear, event_type, "
-                                                             "performance_code, scientist, comments) VALUES " + values)
-                self.db.dbQuery(insert_sql)
-
-                # insert into the event_data table
-
-                # get the current date
-                cur_date = int(dt.strftime(dt.now(), "%Y%m%d"))
-
-                # enter the date of the event (EventOverallDate)
-                date_values = "(" + self.ship + "," + self.survey + "," \
-                              + self.activeEvent + ",'Codend','EventOverallDate'," + str(cur_date) + ")"
-                date_sql = ("INSERT INTO " + self.schema + ".event_data (Ship, Survey, Event_Id, Partition, "
-                                                           "Event_Parameter, Parameter_Value) VALUES %s" % date_values)
-                self.db.dbQuery(date_sql)
-
-                # enter the trawl scientist
-                sci_vals = "(" + self.ship + "," + self.survey + "," \
-                           + self.activeEvent + ",'Codend','TrawlScientist','" + self.sci + "')"
-                sci_sql = ("INSERT INTO " + self.schema + ".event_data (Ship, Survey, Event_Id, Partition, "
-                                                          "Event_Parameter, Parameter_Value) VALUES %s" % sci_vals)
-                self.db.dbQuery(sci_sql)
-
-                # set the current event in the application_configuration table
-                update_sql = ("UPDATE " + self.schema + ".application_configuration SET parameter_value='"
-                              + self.activeEvent + "' WHERE parameter = 'ActiveEvent'")
-                self.db.dbQuery(update_sql)
-                self.set_cur_event()
-            else:
-                cont = 0
-                msg = "That event already exists in the database"
-                self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg)
-                self.message.show()
-                print("duplicate entry")
-            if cont == 1:
-                self.accept()
-
-    def check_active(self):
-        """
-        checks the shown events
-        :return:
-        """
-        if self.cb_active.isChecked():
-            # show only active events
-            self.active = True
-        else:
-            # show all events
-            self.active = False
-        self.set_cur_event()
-
-    def edit_event_num(self):
-        """
-        edits the event number if there are no samples associated with the event
-        :return:
-        """
-        # pull event number out of list item
-        temp_event = self.lw_events.currentItem().text().split("\t")[0]
-        # check again to make sure there are no samples for the event number
-        query = self.db.dbQuery("SELECT * FROM Samples WHERE event_id = " + str(temp_event))
-        if query.first():
-            # if there are samples, send up msg
-            self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
-                                    "There are samples associated with this event "
-                                    "number, so it cannot be changed. Please write "
-                                    "down the issue in the lab notebook.")
-        else:
-            # if no samples
-            # send up numpad to get new number
-            self.numpad.msgLabel.setText("Enter the new event number")
-            if not self.numpad.exec():
-                return
-            value = self.numpad.value
-            # check that number isn't in the database
-            query_2 = self.db.dbQuery("SELECT * FROM Events WHERE event_id = " + str(value))
-            if query_2.first():
-                # if there is an event, send up msg
-                self.message.setMessage(self.errorIcons[1], self.errorSounds[1], "That event is already in the "
-                                                                                 "database, please choose another")
-                self.message.exec()
-            else:
-                # if not update the event_data table
-                try:
-                    self.db.dbQuery("ALTER TABLE Event_Data disable constraint EVENTS_EVENT_DATA_FK")
-                    self.db.dbQuery("UPDATE Event_Data SET event_id = " + str(value) + " WHERE event_id = "
-                                    + str(temp_event))
-                    self.db.dbQuery("ALTER TABLE Event_Data enable constraint EVENTS_EVENT_DATA_FK")
-                    # update the event table
-                    try:
-                        self.db.dbQuery("UPDATE Events SET event_id = " + str(value) + " WHERE event_id = "
-                                        + str(temp_event))
-                        # update the application_configuration table
-                        try:
-                            self.db.dbQuery("UPDATE Application_Configuration SET parameter_value = " + str(value) +
-                                            "WHERE parameter = 'ActiveEvent'")
-                            self.activeEvent = value
-                            self.set_cur_event()
-                        except:
-                            self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
-                                                    "Could not update Active Event with the new event id")
-                            self.message.exec()
-                    except:
-                        self.message.setMessage(self.errorIcons[1], self.errorSounds[1], "Could not update Events "
-                                                                                         "table with the new event id")
-                        self.message.exec()
-                except:
-                    self.message.setMessage(self.errorIcons[1], self.errorSounds[1], "Could not update Event_Data "
-                                                                                     "table with the new event id")
-                    self.message.exec()
-
-
-class AddEvent(QDialog, ui_FEATEventNum.Ui_Dialog):
-    def __init__(self, numpad):
-        """
-        allows user to add an event
-        """
-        super(AddEvent, self).__init__()
-        self.setupUi(self)
-
-        self.numpad = numpad
-        self.activeEvent = ''
+        # set up the timers
+        self.event_timer = QTimer(self)
+        self.td_timer = QTimer(self)
 
         # set slots
-        self.pb_ok.clicked.connect(self.add_event)
-        self.pb_cancel.clicked.connect(self.reject)
-        self.pb_num.clicked.connect(self.set_event)
+        self.pb_metadata.clicked.connect(self.enter_metadata)
+        self.pb_abort.clicked.connect(self.abort_operation)
+        self.commentBtn.clicked.connect(self.add_comment)
+        self.doneBtn.clicked.connect(self.finish_event)
+        self.dataTable.itemSelectionChanged.connect(self.edit_dims)
+        for b in self.buttons:
+            b.clicked.connect(self.set_event)
 
-        self.exec()
+        # set up the initialization timer
+        initTimer = QTimer(self)
+        initTimer.setSingleShot(True)
+        initTimer.timeout.connect(self.init_trawl_event_dialog)
+        initTimer.start(0)
+
+    def init_trawl_event_dialog(self):
+        """
+        shows the FEAT trawl form - the active event is set in when the event is selected (eventseldlg)
+        :return:
+        """
+        # set preliminary information #
+        ###############################
+        # sets the haul number to the 3 digit representation of the activeEvent
+        self.l_haul.setText(str(self.activeEvent).zfill(3))
+
+        # reload the netdlg
+        self.netdlg.reload_data()
+
+        # check if metadata is already entered
+        if self.check_for_required_meta() == 1:
+            self.meta_entered = True
+
+        # deal with buttons#
+        ####################
+        self.determine_buttons()
+
+        # set up for SCS #
+        ##################
+        #  query out the "slow" and "fast" SCS write rates. We write SCS data to the
+        #  event_stream_data table at different rates depending on where we are in
+        #  the event. We write faster between TD and HB, and slower before TD
+        #  and after HB.
+        sql = ("SELECT parameter_value FROM " + self.schema + ".application_configuration " +
+                "WHERE parameter='EventStreamEQHBLogInt'")
+        query = self.db.dbQuery(sql)
+        val, = query.first()
+        if val:
+            try:
+                self.streamEQHBLogInterval = float(val)
+            except:
+                pass
+
+        sql = ("SELECT parameter_value FROM " + self.schema + ".application_configuration " +
+                "WHERE parameter='EventStreamPreEQLogInt'")
+        query = self.db.dbQuery(sql)
+        val, = query.first()
+        if val:
+            try:
+                self.streamSlowLogInterval = float(val)
+            except:
+                pass
+
+        # if this is a restart or continuation of an already started event, reload previously collected data
+        sql = ("SELECT event_id FROM " + self.schema + ".events WHERE ship=" + self.ship + " AND survey="
+               + self.survey + " AND event_id=" + str(self.activeEvent))
+        query = self.db.dbQuery(sql)
+        event_id, = query.first()
+        if event_id:
+            # this is a restart so reload any existing data
+            self.reloaded = True
+            self.reload_data()
+
+        #  Set up sensors - first create an instance of SensorMonitor
+        #  which will handle all the details of receiving and parsing
+        #  data from our devices/sensors.
+        self.sensorMonitor = SensorMonitor.SensorMonitor()
+
+        #  connect the SensorDataReceived signal. This is emitted when
+        #  a sensor transmits a full line of data, after the line is
+        #  parsed.
+        self.sensorMonitor.SensorDataReceived.connect(self.write_stream)
+        
+        #  connect the SensorsStopped signal which tells us when all
+        #  sensorMonitor's acquisition threads have stopped so we make
+        #  sure we don't exit before all threads have stopped.
+        self.sensorMonitor.SensorsStopped.connect(self.devices_closed)
+
+        #  connect the SensorError signal to inform the user of any
+        #  sensor errors. Errors will be emitted asynchronously.
+        self.sensorMonitor.SensorError.connect(self.device_error)
+
+        #  get the devices attached to this workstation
+        self.deviceData = devices.getDevices(self.db, self.workStation)
+        
+        #  set up each device
+        for deviceName in self.deviceData:
+            #  try to get the configuration parameters for this device
+            #  this will fail if a required parameter is missing.
+            try:
+                deviceParams = devices.getDeviceParameters(self.db, deviceName,
+                                                           self.deviceData[deviceName]['id'],
+                                                           self.deviceData[deviceName]['interface'])
+            except Exception as e:
+                self.message.setMessage(self.errorIcons[0], self.errorSounds[0],
+                                        "Error initializing device ::: " + str(e) +
+                                        ". This device will be disabled", 'warning')
+                continue
+
+            #  only set up network and serial devices
+            if self.deviceData[deviceName]['interface'] in ['network', 'serial']:
+                #  then add this device to the sensor monitor
+                self.sensorMonitor.addDevice(deviceName, deviceParams['port'], deviceParams['baud'],
+                                             deviceParams['parseType'], deviceParams['parseExp'],
+                                             deviceParams['parseIndex'], deviceParams['commandPrompt'])
+
+            #  set the initial "last write" time for this device
+            self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
+
+        self.SCSisActive = True
+
+        #  now that all devices are added - start monitoring them. This will cause
+        #  SensorMonitor to open serial or network ports and in the case of serial
+        #  ports start polling. SensorMonitor will buffer data until full messages
+        #  are received. Those messages are optionally parsed and then SensorMonitor
+        #  emits a signal with the parsed data.
+        self.sensorMonitor.startMonitoring()
+        self.sensorsClosed = False
+
+        #  If there are any errors opening ports, SensorMonitor will emit the
+        #  SensorError signal for each device with an issue.
+
+        #  show the window
+        self.show()
+
+        # set stub in status bar
+        self.statusBar.showMessage('SCS not connected!')
+
+    def determine_buttons(self):
+        """
+        deals with which buttons are enabled/disabled
+        :return:
+        """
+        # disable everything but the metadata button
+        self.pb_metadata.setEnabled(True)
+        self.pb_abort.setEnabled(False)
+        self.commentBtn.setEnabled(False)
+        self.doneBtn.setEnabled(False)
+        for btn in self.buttons:
+            btn.setEnabled(False)
+        if not self.aborted:
+            if self.meta_entered:
+                # if there are no event buttons that are pressed yet (self.button_order is empty),
+                # enable the NIW and COM buttons
+                if not self.button_order:
+                    # enable the niw and com event buttons and the comment button
+                    self.pb_niw.setEnabled(True)
+                    self.pb_com.setEnabled(True)
+                    self.commentBtn.setEnabled(True)
+                # if both NIW and NOD have been pressed, (the tow is complete) disable all buttons
+                # except for metadata, comment, and the done button
+                if 'NOD' in self.button_order and 'NIW' in self.button_order:
+                    for btn in self.buttons:
+                        btn.setEnabled(False)
+                    self.doneBtn.setEnabled(True)
+                    self.commentBtn.setEnabled(True)
+                    self.pb_com.setEnabled(False)
+                else:
+                    # if 'NIW' has been pressed, enable the abort and comment buttons
+                    if 'NIW' in self.button_order:
+                        self.pb_abort.setEnabled(True)
+                        self.commentBtn.setEnabled(True)
+                        self.pb_com.setEnabled(True)
+                    if 'HB' in self.button_order:
+                        self.pb_abort.setEnabled(False)
+                    # if buttons have been pressed, determine the last and enable the next button
+                    if self.button_order:
+                        i_max = 0
+                        for i in self.idxs:
+                            if i != 6:
+                                self.buttons[i].setEnabled(True)
+                                if i_max < i:
+                                    i_max = i
+                        self.buttons[i_max + 1].setEnabled(True)
+
+    def disable_enable_buttons(self, action, btn=None):
+        """
+        disables/enables buttons depending on passed action; used when the metadata information is
+        entered or not
+        :param action: the action (disable or enable) to complete
+        :param btn: if this is set, it is to apply action to that single button
+        :return: none
+        """
+        if btn == 'events':
+            # got through all event buttons, except for COM
+            for btn in self.buttons:
+                if btn.text().lower() != 'com':
+                    if action == 'disable':
+                        btn.setEnabled(False)
+                    else:
+                        btn.setEnabled(True)
+                else:
+                    btn.setEnabled(True)
+        elif btn:
+            if action == 'disable':
+                btn.setEnabled(False)
+            else:
+                btn.setEnabled(True)
+        else:
+            # abort (only disable), done, net dimensions
+            if action == 'disable':
+                self.pb_abort.setEnabled(False)
+                self.doneBtn.setEnabled(False)
+                # self.netDimBtn.setEnabled(False)
+            else:
+                self.doneBtn.setEnabled(True)
+                # self.netDimBtn.setEnabled(True)
+
+    def display_time(self, t_type, show_only=False):
+        """
+        displays the timers
+        :return: none
+        """
+        if t_type == 'overall':
+            if not show_only:
+                self.event_time = self.event_time.addSecs(1)
+            if self.event_time.hour() > 0:
+                self.elapseLabel.setText(self.event_time.toString('h:mm:ss'))
+            else:
+                self.elapseLabel.setText(self.event_time.toString('mm:ss'))
+        else:
+            if not show_only:
+                self.tow_time = self.tow_time.addSecs(1)
+            if self.tow_time.hour() > 0:
+                self.l_timeTD.setText(self.tow_time.toString('h:mm:ss'))
+            else:
+                self.l_timeTD.setText(self.tow_time.toString('mm:ss'))
+
+    def reload_data(self):
+        """
+        populates the form, metadata, and net dimensions with whatever data exists in the database for this event
+        """
+        # check if the metadata to entered
+        exists = self.check_for_required_meta()
+        if exists == 1:
+            self.meta_entered = True
+        else:
+            self.meta_entered = False
+            return
+
+        # enter the fisher, td, tdlat, tdlon
+        self.enter_meta_info()
+
+        # populate comments and get the performance
+        sql = ("SELECT performance_code, comments FROM " + self.schema + ".events WHERE ship=" + self.ship +
+                " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
+        query = self.db.dbQuery(sql)
+        perf_code, self.comment = query.first()
+        if int(perf_code) < 0:
+            self.aborted = True
+        # if there isn't a comment - set it to an empty string.
+        if self.comment is None:
+            self.comment = ''
+
+        # set up elapsed seconds to populate
+        overall_elapsed = 0
+        td_elapsed = 0
+
+        # get event types entered by timestamp
+        ev_sql = ("SELECT event_parameter, to_char(to_timestamp(parameter_value,'MMDDYYYY HH24:MI:SS.FF3')) AS times "
+                  "FROM " + self.schema + ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey +
+                  " AND event_id=" + self.activeEvent + " AND partition='MainTrawl' AND event_parameter IN "
+                                                        "('NIW', 'SD', 'TD', 'HB', 'DU', 'NOD', 'COM01', 'COM02', "
+                                                        "'COM03', 'COM04', 'COM05', 'COM06', 'COM07', 'COM08', 'COM09',"
+                                                        " 'COM10', 'COM11', 'COM12', 'COM14', 'COM14', 'COM15') "
+                                                        "ORDER BY times ASC")
+        ev_query = self.db.dbQuery(ev_sql)
+
+        # go through each event type entered into database and add to the table
+        row = 0
+        for ev, ts in ev_query:
+            # add to button order list
+            self.button_order.append(ev)
+            # set the button text
+            if 'com' in ev.lower():
+                btn_txt = 'COM'
+            else:
+                btn_txt = ev
+
+            # get the index in the list to reset the color
+            ind = None
+            for b in self.buttons:
+                if b.text() == btn_txt:
+                    ind = self.buttons.index(b)
+            self.idxs.append(ind)
+
+            #  first check for event_data parameters
+            sql = ("SELECT event_parameter, parameter_value FROM " + self.schema + ".event_data WHERE ship=" +
+                   self.ship + " AND survey=" + self.survey + " AND event_id=" + self.activeEvent +
+                   " AND partition='MainTrawl' AND event_parameter='" + ev + "'")
+            query = self.db.dbQuery(sql)
+            param, val = query.first()
+
+            # if we found something, populate the parameter's row
+            if val:
+                # update the button's table values
+                self.dataTable.setItem(row, 0, QTableWidgetItem(param))
+                self.dataTable.setItem(row, 1, QTableWidgetItem(val))
+                self.btnTimes[row] = QDateTime().fromString(val, 'MMddyyyy hh:mm:ss.zzz')
+
+                buttonValues = self.get_event_stream_vals(val, self.displayMeasurements)
+                self.dataTable.setItem(row, 2, QTableWidgetItem(buttonValues[0]))
+                self.dataTable.setItem(row, 3, QTableWidgetItem(buttonValues[1]))
+                self.dataTable.setItem(row, 4, QTableWidgetItem(buttonValues[2]))
+                self.buttons[ind].setPalette(self.green)
+
+                if param == 'NIW':
+                    # get elapsed seconds since NIW was pressed
+                    self.niw_time = self.btnTimes[row]
+                    overall_elapsed = self.btnTimes[row].secsTo(QDateTime().currentDateTime())
+                elif param == 'NOD':
+                    # get the time NOD was pressed
+                    self.nod_time = self.btnTimes[row]
+                elif param == 'TD':
+                    # get elapsed seconds since TD was pressed
+                    self.td_time = self.btnTimes[row]
+                    td_elapsed = self.btnTimes[row].secsTo(QDateTime().currentDateTime())
+                elif param == 'HB':
+                    # get the time HB was pressed
+                    self.hb_time = self.btnTimes[row]
+            row += 1
+            self.cur_dt_row = row
+
+        #  set timers to display the elapsed time
+        if overall_elapsed > 0 and 'NOD' in self.button_order:
+            tot_time = self.niw_time.secsTo(self.nod_time)
+            self.event_time = self.event_time.addSecs(tot_time)
+            self.display_time('overall', True)
+        elif 'NIW' in self.button_order:
+            self.event_time = self.event_time.addSecs(overall_elapsed)
+            self.event_timer.timeout.connect(lambda: self.display_time('overall'))
+            self.event_timer.start(1000)
+        # if HB is pressed, get elapsed time
+        if td_elapsed > 0 and 'HB' in self.button_order:
+            at_depth_time = self.td_time.secsTo(self.hb_time)
+            self.tow_time = self.tow_time.addSecs(at_depth_time)
+            self.display_time('td', True)
+        elif 'TD' in self.button_order:
+            self.tow_time = self.tow_time.addSecs(td_elapsed)
+            self.td_timer.timeout.connect(lambda: self.display_time('td'))
+            self.td_timer.start(1000)
+
+        self.dataTable.resizeColumnsToContents()
+
+        if 'NOD' in self.button_order:
+            print('here')
+            self.recording = False
+            self.doneBtn.setEnabled(True)
+        else:
+            #self.recording = True
+            pass
+        # enable the comment box
+        self.commentBtn.setEnabled(True)
+
+        #  check if this event has been completed. Completed is defined as having NIW and NOD
+        #  data. Once an event is completed, we only allow editing and do not collect stream data.
+        if 'TD' not in self.button_order or 'HB' not in self.button_order:
+            #  one of them is not complete - ask if we should consider this a live event
+            reply = QMessageBox.question(self, 'Achtung!', "<font size = 14>This haul was not completed. " +
+                                         "Is this event still taking place?</font>", QMessageBox.StandardButton.Yes,
+                                         QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
+                #  determine what SCS logging rate we should use
+                if 'TD' not in self.button_order:
+                    # TD has not been pressed yet
+                    self.SCSLogInterval = self.streamSlowLogInterval
+                    self.fishingFlag = False
+                else:
+                    self.SCSLogInterval = self.streamEQHBLogInterval
+                    self.fishingFlag = True
+                #  set other state variables for a "live" event
+                self.recordStream = True
+            else:
+                #  this is not a live event - treat this as an edit after the fact
+                self.recordStream = False
+        # check if NIW and NOD have both been pressed; if so, it is completed and can only edit
+        if 'NIW' in self.button_order and 'NOD' in self.button_order:
+            QMessageBox.information(self, 'Kipaumbele!', "<font size=14>This haul appears to have been completed. " +
+                                    "You can only edit it. New time values must be within the original "
+                                    "time span of the event. " +
+                                    "No new stream data will be recorded.</font>", QMessageBox.StandardButton.Ok)
+        # deal with all buttons
+        self.determine_buttons()
+
+    def check_for_required_meta(self):
+        """
+
+        :return:
+        """
+        required_exists = 3
+        tot_exists = 0
+        # check for gear and fisher
+        gear_sql = ("SELECT gear FROM " + self.schema + ".events WHERE ship=" + self.ship +
+                    " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
+        gear_query = self.db.dbQuery(gear_sql)
+        gear, = gear_query.first()
+        if gear != self.gear:
+            tot_exists += 1
+        fish_sql = ("SELECT scientist FROM " + self.schema + ".events WHERE ship=" + self.ship +
+                    " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
+        fish_query = self.db.dbQuery(fish_sql)
+        sci, = fish_query.first()
+        if sci != self.scientist:
+            tot_exists += 1
+        # check for transect
+        trans_sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship=" + self.ship +
+                     " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) +
+                     " AND partition='MainTrawl' AND event_parameter='Transect'")
+        trans_query = self.db.dbQuery(trans_sql)
+        trans, = trans_query.first()
+        if trans:
+            tot_exists += 1
+        if tot_exists == required_exists:
+            return 1
+        else:
+            return 0
+
+    def get_event_stream_vals(self, time, parameters):
+        """
+        queries the event_data_stream table for the specified parameter
+        values at the specified time and returns the value closest to the time. If data is not
+        available within the defined time window, empty strings are returned.
+
+        ALL VALUES ARE RETURNED AS STRINGS
+        """
+        #  check that we've been given a list of one or more params
+        if len(parameters) == 0 or not isinstance(parameters, list):
+            return ''
+
+        #  set up our default return value
+        ret_val = [''] * len(parameters)
+        dt = [float('inf')] * len(parameters)
+
+        #  convert our time to a QDateTime
+        time = QDateTime().fromString(time, 'MMddyyyy hh:mm:ss.zzz')
+
+        #  query the data from haul_stream data table within our window
+        inClause = "'" + "','".join(parameters) + "'"
+        sql = ("SELECT time_stamp, measurement_type, measurement_value FROM " + self.schema +
+                ".event_stream_data WHERE time_stamp between to_timestamp('" +
+                time.addSecs(-self.streamWindowSeconds).toString('MMddyyyy hh:mm:ss.zzz') +
+                "','MMDDYYYY HH24:MI:SS.FF3') and to_timestamp('" +
+                time.addSecs(self.streamWindowSeconds).toString('MMddyyyy hh:mm:ss.zzz') +
+                "','MMDDYYYY HH24:MI:SS.FF3') AND measurement_type IN (" + inClause + ")")
+        query = self.db.dbQuery(sql)
+        #  loop thru the returned values
+        for timestamp, meas, value in query:
+            try:
+                #  get the index into our return array
+                i = parameters.index(meas)
+                #  calculate the time difference between this row and our specified time
+                timeDiff = abs(QDateTime.fromString(timestamp, 'MMddyyyy hh:mm:ss.zzz').secsTo(time))
+                #  check if this delta is smaller
+                if timeDiff < dt[i]:
+                    #  difference is smaller, save this value
+                    dt[i] = timeDiff
+                    ret_val[i] = value
+            except:
+                #  this is not the parameter we're looking for
+                pass
+
+        return ret_val
+
+    def add_comment(self):
+        """
+
+        :return:
+        """
+        # get any comments already in database
+        com_sql = ("SELECT comments FROM " + self.schema + ".events WHERE ship=" + self.ship +
+                   " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
+        com_query = self.db.dbQuery(com_sql)
+        comments, = com_query.first()
+
+        # send up keypad and set space with comments
+        if comments:
+            keyDialog = keypad.KeyPad(comments, self)
+        else:
+            keyDialog = keypad.KeyPad('', self)
+        keyDialog.exec()
+        if keyDialog.okFlag:
+            text = keyDialog.dispEdit.toPlainText()
+            # update comments in database
+            update_sql = ("UPDATE " + self.schema + ".events SET comments ='" + text + "' WHERE ship=" + self.ship +
+                          " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
+            self.db.dbQuery(update_sql)
 
     def set_event(self):
         """
-        sets the event by calling the numpad and changing the text of the button
+        when an event is pressed, it writes to the form and to the database
         :return:
         """
-        self.numpad.msgLabel.setText("Enter event num")
-        if not self.numpad.exec():
+        if not self.recording:
+            #self.recording = True
+            pass
+        ind = self.buttons.index(self.sender())
+
+        # get the text of the button
+        self.cur_btn_txt = self.sender().text()
+
+        # check if the button has already been pressed
+        if self.cur_btn_txt in self.button_order and 'com' not in self.cur_btn_txt.lower():
+            # only allow to overwrite the time for now...todo: upgrade this to also change the event type?
+            overwrite = DuplicateDlg()
+            if overwrite.result() == 1:
+                self.edit_flag = True
+                ts_sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship=" + self.ship
+                          + " AND survey=" + self.survey + " AND event_id=" + self.activeEvent
+                          + " AND partition='MainTrawl' AND event_parameter='" + self.cur_btn_txt + "'")
+                ts_query = self.db.dbQuery(ts_sql)
+                self.prev_ts, = ts_query.first()
+                #if self.cur_btn_txt in ['TD', 'HB']:
+                #    self.net_btn = self.cur_btn_txt
+            else:
+                return
+        else:
+            if 'COM' not in self.cur_btn_txt:
+                self.button_order.append(self.cur_btn_txt)
+            else:
+                cur_com_num = 0
+                com_ct = 0
+                for b in self.button_order:
+                    if 'com' in b.lower():
+                        com_ct += 1
+                        # get the number
+                        cur_num = int(b[-2:])
+                        if cur_num >= cur_com_num:
+                            cur_com_num = cur_num
+                self.cur_btn_txt = 'COM' + str(cur_com_num + 1).zfill(2)
+                if com_ct == 14:
+                    self.pb_com.setEnabled(False)
+
+        # save in DB #
+        ##############
+        # get the current timestamp
+        self.cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
+
+        if not self.edit_flag:
+            event_sql = ("INSERT INTO " + self.schema +
+                         ".event_data (ship, survey, event_id, partition, event_parameter, parameter_value) "
+                         "VALUES (" + self.ship + ", " + self.survey + ", " + self.activeEvent + ", 'MainTrawl', '"
+                         + self.cur_btn_txt + "', '" + self.cur_time + "')")
+            event_query = self.db.dbQuery(event_sql)
+            if not event_query:
+                return
+
+            # get the current row that is empty in the data table
+            if self.cur_dt_row > 9:
+                # add an additional row
+                self.dataTable.insertRow(self.cur_dt_row)
+                self.dataTable.scrollToBottom()
+        else:
+            # update associated net dimension data first
+            net_sql = ("UPDATE " + self.schema + ".event_stream_data SET time_stamp='" + self.cur_time
+                       + "' WHERE ship=" + self.ship + " AND survey=" + self.survey + " AND event_id="
+                       + self.activeEvent + " AND time_stamp='" + self.prev_ts + "'")
+            net_query = self.db.dbQuery(net_sql)
+
+            # update event_data timestamp
+            update_sql = ("UPDATE " + self.schema + ".event_data SET parameter_value = '"
+                          + self.cur_time + "' WHERE ship=" + self.ship + " AND survey=" + self.survey
+                          + " AND event_id=" + self.activeEvent
+                          + " AND partition='MainTrawl' AND event_parameter='" + self.cur_btn_txt + "'")
+            self.db.dbQuery(update_sql)
+
+            # find the row in the datatable for this event
+            for row in range(self.dataTable.rowCount()):
+                item = self.dataTable.item(row, 0)
+                if item and item.text() == self.cur_btn_txt:
+                    self.cur_dt_row = row
+
+        self.buttons[ind].setPalette(self.green)
+        self.dataTable.setItem(self.cur_dt_row, 0, QTableWidgetItem(self.cur_btn_txt))
+        self.dataTable.setItem(self.cur_dt_row, 1, QTableWidgetItem(self.cur_time))
+        if self.dispVector:
+            self.dataTable.setItem(self.cur_dt_row, 2, QTableWidgetItem(self.dispVector[0]))
+            self.dataTable.setItem(self.cur_dt_row, 3, QTableWidgetItem(self.dispVector[1]))
+            self.dataTable.setItem(self.cur_dt_row, 4, QTableWidgetItem(self.dispVector[2]))
+        self.dataTable.resizeColumnsToContents()
+
+        # deal with the timers and buttons
+        if 'TD' in self.cur_btn_txt:
+            # set/reset the timer
+            if self.edit_flag:
+                self.td_timer.stop()
+                self.td_time = QTime(0, 0, 0)
+                self.td_timer.start(1000)
+            else:
+                self.td_timer.timeout.connect(lambda: self.display_time('td'))
+                self.td_timer.start(1000)
+            # if TD is pressed, send up net dimensions
+            self.net_btn = 'TD'
+            self.get_net_dims()
+        elif 'HB' in self.cur_btn_txt:
+            # stop the timer
+            self.td_timer.stop()
+            # disable the abort button
+            self.pb_abort.setEnabled(False)
+            # if HB is pressed, send up net dimensions
+            self.net_btn = 'HB'
+            self.get_net_dims()
+        elif 'NIW' in self.cur_btn_txt:
+            # if NIW is pressed, start recording and enable the abort button
+            #self.recording = True
+            self.pb_abort.setEnabled(True)
+            # set/reset the timer
+            if self.edit_flag:
+                self.event_timer.stop()
+                self.event_time = QTime(0, 0, 0)
+                self.event_timer.start(1000)
+            else:
+                self.event_timer.timeout.connect(lambda: self.display_time('overall'))
+                self.event_timer.start(1000)
+        elif 'NOD' in self.cur_btn_txt:
+            # if NOD is pressed, enable the done button, turn off the recording of SCS data, and stop overall timer
+            self.doneBtn.setEnabled(True)
+            self.recording = False
+            self.event_timer.stop()
+        elif 'COM' in self.cur_btn_txt:
+            # if COM is pressed, send up net dimensions
+            self.net_btn = 'COM'
+            self.get_net_dims()
+
+        # set next button enabled if the current button isn't a com
+        self.determine_buttons()
+
+        # move current row ahead one
+        self.cur_dt_row += 1
+
+    def write_stream(self, device_name, data):
+        """
+        write_stream is called when we receive sensor data (from SCS)
+        :return:
+        """
+        # update the status bar that SCS is alive
+        if not self.SCSisActive:
+            self.SCSisActive = True
+        self.statusBar.showMessage('Connected to SCS', 1000)
+        self.scsRetries = 0
+
+        # check if we're recording data and return if not
+        if not self.recordStream or not self.recording:
             return
-        self.pb_num.setText(self.numpad.value)
 
-    def add_event(self):
+        # check if this sensor provides trawl event data
+        if 'trawlevent' not in self.deviceData[device_name]['measurements']:
+            #  it doesn't - ignore this data
+            return
+
+        # get the current time
+        datetime = QDateTime.currentDateTime()
+        time = str(datetime.toString('MMddyyyy hh:mm:ss.zzz'))
+
+        # iterate thru the the list of SCS sensor datagrams and write to database
+        if self.testing:
+            self.dispVector = ['testlat', 'testlon', 'testdepth']
+        else:
+            wroteToDb = False
+
+            # get the measurement type - while devices can be associated with multiple
+            # measurements, in this context this doesn't make sense so we will assume
+            # the first measurement assigned to this de
+            measurement = self.deviceData[device_name]['measurements']['trawlevent'][0]
+            # check that we have data for this sensor
+            if data is None or data.strip() == '':
+                return
+
+            # convert Lat/Lon to decimal degrees
+            if measurement.lower() == 'latitude':
+                data = self.convertDegToDecimal(data, 'lat')
+            if measurement.lower() == 'longitude':
+                data = self.convertDegToDecimal(data, 'lon')
+
+            # check if we need to write a fresh value in the database
+            elapsedSecs = self.lastSCSWriteTime[device_name].secsTo(datetime)
+            if elapsedSecs >= self.SCSLogInterval:
+                #  insert into the database
+                sql = ("INSERT INTO " + self.schema + ".event_stream_data (ship, survey, " +
+                        "event_id, device_id, time_stamp, measurement_type, measurement_value) " +
+                        "VALUES (" + self.ship + "," + self.survey + "," + str(self.activeEvent) + "," +
+                        self.deviceData[device_name]['id'] + ",'" + time + "','" + measurement +
+                        "','" + data + "')")
+                self.db.dbExec(sql)
+                wroteToDb = True
+
+            if measurement in self.displayMeasurements:
+                ind = self.displayMeasurements.index(measurement)
+                self.dispVector[ind] = data
+
+            # update the write time if we wrote to the db
+            if wroteToDb:
+                self.lastSCSWriteTime[device_name] = datetime
+
+    def devices_closed(self):
         """
-        sets the activeEvent and accepts to send back to enter into database
+        called when the SensorMonitor emits the SensorsStopped signal which lets us know all acquisition
+        threads have stopped. Once they are stopped we can close the form without error.
+        (Qt gets angry when threads are destroyed while running.) Set sensorsClosed to True and call close() again.
         :return:
         """
-        self.activeEvent = str(self.pb_num.text())
-        self.accept()
+        #  we check if this is an intentional shutdown and if so, close
+        #  the form. This method will also be called if every sensor
+        #  fails to start when the form is initializing and we *don't*
+        #  want to close the form in that case.
+        if self.sensorsStopping:
+            #  set sensorsClosed to True and call close() again
+            self.sensorsClosed = True
+            self.close()
+
+    def finish_event(self):
+        """
+        popup for entering the performance of the operation and allowing to check/enter comments
+        :return:
+        """
+        if 'NOD' in self.button_order:
+            # stop recording
+            self.recording = False
+            # set up the finish dialog
+            done = donedlg.DoneDlg(self)
+            # display the dialog
+            result = done.exec()
+
+            # if not cancelled, operation is complete
+            if result == QDialog.DialogCode.Accepted:
+                self.accept()
+
+    def get_net_dims(self):
+        """
+        called when the user hits TD, HB, COM or the NetDims button. This presents
+        a simple dialog for entering the net opening width and height and the amount of wire out.
+        """
+        self.net_btn = self.sender().text()
+
+        # reload the net dimension values
+        self.netdlg.reload_data(self.net_btn, self.cur_time)
+
+        # set the text for the button
+        self.netdlg.addRecordBtn.setText("Add\nRecord")
+
+        # display the dialog
+        self.netdlg.exec()
+
+    def edit_dims(self):
+        """
+        allows entry into the net dimensions area to edit
+        :return:
+        """
+        if self.dataTable.item(self.dataTable.currentRow(), 1):
+            self.edit_flag = True
+            # get the timestamp
+            self.cur_time = self.dataTable.item(self.dataTable.currentRow(), 1).text()
+            # set the name of the 'button' to the event from the first column of the table
+            self.net_btn = self.dataTable.item(self.dataTable.currentRow(), 0).text()
+            # reload the data on the form
+            self.netdlg.reload_data(self.net_btn, self.cur_time, self.edit_flag)
+            # only send to dialog if TD, HB, or COM is pressed
+            if self.net_btn in ['TD', 'HB'] or 'COM' in self.net_btn:
+                # display the dialog
+                if self.netdlg.exec():
+                    self.dataTable.blockSignals(True)
+                    self.dataTable.clearSelection()
+                    self.dataTable.blockSignals(False)
+        else:
+            pass
+
+    @pyqtSlot(str, object)
+    def device_error(self, deviceID, obj):
+        """
+
+        :param deviceID:
+        :param obj:
+        :return:
+        """
+        # there was an issue with a device so display a warning dialog
+        QMessageBox.warning(self, "Sensor/Device Error", "<font size = 14>" +
+                            obj.errText + " This device will be not be enabled (Device id: " + deviceID + ".")
+
+    @staticmethod
+    def convertDegToDecimal(deg, pos):
+        """
+
+        :param deg:
+        :param pos:
+        :return:
+        """
+        try:
+            parts = deg.split(',')
+            if len(parts) > 1:
+                deg = parts[0]
+                h = parts[1].strip().lower()
+            else:
+                deg = parts[0][0:-1]
+                h = parts[0][-1].strip().lower()
+            if pos == 'lat':
+                dec = round(float(deg[0:2]) + float(deg[2:])/60., 4)
+            else:
+                dec = round(float(deg[0:3]) + float(deg[3:]) / 60., 4)
+            if h in ['s', 'w']:
+                dec = dec * -1
+        except:
+            dec = ''
+
+        return str(dec)
+
+    def enter_metadata(self):
+        """
+
+        :return:
+        """
+        # set up the metadata dialog
+        meta = metadlg.MetaDlg(self)
+        # reload any data
+        meta.reload_data()
+        # display the dialog
+        result = meta.exec()
+        if result:
+            # check if meta actually entered - this is a double-check since it should be entered if we got this far
+            temp = self.check_for_required_meta()
+            if temp == 1:
+                self.meta_entered = True
+                self.enter_meta_info()
+                self.event_entered = True
+                # deal with buttons
+                self.determine_buttons()
+                """
+                self.disable_enable_buttons('disable', 'events')
+                if not self.button_order:
+                    # enable the niw and com buttons
+                    self.disable_enable_buttons('enable', self.pb_niw)
+                    self.disable_enable_buttons('enable', self.pb_com)
+                else:
+                    i_max = 0
+                    for i in self.idxs:
+                        if i != 6:
+                            self.disable_enable_buttons('disable', self.buttons[i])
+                            if i_max < i:
+                                i_max = i
+                    self.disable_enable_buttons('enable', self.buttons[i_max + 1])
+                """
+
+    def enter_meta_info(self):
+        """
+        this updates the gui with some information the fisher may want on hand
+        :return:
+        """
+        for p in self.meta_info:
+            sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship="
+                              + self.ship + " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) +
+                              " AND partition='MainTrawl' AND event_parameter='" + p + "'")
+            query = self.db.dbQuery(sql)
+            val, = query.first()
+            if 'trawl' in p.lower():
+                self.l_fisher.setText(val)
+            elif 'depth' in p.lower():
+                self.l_td.setText(val)
+            elif 'lat' in p.lower():
+                self.l_tdLat.setText(val)
+            elif 'lon' in p.lower():
+                self.l_tdLon.setText(val)
+
+    def abort_operation(self):
+        """
+        'aborts' the tow and requires performance (reason) and comments
+        :return:
+        """
+        # open dialog only if NIW has already been pressed
+        if 'NIW' in self.button_order:
+            # stop recording
+            self.recording = False
+            # set up the abort dialog
+            abort = abortdlg.AbortDlg(self)
+            # display the dialog
+            result = abort.exec()
+
+            # if not cancelled, operation is complete
+            if result == QDialog.DialogCode.Accepted:
+                self.accept()
 
 
-class AddParams(QDialog, ui_FEATEventParams.Ui_Dialog):
-    def __init__(self, parent):
+class DuplicateDlg(QDialog, ui_DuplicateDlg.Ui_YesNoDlg):
+    def __init__(self):
         """
-        allows user to add an event
+        The CLAMS Trawl event dialog initialization method for FEAT
         """
-        # TODO: take trawl scientist out of add event
         #  call superclass init methods and GUI form setup method
-        super(AddParams, self).__init__()
+        super(DuplicateDlg, self).__init__()
         self.setupUi(self)
 
-        # set up variables
-        self.db = parent.db
-        self.gear = ""
-        self.event_type = ""
-        self.sci = "Check NC"
-
-        # fill combo boxes
-        self.fill_combos()
-
-        # hide the trawl scientist
-        # self.label_3.hide()
-        # self.cb_sci.hide()
-
-        # set slots
-        self.pb_ok.clicked.connect(self.add_params)
-        self.pb_cancel.clicked.connect(self.reject)
+        # set up slots
+        self.yesBtn.clicked.connect(self.accept)
+        self.noBtn.clicked.connect(self.reject)
 
         self.exec()
-
-    def fill_combos(self):
-        """
-        fills the combo boxes for the parameters (gear, event type, and scientist
-        :return:
-        """
-        # get gear list
-        gear_sql = "SELECT gear FROM GEAR WHERE active=1"
-        gear_query = self.db.dbQuery(gear_sql)
-        for gear, in gear_query:
-            self.cb_gear.addItem(gear)
-
-        # get event_types
-        e_sql = "SELECT description FROM EVENT_TYPES"
-        e_query = self.db.dbQuery(e_sql)
-        for description, in e_query:
-            self.cb_event_type.addItem(description)
-
-        # get scientists
-        scis = self.db.dbQuery("SELECT scientist FROM PERSONNEL WHERE active=1")
-        for sci, in scis:
-            self.cb_sci.addItem(sci)
-
-    def add_params(self):
-        """
-        adds the parameters to the self and accepts to close the dialog
-        :return:
-        """
-        self.gear = self.cb_gear.currentText()
-        self.sci = self.cb_sci.currentText()
-        desc = self.cb_event_type.currentText()
-        # get event_type_id
-        ev_sql = ("SELECT event_type FROM EVENT_TYPES where description = '" + desc + "'")
-        ev_query = self.db.dbQuery(ev_sql)
-        self.event_type, = ev_query.first()
-        self.accept()

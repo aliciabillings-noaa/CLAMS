@@ -61,6 +61,8 @@ class EventSelDlg(QDialog, ui_EventSelDlg.Ui_eventselDlg):
         self.ship=parent.ship
         self.survey=parent.survey
         self.eventTable.setRowCount(0)
+        self.settings = parent.settings
+        self.schema = parent.schema
 
         #  set up the table
         self.eventTable.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
@@ -76,14 +78,14 @@ class EventSelDlg(QDialog, ui_EventSelDlg.Ui_eventselDlg):
         #  query out the events that used gear that can retain catch and add to
         #  the table.
         if catchOnly:
-            sql = ("SELECT a.event_id, a.gear FROM (SELECT event_id, gear, " +
+            sql = ("SELECT a.performance_code, a.event_id, a.gear FROM (SELECT performance_code, event_id, gear, " +
                     "ship, survey FROM events) a JOIN (SELECT gear, gear_type " +
                     "FROM gear) b ON a.gear = b.gear JOIN (SELECT gear_type, " +
                     "retains_catch from gear_types) c ON b.gear_type = c.gear_type " +
                     "WHERE a.ship = " + parent.ship + " AND a.survey= " + parent.survey +
                     " AND c.retains_catch > 0  ORDER BY event_id ASC")
         else:
-            sql = ("SELECT a.event_id, a.gear FROM (SELECT event_id, gear, " +
+            sql = ("SELECT a.performance_code, a.event_id, a.gear FROM (SELECT performance_code, event_id, gear, " +
                     "ship, survey FROM events) a JOIN (SELECT gear, gear_type " +
                     "FROM gear) b ON a.gear = b.gear WHERE a.ship = " + parent.ship +
                     " AND a.survey= " + parent.survey + " ORDER BY event_id ASC")
@@ -91,19 +93,21 @@ class EventSelDlg(QDialog, ui_EventSelDlg.Ui_eventselDlg):
 
         #  loop through the events
         rowCount = 0
-        for event_id, gear in eventQuery:
+        for perf_code, event_id, gear in eventQuery:
             #  add the event number
             self.eventTable.insertRow(rowCount)
             self.eventTable.setItem(rowCount, 0, QTableWidgetItem(event_id))
 
             if catchOnly:
                 #  check if the event is "closed" defined by having a HB time
-                sql = ("SELECT parameter_value FROM event_data WHERE event_parameter='Haulback'" +
-                        " AND event_id=" + event_id + " AND ship=" + parent.ship +
-                        " AND survey=" + parent.survey)
+                sql = ("SELECT parameter_value FROM event_data WHERE event_parameter IN ('Haulback', 'HB')" +
+                       " AND event_id=" + event_id + " AND ship=" + parent.ship +
+                       " AND survey=" + parent.survey)
                 query = self.db.dbQuery(sql)
                 hbTime, = query.first()
-
+                # AB added to show which are aborted tows
+                if int(perf_code) < 0 and int(perf_code) != -99:
+                    hbTime = 'Aborted Operation'
                 if hbTime:
                     #  event is closed - insert the gear in black text
                     self.eventTable.setItem(rowCount, 1, QTableWidgetItem(gear))
@@ -159,7 +163,7 @@ class EventSelDlg(QDialog, ui_EventSelDlg.Ui_eventselDlg):
         '''
         #  get the last event ID
         sql = ("SELECT MAX(event_id) FROM events WHERE survey ="+
-                self.survey + "and ship= " + self.ship)
+                self.survey + " and ship= " + self.ship)
         query = self.db.dbQuery(sql)
         lastEvent, = query.first()
         if lastEvent is None:
