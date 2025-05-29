@@ -36,6 +36,7 @@
 |       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
 """
 
+from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *
 from ui import ui_AbortDlg
 import keypad
@@ -125,13 +126,18 @@ class AbortDlg(QDialog, ui_AbortDlg.Ui_abortDlg):
                 fin_coms = comments + "; ABORT COMS: " + self.te_comment.toPlainText()
             else:
                 fin_coms = "ABORT COMS: " + self.te_comment.toPlainText()
-            # update
+            # update the event with the performance code and the comment
             update_sql = ("UPDATE " + self.schema + ".events SET performance_code = " + str(code) +
-                          " AND comments = '" + fin_coms + "' WHERE ship=" + self.ship +
+                          ", comments = '" + fin_coms + "' WHERE ship=" + self.ship +
                           " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
-
             self.db.dbQuery(update_sql)
 
+            # add a HB event to the event_data to close it out
+            cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
+            aborted_sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, event_id, partition, "
+                                                          "event_parameter, parameter_value) VALUES (" + self.ship
+                           + ", " + self.survey + ", " + self.activeEvent + ", 'MainTrawl', 'HB', '" + cur_time + "')")
+            self.db.dbQuery(aborted_sql)
             self.accept()
 
     def cancel(self):
