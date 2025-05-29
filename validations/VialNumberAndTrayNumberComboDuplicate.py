@@ -99,22 +99,19 @@ class VialNumberAndTrayNumberComboDuplicate(QObject):
         trayNumber = values[index]
 
         sql = ("SELECT s.specimen_id, dna_tray_number.measurement_value as dna_tray_number, dna_vial_number.measurement_value as dna_vial_number, dna_vial_number.survey as survey" +
-        "from (select unique specimen_id from measurements) s" +
-        "left outer join measurements dna_tray_number on s.specimen_id = dna_tray_number.specimen_id AND dna_tray_number.measurement_type = 'dna_tray_number'" +
-        "left outer join measurements dna_vial_number on s.specimen_id = dna_vial_number.specimen_id AND dna_vial_number.measurement_type = 'dna_vial_number'" +
-        "where dna_vial_number.survey =" + self.survey +
-        "and dna_tray_number.measurement_value = " + trayNumber +
-        "and dna_vial_number.measurement_value = " + currentValue)
-
-        print(sql)
+        " from (select unique specimen_id from measurements) s" +
+        " left outer join measurements dna_tray_number on s.specimen_id = dna_tray_number.specimen_id AND dna_tray_number.measurement_type = 'dna_tray_number'" +
+        " left outer join measurements dna_vial_number on s.specimen_id = dna_vial_number.specimen_id AND dna_vial_number.measurement_type = 'dna_vial_number'" +
+        " where dna_vial_number.survey =" + self.survey +
+        " and dna_tray_number.measurement_value = " + trayNumber +
+        " and dna_vial_number.measurement_value = " + currentValue)
 
         query = self.db.dbQuery(sql)
         val = query.first()
-        print(val)
-        if val is not None:
-            #  Vial number already exists
-            result = (False, "This tray number and vial number combo already exists in the database for " +
-                    "this survey.  Do you want to re-enter?")
+        if val[0] is not None:
+            #  Vial and Tray number combo already exists
+            result = ('invalid', "This tray number and vial number combo already exists in the database for " +
+                    "this survey.  Entering a duplicate of the combo is not allowed")
         else:
             # New vial number entered, success
             result = (True, '')

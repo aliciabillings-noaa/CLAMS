@@ -119,7 +119,7 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         if col == 1:
             # selected weight - show the numpad to get the new weight
 
-            self.numpad.msgLabel.setText("Enter the New Weight")
+            self.numpad.msgLabel.setText("Enter the New Weight (kg)")
             if not self.numpad.exec():
                 #  user hit cancel
                 return
