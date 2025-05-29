@@ -2,6 +2,7 @@
 "LengthRange","Specimen","Check whether length falls within a range."
 "WeightRange","Specimen","Check whether weight falls into a range."
 "LengthWeight","Specimen","See if a weight record is close to the LW regression value."
+"MMLengthWeight","Specimen","See if a weight record (in mm) is close to the LW regression value."
 "BarcodeDuplicate","Specimen","Check whether barcode scan already exists."
 "BarcodeNumeric","Specimen","Check whether Barcode is number (required since scans can sometimes return garbage characters)."
 "OvaryWeightRange","Specimen","See whether gonad weight is within a percentage range of organism weight."
