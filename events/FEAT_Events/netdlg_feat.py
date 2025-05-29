@@ -35,7 +35,6 @@
 |       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
 """
 
-from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *
 from ui import ui_NetDlg_FEAT
 import numpad
@@ -47,6 +46,8 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
     def __init__(self, parent=None):
         super(NetDlgFEAT, self).__init__(parent)
         self.setupUi(self)
+
+        # bring in variable from parent
         self.settings = parent.settings
         self.db = parent.db
         self.activeEvent = parent.activeEvent
@@ -57,20 +58,17 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
         self.cur_time = parent.cur_time
         self.net_btn = parent.net_btn
 
+        # set up the buttons and the type of popup to set/edit parameter
         self.buttons = {self.pb_nh: 'num',
                         self.pb_nw: 'num',
                         self.pb_hd: 'num',
                         self.pb_wo: 'num',
                         self.pb_com: 'key'}
+        # todo: this should be pulled from the database in the future? Will need to rejigger dialog
         self.measurements = ['NetVerticalOpening', 'NetHorizontalOpening', 'HeadRopeDepth',
                              'TrawlWireOut', 'EventComments']
-        self.timeDlg = parent.timeDlg
-        self.set_time = None
         self.edit_flag = False
-        self.doneEditing = False
-        
         self.numpad = numpad.NumPad(self)
-        self.defTime = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
 
         #  set up signals
         for btn in self.buttons:
@@ -78,27 +76,19 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
             btn.setText('')
         self.okBtn.clicked.connect(self.doneClicked)
         self.addRecordBtn.clicked.connect(self.add_record)
-        self.netTable.itemSelectionChanged.connect(self.edit_data)
-        
+
+        # if the trawl event data was reloaded, reload the net dialog as well
         if self.reloaded:
             self.reload_data()
-            sql = ("SELECT to_char(min(time_stamp), 'MMDDYYYY HH24:MI:SS.FF3') " +
-                    "FROM " + self.schema + ".event_stream_data WHERE ship=" + self.ship +
-                    " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
-            query = self.db.dbQuery(sql)
-            timeStamp, = query.first()
-            self.minTime = QDateTime().fromString(timeStamp, 'MMddyyyy hh:mm:ss.zzz')
-            sql = ("SELECT to_char(max(time_stamp), 'MMDDYYYY HH24:MI:SS.FF3') FROM " +
-                    self.schema + ".event_stream_data WHERE ship=" + self.ship + " AND survey=" +
-                    self.survey + " AND event_id=" + self.activeEvent)
-            query = self.db.dbQuery(sql)
-            timeStamp, = query.first()
-            self.maxTime = QDateTime().fromString(timeStamp, 'MMddyyyy hh:mm:ss.zzz')
 
-    def reload_data(self, btn=None, cur_time=None):
+    def reload_data(self, btn=None, cur_time=None, edit=False):
         """
-        populates the table with any existing data. This is used when
-        an event is reloaded and the dialog state has to be updated from the db.
+        populates the table with any existing data. This is used when an event is reloaded and the dialog
+        state has to be updated from the db, or when a net mensuration is added
+        :param btn: if passed, it is the name of the event that has been created or to be edited
+        :param cur_time: if passed, the time of when the event was created to be passed to event_stream_data
+        :param edit: if passed, it is to edit the data entered for the event
+        :return: None
         """
         # remove any newline characters from the btn text and set the self.net_btn variable
         if btn:
@@ -165,45 +155,29 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
                     self.netTable.setItem(row, i+1, QTableWidgetItem(val))
                 else:
                     self.netTable.setItem(row, i+1, QTableWidgetItem(''))
-
-            if timestamp == self.cur_time:
+            # if this is an edit operation, reset the button text and fill in the buttons with values
+            if edit:
+                self.edit_flag = True
+                self.addRecordBtn.setText("Update\nRecord")
                 # find the row that matches the button
                 for row in range(self.netTable.rowCount()):
                     item = self.netTable.item(row, 0).text()
                     if item == self.net_btn:
+                        col = 1
+                        # fill in buttons
+                        for btn in self.buttons:
+                            btn.setText(self.netTable.item(row, col).text())
+                            col += 1
                         self.netTable.selectRow(row)
-            else:
-                self.edit_flag = False
-                self.addRecordBtn.setText('Add\nRecord')
             row += 1
         self.netTable.resizeColumnsToContents()
         self.netTable.scrollToBottom()
 
-    def edit_data(self):
-        """
-        sets the text of the buttons depending on the row selected and sets the edit flag
-        :return:
-        """
-
-        if self.doneEditing:
-            self.doneEditing = False
-            return
-        # set the text of the buttons to the entered text and enable the button
-        for i in range(len(self.measurements)):
-            if self.netTable.item(self.netTable.currentRow(), i+1):
-                list(self.buttons)[i].setText(self.netTable.item(self.netTable.currentRow(), i+1).text())
-                list(self.buttons)[i].setEnabled(True)
-        self.edit_flag = True
-        self.addRecordBtn.setText('Update \nRecord')
-        # enable the update button
-        self.addRecordBtn.setEnabled(True)
-
     def get_value(self):
         """
-        set up either a numpad or a keypad for the button pressed
-        :return:
+        send up either a numpad or a keypad for the button pressed
+        :return: None
         """
-
         cur_btn = self.sender()
         cur_popup = self.buttons[cur_btn]
         if cur_popup == 'num':
@@ -222,10 +196,10 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
 
     def add_record(self):
         """
-        adds a total record to the database or updates if it is flagged for editing
-        :return:
+        adds or edits a record for each measure in the database
+        :return: None
         """
-        # update record
+        # update record if set
         if self.edit_flag:
             for i in range(len(self.measurements)):
                 cur_btn = list(self.buttons.keys())[i]
@@ -270,7 +244,6 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
 
             self.edit_flag = False
             self.addRecordBtn.setText('Add \nRecord')
-            self.doneEditing = True
             self.netTable.clearSelection()
         # new record
         else:
@@ -282,19 +255,21 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
                            "VALUES (" + self.ship + ", " + self.survey + ", " + self.activeEvent +
                            ", 0 , to_timestamp('" + self.cur_time + "', 'MMDDYYYY HH24:MI:SS.FF3'), '"
                            + self.measurements[i] + "', '" + btn.text() + "')")
-                    print(sql)
                     self.db.dbExec(sql)
                 i += 1
+        # reload the table
         self.reload_data()
+        # close the dialog
+        self.accept()
 
     def doneClicked(self):
         """
         resets the button text, clears the selection, and closes the dialog
-        :return:
+        :return: None
         """
         self.addRecordBtn.setText('Add\nRecord')
         self.netTable.clearSelection()
-        self.close()
+        self.accept()
 
     def closeEvent(self, event=None):
         self.accept()

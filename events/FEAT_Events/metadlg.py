@@ -209,6 +209,7 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
         """
         writes the initial records into the events table;
         todo: default for event type is used, but could be taken from db at some point
+        default for performance_code is 0
         :return:
         """
         #  write record to events table

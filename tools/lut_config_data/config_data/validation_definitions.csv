@@ -6,4 +6,5 @@
 "BarcodeNumeric","Specimen","Check whether Barcode is number (required since scans can sometimes return garbage characters)."
 "OvaryWeightRange","Specimen","See whether gonad weight is within a percentage range of organism weight."
 "VialNumberDuplicate","Specimen","Check if vial number has already been used"
+"VialNumberAndTrayNumberComboDuplicate","Specimen","Check if the combo of vial number and tray number has already been used"
 "FinclipVialNumberDuplicate","Specimen","Check if finclip number has already been used"

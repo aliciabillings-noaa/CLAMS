@@ -691,6 +691,11 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                                                 "You're in big trouble, " + self.firstName, 'info')
                     missing_validations.append(valName)
+            elif result[0] == 'invalid':
+                self.message.setMessage(self.errorIcons[1],self.errorSounds[1], result[1])
+                if self.message.exec():
+                    # redo the measurement
+                    return
 
         if missing_validations:
             if (self.specimenKey == None):
@@ -836,6 +841,12 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                                                 "You're in big trouble, " + self.firstName, 'info')
                     missing_validations.append(valName)
+            elif result[0] == 'invalid':
+                self.message.setMessage(self.errorIcons[1],self.errorSounds[1], result[1])
+                if self.message.exec():
+                    # redo the measurement
+                    return
+
 
         if missing_validations:
             if (self.specimenKey == None):
@@ -1611,8 +1622,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     #  user wants to print a label anyways
                     break
 
-
-        if 'nwfsc' in self.settings['OrganizationName'].lower():
+        if 'nwfsc' in self.settings['OrganizationName'].lower() or 'swfsc' in self.settings['OrganizationName'].lower():
             code = str(self.survey) + str(self.ship) + str(self.activeHaul).zfill(3) + str(self.specimenKey)
 
             lengthType = str(self.lengthTypeBox.currentText())
