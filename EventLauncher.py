@@ -59,6 +59,9 @@ class EventLauncher(QDialog, ui_EventLauncher.Ui_EventLauncher):
         self.survey = parent.survey
         self.parent = parent
 
+        self.settings = parent.settings
+        self.schema = parent.schema
+
         #  connect the cancel button signal
         self.pbCancel.clicked.connect(self.cancelClicked)
 
