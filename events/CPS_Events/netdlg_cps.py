@@ -82,6 +82,7 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
         """
         self.pb_door_spread.setText('')
         self.pb_fr.setText('')
+        self.values = {}
         # get the current time, if sent
         if cur_time:
             self.cur_time = cur_time
