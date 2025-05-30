@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS_WPy64-31260\CLAMS\ui\CPSTrawlEvent.ui'
+# Form implementation generated from reading ui file 'C:\Users\Melina.Shak\Documents\CLAMS_WPy64-31260_Deploy\CLAMS\ui\CPSTrawlEvent.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -222,6 +222,26 @@ class Ui_CPSTrawlEvent(object):
         self.pb_eq.setFont(font)
         self.pb_eq.setObjectName("pb_eq")
         self.verticalLayout_3.addWidget(self.pb_eq)
+        self.pb_eq10 = QtWidgets.QPushButton(parent=self.buttonsGroup)
+        self.pb_eq10.setMinimumSize(QtCore.QSize(170, 36))
+        font = QtGui.QFont()
+        font.setFamily("Arial Black")
+        font.setPointSize(12)
+        font.setBold(True)
+        font.setWeight(75)
+        self.pb_eq10.setFont(font)
+        self.pb_eq10.setObjectName("pb_eq10")
+        self.verticalLayout_3.addWidget(self.pb_eq10)
+        self.pb_eq20 = QtWidgets.QPushButton(parent=self.buttonsGroup)
+        self.pb_eq20.setMinimumSize(QtCore.QSize(170, 36))
+        font = QtGui.QFont()
+        font.setFamily("Arial Black")
+        font.setPointSize(12)
+        font.setBold(True)
+        font.setWeight(75)
+        self.pb_eq20.setFont(font)
+        self.pb_eq20.setObjectName("pb_eq20")
+        self.verticalLayout_3.addWidget(self.pb_eq20)
         self.pb_hb = QtWidgets.QPushButton(parent=self.buttonsGroup)
         self.pb_hb.setMinimumSize(QtCore.QSize(170, 37))
         self.pb_hb.setMaximumSize(QtCore.QSize(170, 36))
@@ -389,6 +409,8 @@ class Ui_CPSTrawlEvent(object):
         self.label_2.setText(_translate("CPSTrawlEvent", "EVENTS"))
         self.pb_niw.setText(_translate("CPSTrawlEvent", "Net In Water"))
         self.pb_eq.setText(_translate("CPSTrawlEvent", "Equilibrium"))
+        self.pb_eq10.setText(_translate("CPSTrawlEvent", "EQ 10"))
+        self.pb_eq20.setText(_translate("CPSTrawlEvent", "EQ 20"))
         self.pb_hb.setText(_translate("CPSTrawlEvent", "Haul Back"))
         self.pb_nod.setText(_translate("CPSTrawlEvent", "Net On Deck"))
         item = self.dataTable.verticalHeaderItem(0)
