@@ -82,6 +82,7 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
         """
         self.pb_door_spread.setText('')
         self.pb_fr.setText('')
+        self.values = {}
         # get the current time, if sent
         if cur_time:
             self.cur_time = cur_time
@@ -95,9 +96,9 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
             query = self.db.dbQuery(sql)
             for val in query:
                 if val[0] == 'DoorSpread':
-                    self.pb_door_spread.setText(val[1])
+                    self.pb_door_spread.setText(val[1] if val[1] else None)
                 else:
-                    self.pb_fr.setText(val[1])
+                    self.pb_fr.setText(val[1] if val[1] else None)
 
     def edit_data(self):
         """

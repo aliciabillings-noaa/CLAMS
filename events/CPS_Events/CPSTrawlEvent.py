@@ -64,8 +64,8 @@ class Events(Enum):
     EQ = 'Equilibrium'
     Haulback = 'Haul Back'
     NetOnDeck = 'Net On Deck'
-    EQ10Min = 'EQ10Min'
-    EQ20Min = 'EQ20Min'
+    EQ10Min = 'EQ 10'
+    EQ20Min = 'EQ 20'
 
 # noinspection PyArgumentList,PyCallByClass,PyTypeChecker
 class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
@@ -143,7 +143,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.statusLayout.addWidget(self.statusBar)
 
         # declare buttons
-        self.buttons = [self.pb_niw, self.pb_eq, self.pb_hb, self.pb_nod]
+        self.buttons = [self.pb_niw, self.pb_eq, self.pb_eq10, self.pb_eq20, self.pb_hb, self.pb_nod]
         self.button_order = []
 
         self.streamWindowSeconds = 5
@@ -163,11 +163,8 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         # set up the timers
         self.event_timer = QTimer(self)
-        # timer that goes off every 10 minutes after eq
-        self.td_timer_interval = QTimer(self)
         # timer that runs continuously after eq
         self.td_timer = QTimer(self)
-        self.eqTimerCount = 0
 
         # set slots
         self.pb_metadata.clicked.connect(self.enter_metadata)
@@ -489,7 +486,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.display_time(Events.EQ.name, True)
         elif Events.EQ.name in self.button_order:
             self.tow_time = self.tow_time.addSecs(td_elapsed)
-            self.td_timer_interval.start(1000)
             self.td_timer.timeout.connect(lambda: self.display_time('td'))
             self.td_timer.start(1000)
 
@@ -673,32 +669,27 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 return
 
         self.buttons[ind].setPalette(self.green)
-        # skip two rows if haul back or net on deck
-        tableIdx = ind + 2 if ind > 1 else ind
-        self.dataTable.setItem(tableIdx, 0, QTableWidgetItem(paramName))
-        self.dataTable.setItem(tableIdx, 1, QTableWidgetItem(self.cur_time))
+        self.dataTable.setItem(ind, 0, QTableWidgetItem(paramName))
+        self.dataTable.setItem(ind, 1, QTableWidgetItem(self.cur_time))
         if self.dispVector:
-            self.dataTable.setItem(tableIdx, 2, QTableWidgetItem(self.dispVector[0]))
-            self.dataTable.setItem(tableIdx, 3, QTableWidgetItem(self.dispVector[1]))
-            self.dataTable.setItem(tableIdx, 4, QTableWidgetItem(self.dispVector[2]))
+            self.dataTable.setItem(ind, 2, QTableWidgetItem(self.dispVector[0]))
+            self.dataTable.setItem(ind, 3, QTableWidgetItem(self.dispVector[1]))
+            self.dataTable.setItem(ind, 4, QTableWidgetItem(self.dispVector[2]))
         self.dataTable.resizeColumnsToContents()
 
         # deal with the timers and buttons
-        if Events.EQ.name in paramName:
-            # set the timer
-            self.td_timer_interval.start(1000)
-
+        if Events.EQ.name == paramName:
             self.td_timer.timeout.connect(lambda: self.display_time('td'))
             self.td_timer.start(1000)
             # if TD is pressed, send up net dimensions
             self.net_btn = Events.EQ.name
             self.get_net_dims()
-            # Every 10 minutes, show net mensuration dialog
-            self.td_timer_interval.setInterval(600000)
-            self.td_timer_interval.timeout.connect(lambda: self.timerSet())
+            self.disable_enable_buttons('enable', self.pb_hb)
+        elif paramName in (Events.EQ10Min.name, Events.EQ20Min.name):
+            self.net_btn = paramName
+            self.get_net_dims()
         elif Events.Haulback.name in paramName:
             # stop the timer
-            self.td_timer_interval.stop()
             self.td_timer.stop()
             # if HB is pressed, send up net dimensions
             self.net_btn = Events.Haulback.name
@@ -707,7 +698,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             # if NIW is pressed, start recording and enable the abort button
             self.recording = True
             self.disable_enable_buttons('enable', self.pb_abort)
-            # self.disable_enable_buttons('enable', self.netDimBtn)
             # set the timer
             self.event_timer.timeout.connect(lambda: self.display_time('overall'))
             self.event_timer.start(1000)
@@ -718,7 +708,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.event_timer.stop()
 
         # set next button enabled as long as current button is not Net on Deck
-        if paramName not in (Events.EQ.name, Events.NetOnDeck.name):
+        if paramName != Events.NetOnDeck.name:
             self.disable_enable_buttons('enable', self.buttons[ind + 1])
 
         # move current row ahead one
@@ -820,53 +810,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             # if not cancelled, operation is complete
             if result == QDialog.DialogCode.Accepted:
                 self.accept()
-
-    def timerSet(self):
-        """
-        Called 10 and 20 minutes after EQ. Sets EQ10Min and EQ20Min rows
-        """
-        # After 30 mins, automatically presses haul back and exit
-        if self.eqTimerCount > 1:
-            self.pb_hb.click()
-            self.eqTimerCount = 0
-            return
-        
-        self.cur_time = QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss.zzz')
-
-        param = 'EQ10Min' if self.eqTimerCount == 0 else 'EQ20Min'
-
-        sql = ("SELECT PARAMETER_VALUE FROM " + self.schema + ".EVENT_DATA WHERE SHIP=" + self.ship +
-            " AND SURVEY=" + self.survey +
-            " AND EVENT_ID=" + str(self.activeEvent) + 
-            " AND EVENT_PARAMETER='" + param + "'")
-        query = self.db.dbQuery(sql)
-        val, = query.first()
-        if val == None:
-            val = self.cur_time
-            sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, " +
-                            "event_id, partition, event_parameter, parameter_value) " +
-                            "VALUES (" + self.ship + "," + self.survey + "," + str(self.activeEvent) + 
-                            ", 'MainTrawl', '" + param + "', '" + self.cur_time + "')")
-            self.db.dbExec(sql)
-        else:
-            sql = ("UPDATE " + self.schema + ".event_data SET parameter_value ='" + self.cur_time + "' WHERE ship=" + self.ship +
-                        " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) + 
-                        " AND EVENT_PARAMETER='" + param + "'")
-            self.db.dbExec(sql)
-
-        # Populate table rows 2 & 3 with EQ10Min and EQ20Min events
-        index = self.eqTimerCount + 2
-        self.dataTable.setItem(index, 0, QTableWidgetItem(param))
-        self.dataTable.setItem(index, 1, QTableWidgetItem(self.cur_time))
-
-        self.netdlg.reload_data(val)
-        
-        self.netdlg.exec()
-        if self.eqTimerCount == 1:
-            self.disable_enable_buttons('enable', self.pb_hb)
-        self.eqTimerCount = self.eqTimerCount + 1
-
-    
+   
     def get_net_dims(self):
         """
         called when the user hits EQ, HB. This presents
