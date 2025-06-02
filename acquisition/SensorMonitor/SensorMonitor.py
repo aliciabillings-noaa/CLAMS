@@ -476,6 +476,9 @@ class SensorMonitor(QObject):
         #  get a reference to the thread that is shutting down
         thread = QObject.sender(self)
 
+        #  initialize a variable that will contain this thread's device name
+        thisDevice = None
+
         #  look for this thread in our device dict. If we find it, we
         #  dereference the python references to our thread and sensor
         #  object. At this point we know they have been destroyed on
@@ -486,10 +489,12 @@ class SensorMonitor(QObject):
                 self.devices[device]['thread'] = None
                 self.devices[device]['object'] = None
                 self.nThreads -= 1
+                thisDevice = device
 
-                #  check if we're removing this device
-                if self.devices[device]['remove']:
-                    del self.devices[device]
+        #  check if we're removing this device
+        if thisDevice:
+            if self.devices[thisDevice]['remove']:
+                del self.devices[thisDevice]
 
         if self.nThreads == 0:
             self.SensorsStopped.emit()

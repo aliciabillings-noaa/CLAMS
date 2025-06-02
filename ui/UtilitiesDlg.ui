@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>359</height>
+    <height>330</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,7 +33,25 @@
     </widget>
    </item>
    <item>
+    <widget class="QPushButton" name="IchthystickBtn">
+     <property name="font">
+      <font>
+       <family>Arial Black</family>
+       <pointsize>20</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Icthystick Setup</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QPushButton" name="setupBtn">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="font">
       <font>
        <family>Arial Black</family>
@@ -44,21 +62,6 @@
      </property>
      <property name="text">
       <string>Setup Serial Devices</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="loadStreamBtn">
-     <property name="font">
-      <font>
-       <family>Arial Black</family>
-       <pointsize>20</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>load stream data</string>
      </property>
     </widget>
    </item>

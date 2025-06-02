@@ -1,4 +1,10 @@
+#!/usr/bin/env python
 
+#  add the UI files to the python path
+#import sys
+#import os
+#pyPath = reduce(lambda l,r: l + os.path.sep + r, os.path.dirname(os.path.realpath(__file__)).split(os.path.sep))
+#sys.path.append(os.path.join(pyPath, 'ui'))
 
 #  import dependent modules
 from PyQt6.QtCore import *
@@ -11,7 +17,8 @@ from .ui import ui_SelectWinPortDialog
 
 class selectWinPortDialog(QDialog, ui_SelectWinPortDialog.Ui_SelectWinPortDialog):
 
-    def __init__(self, defaultPort=None, defaultBaud=None, showAll=False, title=None, parent=None):
+    def __init__(self, defaultPort=None, defaultBaud=None, showAll=False,
+            title=None, enableBaud=True, checkStatus=True, parent=None):
         #  initialize the GUI
         super(selectWinPortDialog, self).__init__(parent)
         self.setupUi(self)
@@ -24,22 +31,27 @@ class selectWinPortDialog(QDialog, ui_SelectWinPortDialog.Ui_SelectWinPortDialog
         if (title):
             self.titleLabel.setText(title)
 
+        if not enableBaud:
+            self.cbBaud.setEnabled(False)
+
         #  get the list of COM ports
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         for port, desc, hwid in sorted(serial_scanwin.comports(not showAll)):
-             # test open to determine port status
-            try:
-                serial.Serial(port)
-            except serial.serialutil.SerialException:
-                status = "In use"
-            else:
+            # test open to determine port status
+            if checkStatus:
                 status = "Ready"
+                try:
+                    serial.Serial(port)
+                except serial.serialutil.SerialException:
+                    status = "In use"
+            else:
+                status = "Unknown"
             self.allPorts[port] = (port, desc, hwid, status)
 
         #  add ports to the combo box and update details
         if (len(self.allPorts) > 0):
             self.cbPorts.addItems(self.allPorts.keys())
-            if (defaultPort):
+            if defaultPort:
                 idx = self.cbPorts.findText(defaultPort)
                 if (idx >= 0):
                     self.cbPorts.setCurrentIndex(idx)

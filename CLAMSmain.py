@@ -49,7 +49,7 @@ import numpad
 import CLAMSprocess
 import admindlg
 import connectdlg
-#import utilitiesdlg
+import utilitiesdlg
 import processdlg
 import EventLauncher
 import dbConnection
@@ -553,9 +553,9 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         '''
             Display the utilities dialog.
         '''
-        #dialog = utilitiesdlg.UtilitiesDlg(self)
-        #dialog.exec()
-        pass
+        dialog = utilitiesdlg.UtilitiesDlg(self)
+        dialog.exec()
+        #pass
 
 
     def administration(self):

@@ -181,7 +181,10 @@ class UDPDevice(QObject):
 
         #  disconnect readyRead and close the rx socket
         if self.udp_socket:
-            self.udp_socket.readyRead.disconnect()
+            try:
+                self.udp_socket.readyRead.disconnect()
+            except:
+                pass
             if self.udp_socket.state().value > 0:
                 #  close the receive socket
                 self.udp_socket.close()
