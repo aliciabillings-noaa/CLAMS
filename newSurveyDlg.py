@@ -119,7 +119,8 @@ class newSurveyDlg(QDialog, ui_NewSurveyDlg.Ui_newSurveyDlg):
         sql = ("SELECT survey FROM surveys WHERE ship=" + ship+ " AND survey=" +
                 surveyNumber)
         query = self.db.dbQuery(sql)
-        if query.first():
+        survey, = query.first()
+        if survey:
             QMessageBox.critical(self, 'Error', "Error creating survey. " +
                     "Survey already exists in the database.")
             return
