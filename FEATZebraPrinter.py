@@ -54,7 +54,7 @@ class PrintLabel:
         # TOP LINE; NWFSC/FEAT Sample Haul: # SN: #
         z_doc.add_zpl_raw("^XA")
         z_doc.add_zpl_raw("^FO15,55")
-        z_doc.add_zpl_raw("^A0N,110,40^FDNWFSC/FEAT Sample\tHaul: " + str(event))
+        z_doc.add_zpl_raw("^A0N,110,40^FDIWCPS Sample\tHaul: " + str(event))
         if spec_num:
             z_doc.add_zpl_raw("\t\tSN: " + str(spec_num) + "^FS")
         else:
