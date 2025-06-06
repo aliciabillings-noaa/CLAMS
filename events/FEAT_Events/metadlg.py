@@ -60,6 +60,7 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
         self.gear = parent.gear
         self.scientist = parent.scientist
         self.event_entered = parent.event_entered
+        self.msg_shown = parent.msg_shown
 
         self.message = messagedlg.MessageDlg(self)
 
@@ -69,7 +70,7 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
         self.pbs = {'Transect': [self.pb_transect, 'ed', 'np'],
                     'TargetDepth': [self.pb_td, 'ed', 'np'],
                     'TDLatitude': [self.pb_tdlat, 'ed', 'kp'],
-                    'TDLongitude': [self.pb_tdlon, 'ed', 'np'],
+                    'TDLongitude': [self.pb_tdlon, 'ed', 'kp'],
                     'WindSpd': [self.pb_wind_spd, 'ed', 'np'],
                     'WindDir': [self.pb_wind_dir, 'ed', 'np'],
                     'SwellHeight': [self.pb_swell_h, 'ed', 'np'],
@@ -77,6 +78,7 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
         self.cbs = {'TrawlScientist': [self.cb_sci, 'ed'],
                     'Gear': [self.cb_gear, 'ed'],
                     'TomWeights': [self.cb_toms, 'ga'],
+                    'NetNumber': [self.cb_netnums, 'ga'],
                     'HeadropeSBE': [self.cb_head_sbe, 'ga'],
                     'FootropeSBE': [self.cb_foot_sbe, 'ga'],
                     'CameraSBE': [self.cb_cam_sbe, 'ga'],
@@ -100,6 +102,13 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
             btn[0].clicked.connect(self.enter_data)
         self.pb_save.clicked.connect(self.save)
         self.pb_cancel.clicked.connect(self.cancel)
+
+        # send up a reminder message
+        if not self.msg_shown:
+            self.message.setMessage(self.errorIcons[0], self.errorSounds[0],
+                                    "Don't forget to turn off the EAL and reset recording depth!", 'warning')
+            self.message.show()
+            self.msg_shown = True
 
     def reload_data(self):
         """
@@ -130,7 +139,7 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
         :return:
         """
         # list of scientists for the fisher
-        sci_sql = "SELECT scientist FROM personnel WHERE active=1"
+        sci_sql = "SELECT scientist FROM personnel WHERE active=1 AND uuid='F'"
         sci_query = self.db.dbQuery(sci_sql)
         for sci, in sci_query:
             self.cb_sci.addItem(sci)
@@ -150,6 +159,14 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
         for tom, in tom_query:
             self.cb_toms.addItem(tom)
             self.cb_toms.setCurrentIndex(-1)
+
+        # list of net numbers
+        net_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
+                   "WHERE gear_accessory='Net_nums' AND active = 1")
+        net_query = self.db.dbQuery(net_sql)
+        for net, in net_query:
+            self.cb_netnums.addItem(net)
+            self.cb_netnums.setCurrentIndex(-1)
 
         # SBE lists
         sbe_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
@@ -249,6 +266,22 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
                 # dialog was closed - fix if there is a better way
                 return 'stub'
         else:
+            # see if the checkbox is clicked or not
+            exists = self.check_if_exists('Uphill', 'ed')
+            if exists == 0:
+                if self.ckb_uphill.isChecked():
+                    up_sql = ("INSERT INTO " + self.schema +
+                              ".event_data (ship, survey, event_id, partition, event_parameter, parameter_value) "
+                              "VALUES (" + self.ship + ", " + self.survey + ", " + str(self.activeEvent) +
+                              ", 'MainTrawl', 'Uphill', 'Y')")
+                    self.db.dbQuery(up_sql)
+            else:
+                if not self.ckb_uphill.isChecked():
+                    del_sql = ("DELETE FROM " + self.schema + ".event_data WHERE ship=" + self.ship +
+                               " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) +
+                               " AND partition='MainTrawl' AND event_parameter='Uphill'")
+                    self.db.dbQuery(del_sql)
+
             # iterate over all buttons and dropdowns
             for param, pb_lst in self.pbs.items():
                 pb, table, np = pb_lst

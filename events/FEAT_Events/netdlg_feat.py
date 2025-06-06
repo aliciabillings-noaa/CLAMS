@@ -103,7 +103,7 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
             self.pb_com.setText('')
 
             # if the button is the net dimensions button, do not allow to add a new record since we associate any
-            # net dimension entries with an event (TD, HB, COM, etc)
+            # net dimension entries with an event (TD, HB, COM)
             if 'net' in self.net_btn.lower():
                 self.pb_nh.setEnabled(False)
                 self.pb_nw.setEnabled(False)
@@ -268,6 +268,7 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
         :return: None
         """
         self.addRecordBtn.setText('Add\nRecord')
+        self.edit_flag = False
         self.netTable.clearSelection()
         self.accept()
 

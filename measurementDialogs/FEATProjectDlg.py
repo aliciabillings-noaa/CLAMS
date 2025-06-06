@@ -105,20 +105,28 @@ class FEATProjectDlg(QDialog):
 
         # add buttons for the projects if the active species is not the Mix parent
         if self.activeSpcCode not in ['100000', '100001', '100002', '100003', '100004', '100005']:
-            sp_protos = self.protos[self.activeSpcCode]
-            # get the label and check if there is a specimen_collection for each protocol
-            for proto in sp_protos:
-                proto_sql = ("SELECT label FROM "
-                             + self.schema + ".protocol_definitions WHERE protocol_name='" + proto +
-                             "' AND measurement_type='specimen_collection'")
-                proto_query = self.db.dbQuery(proto_sql)
-                label, = proto_query.first()
-                if label:
-                    btn = QPushButton()
-                    btn.setStyleSheet("color: rgb(0, 0, 127); font: 30pt 'Calibri';")
-                    btn.setText(label)
-                    btn.clicked.connect(self.set_project)
-                    self.overall_layout.addWidget(btn)
+            if self.protos:
+                sp_protos = self.protos[self.activeSpcCode]
+                # get the label and check if there is a specimen_collection for each protocol
+                for proto in sp_protos:
+                    proto_sql = ("SELECT label FROM "
+                                 + self.schema + ".protocol_definitions WHERE protocol_name='" + proto +
+                                 "' AND measurement_type='specimen_collection'")
+                    proto_query = self.db.dbQuery(proto_sql)
+                    label, = proto_query.first()
+                    if label:
+                        btn = QPushButton()
+                        btn.setStyleSheet("color: rgb(0, 0, 127); font: 30pt 'Calibri';")
+                        btn.setText(label)
+                        btn.clicked.connect(self.set_project)
+                        self.overall_layout.addWidget(btn)
+            else:
+                instruction_label.setText("No projects for this species")
+                btn = QPushButton()
+                btn.setStyleSheet("color: rgb(0, 0, 127); font: 30pt 'Calibri';")
+                btn.setText("OK")
+                btn.clicked.connect(self.reject)
+                self.overall_layout.addWidget(btn)
         else:
             instruction_label.setText("No projects for this species")
             btn = QPushButton()

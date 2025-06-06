@@ -64,27 +64,28 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
 
         self.message = messagedlg.MessageDlg(self)
 
-        # set up performance box
+        # get the performance code and overall comments already entered to display
+        com_sql = ("SELECT comments, performance_code FROM " + self.schema + ".events WHERE ship=" +
+                   self.ship + " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
+        com_query = self.db.dbQuery(com_sql)
+        self.cur_coms, perf_code = com_query.first()
+        self.te_comment.setText(self.cur_coms)
+
         # fill the performance dialog
         self.cb_perf.clear()
         perf_sql = ("SELECT event_performance.performance_code, event_performance.description "
-                    "FROM " + self.schema + ".event_performance ORDER BY event_performance.performance_code DESC")
+                    "FROM " + self.schema + ".event_performance WHERE event_performance.performance_code >= 0 "
+                    "ORDER BY event_performance.performance_code DESC")
         perf_query = self.db.dbQuery(perf_sql)
         i = 0
         for perfCode, desc in perf_query:
             perf_txt = str(perfCode) + " - " + desc
             self.cb_perf.addItem(perf_txt)
-            if str(perfCode) == '0':
+            if str(perfCode) == str(perf_code):
                 self.cb_perf.setCurrentIndex(i)
-            self.cb_perf.setCurrentIndex(-1)
+            else:
+                self.cb_perf.setCurrentIndex(-1)
             i += 1
-
-        # get the overall comments already entered to display
-        com_sql = ("SELECT comments FROM " + self.schema + ".events WHERE ship=" +
-                   self.ship + " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
-        com_query = self.db.dbQuery(com_sql)
-        self.cur_coms, = com_query.first()
-        self.te_comment.setText(self.cur_coms)
 
         # set signals and slots
         self.te_comment.selectionChanged.connect(self.display_keypad)
@@ -102,18 +103,28 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
         if keyDialog.okFlag:
             text = keyDialog.dispEdit.toPlainText()
             self.te_comment.setText(text)
+            self.cur_coms = text
 
     def save(self):
         """
 
         :return: none
         """
-        # check if the performance has been recorded and that a comment has been entered
+        # check if the performance has been recorded and if a comment has been entered
         if self.cb_perf.currentText() == '':
             self.message.setMessage(self.errorIcons[0], self.errorSounds[0],
                                     "You must enter the gear performance for this operation", "error")
             self.message.show()
         else:
+            if not self.cur_coms:
+                self.cur_coms = ''
+            # get checkbox
+            if self.checkBox.isChecked():
+                man_sql = ("INSERT INTO " + self.schema +
+                           ".event_data (ship, survey, event_id, partition, event_parameter, parameter_value) VALUES "
+                           "(" + self.ship + ", " + self.survey + ", " + self.activeEvent +
+                           ", 'MainTrawl', 'ManualBottom', 'Yes')")
+                self.db.dbQuery(man_sql)
             # get the performance code from the cb text
             code, desc = self.cb_perf.currentText().split(" - ")
             update_sql = ("UPDATE " + self.schema + ".events SET performance_code = " + str(code) +
