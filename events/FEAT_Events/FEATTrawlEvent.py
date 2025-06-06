@@ -1101,8 +1101,9 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                                       "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
                                       + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '" + dev_avg + "')")
                         self.db.dbQuery(insert_sql)
-                    else:
-                        msg = "Missing TD or HB"
+                else:
+                    msg = "Missing TD or HB for this tow, no averages can be calculated"
+                    self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg, 'warning')
 
 
 class DuplicateDlg(QDialog, ui_DuplicateDlg.Ui_YesNoDlg):

@@ -119,7 +119,7 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
             if not self.cur_coms:
                 self.cur_coms = ''
             # get checkbox
-            if self.checkBox.isChecked():
+            if self.ckb_man.isChecked():
                 man_sql = ("INSERT INTO " + self.schema +
                            ".event_data (ship, survey, event_id, partition, event_parameter, parameter_value) VALUES "
                            "(" + self.ship + ", " + self.survey + ", " + self.activeEvent +
