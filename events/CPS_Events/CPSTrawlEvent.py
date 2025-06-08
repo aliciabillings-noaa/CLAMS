@@ -815,6 +815,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
             # if not cancelled, operation is complete
             if result == QDialog.DialogCode.Accepted:
+                self.run_scs_avgs()
                 self.accept()
    
     def get_net_dims(self):
@@ -960,14 +961,15 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         # get the time of the TD and HB
         td_time = hb_time = None
         time_sql = ("SELECT event_parameter, parameter_value FROM " + self.schema
-                    + ".event_data WHERE event_parameter IN ('EQ', 'Haulback')")
+                    + ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey + " AND event_id="
+                    + self.activeEvent + " AND event_parameter IN ('EQ', 'Haulback')")
+
         time_query = self.db.dbQuery(time_sql)
         for param, val in time_query:
-            if param.lower() == 'td':
+            if param.lower() == 'eq':
                 td_time = val
-            elif param.lower() == 'hb':
+            elif param.lower() == 'haulback':
                 hb_time = val
-
         for dev_id, dev_name in self.current_scs.items():
             # do not take averages of locations (latitude, longitude)
             if dev_name.lower() not in ['latitude', 'longitude']:
@@ -995,6 +997,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                                       + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '" + dev_avg + "')")
                         self.db.dbQuery(insert_sql)
                 else:
-                    msg = "Missing TD or HB for this tow, no averages can be calculated"
+                    msg = "Missing EQ or HB for this tow, no averages can be calculated"
                     self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg, 'warning')
 

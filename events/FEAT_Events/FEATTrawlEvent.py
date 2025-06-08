@@ -1067,7 +1067,8 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         # get the time of the TD and HB
         td_time = hb_time = None
         time_sql = ("SELECT event_parameter, parameter_value FROM " + self.schema
-                    + ".event_data WHERE event_parameter IN ('TD', 'HB')")
+                    + ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey + " AND event_id="
+                    + self.activeEvent + " AND event_parameter IN ('TD', 'HB')")
         time_query = self.db.dbQuery(time_sql)
         for param, val in time_query:
             if param.lower() == 'td':
