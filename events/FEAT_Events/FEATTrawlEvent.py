@@ -110,6 +110,8 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         self.event_entered = False
         self.edit_flag = False
         self.prev_ts = None
+        self.current_scs = {}
+        self.msg_shown = False
 
         # set up the time to display for the timer
         self.niw_time = QTime(0, 0, 0)
@@ -146,7 +148,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         self.red = QPalette()
         self.red.setColor(QPalette.ColorRole.ButtonText, QColor(230, 0, 0))
         self.green = QPalette()
-        self.green.setColor(QPalette.ColorRole.ButtonText, QColor(0, 230, 0))
+        self.green.setColor(QPalette.ColorRole.ButtonText, QColor(0, 100, 0))
         self.yellow = QPalette()
         self.yellow.setColor(QPalette.ColorRole.ButtonText, QColor(180, 180, 0))
 
@@ -197,7 +199,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         #  the event. We write faster between TD and HB, and slower before TD
         #  and after HB.
         sql = ("SELECT parameter_value FROM " + self.schema + ".application_configuration " +
-                "WHERE parameter='EventStreamEQHBLogInt'")
+               "WHERE parameter='EventStreamEQHBLogInt'")
         query = self.db.dbQuery(sql)
         val, = query.first()
         if val:
@@ -207,7 +209,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                 pass
 
         sql = ("SELECT parameter_value FROM " + self.schema + ".application_configuration " +
-                "WHERE parameter='EventStreamPreEQLogInt'")
+               "WHERE parameter='EventStreamPreEQLogInt'")
         query = self.db.dbQuery(sql)
         val, = query.first()
         if val:
@@ -268,6 +270,12 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                 self.sensorMonitor.addDevice(deviceName, deviceParams['port'], deviceParams['baud'],
                                              deviceParams['parseType'], deviceParams['parseExp'],
                                              deviceParams['parseIndex'], deviceParams['commandPrompt'])
+
+            # get scs stream 'devices'
+            if 'trawlevent' in self.deviceData[deviceName]['measurements']:
+                dev_id = self.deviceData[deviceName]['id']
+                dev_name = self.deviceData[deviceName]['measurements']['trawlevent'][0]
+                self.current_scs[dev_id] = dev_name
 
             #  set the initial "last write" time for this device
             self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
@@ -408,7 +416,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
 
         # populate comments and get the performance
         sql = ("SELECT performance_code, comments FROM " + self.schema + ".events WHERE ship=" + self.ship +
-                " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
+               " AND survey=" + self.survey + " AND event_id=" + self.activeEvent)
         query = self.db.dbQuery(sql)
         perf_code, self.comment = query.first()
         if int(perf_code) < 0:
@@ -508,11 +516,10 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         self.dataTable.resizeColumnsToContents()
 
         if 'NOD' in self.button_order:
-            print('here')
             self.recording = False
             self.doneBtn.setEnabled(True)
         else:
-            #self.recording = True
+            self.recording = True
             pass
         # enable the comment box
         self.commentBtn.setEnabled(True)
@@ -559,13 +566,13 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                     " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
         gear_query = self.db.dbQuery(gear_sql)
         gear, = gear_query.first()
-        if gear != self.gear:
+        if gear:
             tot_exists += 1
         fish_sql = ("SELECT scientist FROM " + self.schema + ".events WHERE ship=" + self.ship +
                     " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent))
         fish_query = self.db.dbQuery(fish_sql)
         sci, = fish_query.first()
-        if sci != self.scientist:
+        if sci:
             tot_exists += 1
         # check for transect
         trans_sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship=" + self.ship +
@@ -602,13 +609,13 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         #  query the data from haul_stream data table within our window
         inClause = "'" + "','".join(parameters) + "'"
         sql = ("SELECT time_stamp, measurement_type, measurement_value FROM " + self.schema +
-                ".event_stream_data WHERE time_stamp between to_timestamp('" +
-                time.addSecs(-self.streamWindowSeconds).toString('MMddyyyy hh:mm:ss.zzz') +
-                "','MMDDYYYY HH24:MI:SS.FF3') and to_timestamp('" +
-                time.addSecs(self.streamWindowSeconds).toString('MMddyyyy hh:mm:ss.zzz') +
-                "','MMDDYYYY HH24:MI:SS.FF3') AND measurement_type IN (" + inClause + ")")
+               ".event_stream_data WHERE time_stamp between to_timestamp('" +
+               time.addSecs(-self.streamWindowSeconds).toString('MMddyyyy hh:mm:ss.zzz') +
+               "','MMDDYYYY HH24:MI:SS.FF3') and to_timestamp('" +
+               time.addSecs(self.streamWindowSeconds).toString('MMddyyyy hh:mm:ss.zzz') +
+               "','MMDDYYYY HH24:MI:SS.FF3') AND measurement_type IN (" + inClause + ")")
         query = self.db.dbQuery(sql)
-        #  loop thru the returned values
+        #  loop through the returned values
         for timestamp, meas, value in query:
             try:
                 #  get the index into our return array
@@ -656,9 +663,11 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         :return:
         """
         if not self.recording:
-            #self.recording = True
+            self.recording = True
             pass
         ind = self.buttons.index(self.sender())
+
+        self.idxs.append(ind)
 
         # get the text of the button
         self.cur_btn_txt = self.sender().text()
@@ -674,8 +683,8 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                           + " AND partition='MainTrawl' AND event_parameter='" + self.cur_btn_txt + "'")
                 ts_query = self.db.dbQuery(ts_sql)
                 self.prev_ts, = ts_query.first()
-                #if self.cur_btn_txt in ['TD', 'HB']:
-                #    self.net_btn = self.cur_btn_txt
+                if self.cur_btn_txt in ['TD', 'HB']:
+                    self.net_btn = self.cur_btn_txt
             else:
                 return
         else:
@@ -719,7 +728,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
             net_sql = ("UPDATE " + self.schema + ".event_stream_data SET time_stamp='" + self.cur_time
                        + "' WHERE ship=" + self.ship + " AND survey=" + self.survey + " AND event_id="
                        + self.activeEvent + " AND time_stamp='" + self.prev_ts + "'")
-            net_query = self.db.dbQuery(net_sql)
+            self.db.dbQuery(net_sql)
 
             # update event_data timestamp
             update_sql = ("UPDATE " + self.schema + ".event_data SET parameter_value = '"
@@ -766,7 +775,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
             self.get_net_dims()
         elif 'NIW' in self.cur_btn_txt:
             # if NIW is pressed, start recording and enable the abort button
-            #self.recording = True
+            self.recording = True
             self.pb_abort.setEnabled(True)
             # set/reset the timer
             if self.edit_flag:
@@ -841,10 +850,10 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
             if elapsedSecs >= self.SCSLogInterval:
                 #  insert into the database
                 sql = ("INSERT INTO " + self.schema + ".event_stream_data (ship, survey, " +
-                        "event_id, device_id, time_stamp, measurement_type, measurement_value) " +
-                        "VALUES (" + self.ship + "," + self.survey + "," + str(self.activeEvent) + "," +
-                        self.deviceData[device_name]['id'] + ",'" + time + "','" + measurement +
-                        "','" + data + "')")
+                       "event_id, device_id, time_stamp, measurement_type, measurement_value) " +
+                       "VALUES (" + self.ship + "," + self.survey + "," + str(self.activeEvent) + "," +
+                       self.deviceData[device_name]['id'] + ",'" + time + "','" + measurement +
+                       "','" + data + "')")
                 self.db.dbExec(sql)
                 wroteToDb = True
 
@@ -877,6 +886,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         popup for entering the performance of the operation and allowing to check/enter comments
         :return:
         """
+        # event will not finish unless NOD is pressed
         if 'NOD' in self.button_order:
             # stop recording
             self.recording = False
@@ -887,6 +897,8 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
 
             # if not cancelled, operation is complete
             if result == QDialog.DialogCode.Accepted:
+                # get the scs averages and put into event_data
+                self.run_scs_avgs()
                 self.accept()
 
     def get_net_dims(self):
@@ -925,6 +937,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                     self.dataTable.blockSignals(True)
                     self.dataTable.clearSelection()
                     self.dataTable.blockSignals(False)
+            self.edit_flag = False
         else:
             pass
 
@@ -978,6 +991,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         meta.reload_data()
         # display the dialog
         result = meta.exec()
+        self.msg_shown = meta.msg_shown
         if result:
             # check if meta actually entered - this is a double-check since it should be entered if we got this far
             temp = self.check_for_required_meta()
@@ -1003,6 +1017,11 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                     self.disable_enable_buttons('enable', self.buttons[i_max + 1])
                 """
 
+            else:
+                print("temp:" + str(temp))
+        else:
+            print("result:" + str(result))
+
     def enter_meta_info(self):
         """
         this updates the gui with some information the fisher may want on hand
@@ -1010,8 +1029,8 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         """
         for p in self.meta_info:
             sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship="
-                              + self.ship + " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) +
-                              " AND partition='MainTrawl' AND event_parameter='" + p + "'")
+                   + self.ship + " AND survey=" + self.survey + " AND event_id=" + str(self.activeEvent) +
+                   " AND partition='MainTrawl' AND event_parameter='" + p + "'")
             query = self.db.dbQuery(sql)
             val, = query.first()
             if 'trawl' in p.lower():
@@ -1040,6 +1059,52 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
             # if not cancelled, operation is complete
             if result == QDialog.DialogCode.Accepted:
                 self.accept()
+
+    def run_scs_avgs(self):
+        """
+        creates averages of the scs stream data and puts it into the event_data table
+        """
+        # get the time of the TD and HB
+        td_time = hb_time = None
+        time_sql = ("SELECT event_parameter, parameter_value FROM " + self.schema
+                    + ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey + " AND event_id="
+                    + self.activeEvent + " AND event_parameter IN ('TD', 'HB')")
+        time_query = self.db.dbQuery(time_sql)
+        for param, val in time_query:
+            if param.lower() == 'td':
+                td_time = val
+            elif param.lower() == 'hb':
+                hb_time = val
+
+        for dev_id, dev_name in self.current_scs.items():
+            # do not take averages of locations (latitude, longitude)
+            if dev_name.lower() not in ['latitude', 'longitude']:
+                if td_time is not None or hb_time is not None:
+                    event_param = "Avg" + dev_name
+                    # check if the parameter already exists
+                    exists_sql = ("SELECT event_parameter FROM " + self.schema +
+                                  ".event_data WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                                  " AND event_id = " + self.activeEvent + " AND partition = 'MainTrawl' "
+                                                                          "AND event_parameter = '" + event_param + "'")
+                    exists_query = self.db.dbQuery(exists_sql)
+                    param, = exists_query.first()
+
+                    if not param:
+                        # get avg of the data between the TD and the HB times in event_stream_data
+                        avg_sql = ("SELECT AVG(measurement_value) FROM " + self.schema
+                                   + ".event_stream_data WHERE measurement_type='" + dev_name
+                                   + "' AND time_stamp BETWEEN '" + td_time + "' AND '" + hb_time + "'")
+                        avg_query = self.db.dbQuery(avg_sql)
+                        dev_avg, = avg_query.first()
+                        # insert parameter into event_data
+                        insert_sql = ("INSERT INTO " + self.schema +
+                                      ".event_data (ship, survey, event_id, partition, event_parameter, "
+                                      "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
+                                      + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '" + dev_avg + "')")
+                        self.db.dbQuery(insert_sql)
+                else:
+                    msg = "Missing TD or HB for this tow, no averages can be calculated"
+                    self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg, 'warning')
 
 
 class DuplicateDlg(QDialog, ui_DuplicateDlg.Ui_YesNoDlg):

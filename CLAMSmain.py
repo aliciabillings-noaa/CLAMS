@@ -496,7 +496,7 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
 
             #  get the time the active event came on deck
             sql = ("SELECT parameter_value FROM " + self.schema +
-                    ".event_data WHERE event_parameter='Haulback' AND event_id="+
+                    ".event_data WHERE event_parameter IN ('Haulback', 'HB') AND event_id="+
                     event + "AND ship="+self.ship+" AND survey="+self.survey)
             query = self.db.dbQuery(sql)
             eventTime, = query.first()

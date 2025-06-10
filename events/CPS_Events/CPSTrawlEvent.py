@@ -122,6 +122,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.net_btn = None
         self.fishingFlag = False
         self.event_entered = False
+        self.current_scs = {}
 
         # set up the time to display for the timer
         self.niw_time = QTime(0, 0, 0)
@@ -269,6 +270,11 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 self.sensorMonitor.addDevice(deviceName, deviceParams['port'], deviceParams['baud'],
                                              deviceParams['parseType'], deviceParams['parseExp'],
                                              deviceParams['parseIndex'], deviceParams['commandPrompt'])
+
+            if 'trawlevent' in self.deviceData[deviceName]['measurements']:
+                dev_id = self.deviceData[deviceName]['id']
+                dev_name = self.deviceData[deviceName]['measurements']['trawlevent'][0]
+                self.current_scs[dev_id] = dev_name
 
             #  set the initial "last write" time for this device
             self.lastSCSWriteTime[deviceName] = QDateTime.currentDateTime()
@@ -809,6 +815,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
             # if not cancelled, operation is complete
             if result == QDialog.DialogCode.Accepted:
+                self.run_scs_avgs()
                 self.accept()
    
     def get_net_dims(self):
@@ -946,3 +953,50 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             # if not cancelled, operation is complete
             if result == QDialog.DialogCode.Accepted:
                 self.accept()
+
+    def run_scs_avgs(self):
+        """
+        creates averages of the scs stream data and puts it into the event_data table
+        """
+        # get the time of the TD and HB
+        td_time = hb_time = None
+        time_sql = ("SELECT event_parameter, parameter_value FROM " + self.schema
+                    + ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey + " AND event_id="
+                    + self.activeEvent + " AND event_parameter IN ('EQ', 'Haulback')")
+
+        time_query = self.db.dbQuery(time_sql)
+        for param, val in time_query:
+            if param.lower() == 'eq':
+                td_time = val
+            elif param.lower() == 'haulback':
+                hb_time = val
+        for dev_id, dev_name in self.current_scs.items():
+            # do not take averages of locations (latitude, longitude)
+            if dev_name.lower() not in ['latitude', 'longitude']:
+                if td_time is not None or hb_time is not None:
+                    event_param = "Avg" + dev_name
+                    # check if the parameter already exists
+                    exists_sql = ("SELECT event_parameter FROM " + self.schema +
+                                  ".event_data WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                                  " AND event_id = " + self.activeEvent + " AND partition = 'MainTrawl' "
+                                                                          "AND event_parameter = '" + event_param + "'")
+                    exists_query = self.db.dbQuery(exists_sql)
+                    param, = exists_query.first()
+
+                    if not param:
+                        # get avg of the data between the TD and the HB times in event_stream_data
+                        avg_sql = ("SELECT AVG(measurement_value) FROM " + self.schema
+                                   + ".event_stream_data WHERE measurement_type='" + dev_name
+                                   + "' AND time_stamp BETWEEN '" + td_time + "' AND '" + hb_time + "'")
+                        avg_query = self.db.dbQuery(avg_sql)
+                        dev_avg, = avg_query.first()
+                        # insert parameter into event_data
+                        insert_sql = ("INSERT INTO " + self.schema +
+                                      ".event_data (ship, survey, event_id, partition, event_parameter, "
+                                      "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
+                                      + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '" + dev_avg + "')")
+                        self.db.dbQuery(insert_sql)
+                else:
+                    msg = "Missing EQ or HB for this tow, no averages can be calculated"
+                    self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg, 'warning')
+

@@ -54,7 +54,7 @@ class PrintLabel:
         # TOP LINE; NWFSC/FEAT Sample Haul: # SN: #
         z_doc.add_zpl_raw("^XA")
         z_doc.add_zpl_raw("^FO15,55")
-        z_doc.add_zpl_raw("^A0N,110,40^FDNWFSC/FEAT Sample\tHaul: " + str(event))
+        z_doc.add_zpl_raw("^A0N,110,40^FDIWCPS Sample\tHaul: " + str(event))
         if spec_num:
             z_doc.add_zpl_raw("\t\tSN: " + str(spec_num) + "^FS")
         else:
@@ -90,11 +90,11 @@ class PrintLabel:
         png = z_doc.render_png(label_width=5, label_height=3)
         fake_file = io.BytesIO(png)
         img = Image.open(fake_file)
-        img.show()
+        #img.show()
 
         # print to network printer
-        #printer = NetworkPrinter(self.ip, self.port)
-        #try:
-        #    printer.print_zpl(z_doc)
-        #except (TimeoutError, PermissionError):
-        #    print('cannot connect to printer')
+        printer = NetworkPrinter(self.ip, self.port)
+        try:
+            printer.print_zpl(z_doc)
+        except (TimeoutError, PermissionError):
+            print('cannot connect to printer')

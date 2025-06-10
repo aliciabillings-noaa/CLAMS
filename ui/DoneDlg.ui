@@ -115,6 +115,19 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QCheckBox" name="ckb_man">
+       <property name="font">
+        <font>
+         <family>Arial Black</family>
+         <pointsize>14</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Use Manual Bottom Depths</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
