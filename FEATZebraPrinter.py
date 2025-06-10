@@ -90,11 +90,11 @@ class PrintLabel:
         png = z_doc.render_png(label_width=5, label_height=3)
         fake_file = io.BytesIO(png)
         img = Image.open(fake_file)
-        img.show()
+        #img.show()
 
         # print to network printer
-        #printer = NetworkPrinter(self.ip, self.port)
-        #try:
-        #    printer.print_zpl(z_doc)
-        #except (TimeoutError, PermissionError):
-        #    print('cannot connect to printer')
+        printer = NetworkPrinter(self.ip, self.port)
+        try:
+            printer.print_zpl(z_doc)
+        except (TimeoutError, PermissionError):
+            print('cannot connect to printer')
