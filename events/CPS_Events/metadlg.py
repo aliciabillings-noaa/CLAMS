@@ -103,7 +103,7 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         populates the widgets with data loaded from the database
         :return: none
         """
-        startingEventNum = 4791
+        startingEventNum = 4790
         # refill any buttons
         for param, pb_lst in self.pbs.items():
             pb, table, np = pb_lst
