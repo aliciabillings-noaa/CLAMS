@@ -1580,7 +1580,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             # iterate though boxes and get checked ones - non-visible boxes default to uncecked
             for i, box in enumerate(collectionDialog.checkboxes):
                 if box.isChecked():
-                    if 'nwfsc' in self.settings['OrganizationName'].lower():
+                    if 'nwfsc' in self.settings['OrganizationName'].lower() or \
+                            'swfsc' in self.settings['OrganizationName'].lower():
                         self.printLabel()
                     else:
                         # insert measurement
