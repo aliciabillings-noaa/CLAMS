@@ -33,7 +33,6 @@
        <property name="font">
         <font>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -64,7 +63,6 @@
        <property name="font">
         <font>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -82,9 +80,7 @@
       <widget class="QLabel" name="label">
        <property name="font">
         <font>
-         <family>Arial Black</family>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -103,9 +99,7 @@
        </property>
        <property name="font">
         <font>
-         <family>Arial Black</family>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -130,9 +124,7 @@
        </property>
        <property name="font">
         <font>
-         <family>Arial Black</family>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -151,9 +143,7 @@
        </property>
        <property name="font">
         <font>
-         <family>Arial Black</family>
          <pointsize>12</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -208,9 +198,7 @@
        </property>
        <property name="font">
         <font>
-         <family>Arial Black</family>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -236,7 +224,6 @@
        <property name="font">
         <font>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -263,9 +250,7 @@
        </property>
        <property name="font">
         <font>
-         <family>Arial Black</family>
          <pointsize>16</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -284,19 +269,17 @@
        </property>
        <property name="font">
         <font>
-         <family>Arial Black</family>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
        <property name="text">
-        <string>Headrope Depth</string>
+        <string>Bottom Depth</string>
        </property>
       </widget>
      </item>
      <item row="2" column="1" colspan="2">
-      <widget class="QPushButton" name="pb_hd">
+      <widget class="QPushButton" name="pb_bd">
        <property name="minimumSize">
         <size>
          <width>250</width>
@@ -312,7 +295,6 @@
        <property name="font">
         <font>
          <pointsize>18</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -349,7 +331,6 @@
        <property name="font">
         <font>
          <pointsize>9</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -373,9 +354,7 @@
        </property>
        <property name="font">
         <font>
-         <family>Arial Black</family>
          <pointsize>16</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
