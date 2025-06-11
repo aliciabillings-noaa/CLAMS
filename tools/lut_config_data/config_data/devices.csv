@@ -31,7 +31,7 @@
 "302","MACE_Lengthboard4","0","0","MACE Shop Test Lengthboard","1"
 "303","Barcode_Reader","0","0","MACE Shop Test Scanner","1"
 "11","VialNumDlg","0","0","The vial number input dialog.","1"
-"61","TrayNumDlg","0","0","The tray number input dialog.","1"
+"62","TrayNumDlg","0","0","The tray number input dialog.","1"
 "31","SBE_1797","SBE39","1797","Headrope mounted pressure and temperature logger.","0"
 "32","SBE_00997","SBE39","00997","Headrope mounted pressure and temperature logger","0"
 "33","SBE_0996","SBE39","0996","Headrope mounted pressure and temperature logger","0"
