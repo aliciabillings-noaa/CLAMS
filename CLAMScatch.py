@@ -254,7 +254,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         printerId, printerName = query.first()
         if printerId:
             #  initialize the Label Printer
-            if 'nwfsc' in self.settings['OrganizationName'].lower():
+            if 'nwfsc' in self.settings['OrganizationName'].lower() or \
+                    'swfsc' in self.settings['OrganizationName'].lower():
                 # get the ip and port
                 printer_sql = ("SELECT device_parameter, parameter_value "
                                "FROM " + self.schema + ".device_configuration WHERE device_id = " + printerId)

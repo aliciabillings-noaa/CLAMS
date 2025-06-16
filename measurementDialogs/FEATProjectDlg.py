@@ -111,7 +111,7 @@ class FEATProjectDlg(QDialog):
                 for proto in sp_protos:
                     proto_sql = ("SELECT label FROM "
                                  + self.schema + ".protocol_definitions WHERE protocol_name='" + proto +
-                                 "' AND measurement_type='specimen_collection'")
+                                 "' AND measurement_type='group_collection'")
                     proto_query = self.db.dbQuery(proto_sql)
                     label, = proto_query.first()
                     if label:

@@ -139,7 +139,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         # if there is a printer set up, initialize the printer and add the sound
         if 'Label_Printer' in self.deviceData:
-            if 'nwfsc' in self.settings['OrganizationName'].lower():
+            if 'nwfsc' in self.settings['OrganizationName'].lower() or \
+                    'swfsc' in self.settings['OrganizationName'].lower():
                 # get the ip and port
                 printer_sql = ("SELECT device_parameter, parameter_value "
                                "FROM " + self.schema + ".device_configuration WHERE device_id = "
@@ -1580,7 +1581,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             # iterate though boxes and get checked ones - non-visible boxes default to uncecked
             for i, box in enumerate(collectionDialog.checkboxes):
                 if box.isChecked():
-                    if 'nwfsc' in self.settings['OrganizationName'].lower():
+                    if 'nwfsc' in self.settings['OrganizationName'].lower() or \
+                            'swfsc' in self.settings['OrganizationName'].lower():
                         self.printLabel()
                     else:
                         # insert measurement
