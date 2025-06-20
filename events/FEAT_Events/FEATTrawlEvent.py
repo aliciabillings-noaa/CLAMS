@@ -445,15 +445,12 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
             # add to button order list
             self.button_order.append(ev)
             # set the button text
-            if 'com' in ev.lower():
-                btn_txt = 'COM'
-            else:
-                btn_txt = ev
+            btn_txt = ev
 
             # get the index in the list to reset the color
             ind = None
             for b in self.buttons:
-                if b.text() == btn_txt:
+                if b.text() == btn_txt or 'com' in btn_txt.lower():
                     ind = self.buttons.index(b)
             self.idxs.append(ind)
 
@@ -701,6 +698,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                         if cur_num >= cur_com_num:
                             cur_com_num = cur_num
                 self.cur_btn_txt = 'COM' + str(cur_com_num + 1).zfill(2)
+                self.button_order.append(self.cur_btn_txt)
                 if com_ct == 14:
                     self.pb_com.setEnabled(False)
 
