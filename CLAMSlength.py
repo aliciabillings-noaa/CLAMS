@@ -100,6 +100,10 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.message = messagedlg.MessageDlg(self)
         self.addspec = addspecdlg.addspecedlg(self)
 
+        #  set the event number
+        haul_txt = str(self.activeHaul) + " - " + self.activePartition
+        self.haulNum.setText(haul_txt)
+
         # figure out if this is administrative station
         actions = str(self.settings['MainActions'] )
         actions = actions.split(',')

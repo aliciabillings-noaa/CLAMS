@@ -135,7 +135,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.message = messagedlg.MessageDlg(self)
 
         #  set the event number
-        self.haulNum.setText(self.activeHaul)
+        haul_txt = str(self.activeHaul) + " - " + self.activePartition
+        self.haulNum.setText(haul_txt)
 
         # if there is a printer set up, initialize the printer and add the sound
         if 'Label_Printer' in self.deviceData:
