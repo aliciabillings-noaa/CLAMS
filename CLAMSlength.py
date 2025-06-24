@@ -52,7 +52,8 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from PyQt6 import QtSql
-from ui import  ui_CLAMSLength
+from PyQt6.QtMultimedia import QSoundEffect
+from ui import ui_CLAMSLength
 import numpad
 import keypad
 import messagedlg
@@ -192,6 +193,30 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.manualBtn.clicked.connect(self.getManual)
         # auto lengths from serial device
         self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
+
+        # get the sound for the board
+        board_sql = ("SELECT device_id FROM measurement_setup WHERE workstation_id = " + self.workStation +
+                     " AND gui_module = 'Length'")
+        board_query = self.db.dbQuery(board_sql)
+        device_id, = board_query.first()
+        if device_id:
+            sql = ("SELECT parameter_value FROM device_configuration WHERE device_id = " + device_id
+                   + " AND device_parameter = 'SoundFile'")
+        query1 = self.db.dbQuery(sql)
+        sound_file, = query1.first()
+        soundEffect = QSoundEffect()
+
+        if sound_file:
+            hasExt = sound_file.split('.')
+            if len(hasExt) > 1:
+                soundFile = (self.settings['SoundsDir'] + sound_file)
+            else:
+                soundFile = (self.settings['SoundsDir'] + sound_file + '.wav')
+
+        else:
+            soundFile = (self.settings['SoundsDir'] + 'softwareSound.wav')
+        soundEffect.setSource(QUrl.fromLocalFile(soundFile))
+        self.sound = soundEffect
 
 #        # connect to serial devices
 #        self.openSerial()
@@ -397,6 +422,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
                 # call writeTable to insert this measurement into the database
                 self.writeTable()
                 self.valFlag = False
+                self.sound.play()
             else:
                 self.message.setMessage(self.errorIcons[1],self.errorSounds[1], self.firstName +
                         ", The length is out of range for this. Do you want to reenter length?", 'choice')
@@ -461,8 +487,7 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         self.activeDeviceId = self.deviceData[device_name]['id']
 
         #  play the sound associated with this device if provided
-        if self.deviceData[device_name]['soundeffect']:
-            self.deviceData[device_name]['soundeffect'].play()
+        self.sound.play()
 
         # now check to see if it is within the acceptable range.  If not show a
         # warning and ask if user wants to reenter.
