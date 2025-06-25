@@ -159,7 +159,8 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         gear_query = self.db.dbQuery(gear_sql)
         for gear, in gear_query:
             self.cb_gear.addItem(gear)
-            self.cb_gear.setCurrentIndex(-1)
+            # Default to MFT 
+            self.cb_gear.setCurrentIndex(0)
 
     def enter_data(self):
         """
