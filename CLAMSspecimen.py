@@ -124,7 +124,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.buttons = [self.btn_0, self.btn_1, self.btn_2, self.btn_3, self.btn_4,
                 self.btn_5, self.btn_6, self.btn_7, self.btn_8, self.btn_9]
         self.lastSerialValue = [None,None]
-        self.devices = []
+        self.devices = {}
         self.sqlString = None
         self.activeCollections = []
         self.collectionMeasurementTypes = [] # also temporary for now
@@ -482,6 +482,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             self.protoLabel.setText(self.protocol)
             self.setup()
             self.updateMeasureView()
+            self.autoCheck.setChecked(False)
             return True
         else:
             #  user cancelled selection - return false
@@ -509,53 +510,66 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             return
 
         try:
-            #  get an index into our devices list for this device
-            ind = self.devices.index(device_id)
-        except:
-            #  somehow we have received data from a device we didn't configure?
-            print("ERROR: CLAMSspecimen.serialInput: received data from unknown device? How can that be?")
-            return
+            #  get an index into our measurements list for this device
+            ind = None
 
-        #  Check if we have a duplicate serial value within the filter timer period
-        if (self.serialIOTimerOK == False):
-            if (ind == self.lastSerialValue[0]) and (val == self.lastSerialValue[1]):
-                #  This measurement is the same as the last and we're within our filter period - ignore
-                return
+            #  first, get the list of indices into the measurements list that this
+            #  device provides measurements for.
+            possibleIndices = self.devices[device_id]
 
-        #  set the serial value variables
-        self.lastSerialValue = [ind, val]
-        self.serialValue = val
+            #  check if this device provides a single, or multiple measurements for
+            #  this protocol. If this device only provides a single measurement,
+            #  then we know exactly what measurement this data is for.
+            if len(possibleIndices) == 1:
+                #  it provides a single measurement, unpack our one value
+                ind = possibleIndices[0]
+            else:
+                #  it provides multiple measurements, so we need to figure out which
+                #  one this value is for. In this case we have to assume this data is
+                #  for the first empty measurement this device provides data for
+                for i in possibleIndices:
+                    #  check if this measurement has data
+                    if self.values[i] == None:
+                        #  no data for this measurement so we assume this data is
+                        #  for this measurement
+                        ind = i
+                        break
 
-        #  set the timer OK value to false and start the filter timer
-        self.serialIOTimerOK = False
-        self.serialIOTimer.start(self.serialIOTimerInterval)
+                if ind is None:
+                    #  if we're here, all of the measurements have been collected
+                    #  for this specimen so we can't know for sure what the user's
+                    #  intent is. In this case, we just pick the last one.
+                    ind = possibleIndices[-1]
 
-        # determine if this device provides multiple measurements
-        if (self.devices.count(device_id) == 1):
-            # only one measurement using this device
+            #  now that we have the measurement index, we need to filter for duplicate
+            #  values or values sent too quickly (think switch debounce)
+            if (self.serialIOTimerOK == False):
+                if (ind == self.lastSerialValue[0]) and (val == self.lastSerialValue[1]):
+                    #  This measurement is the same as the last and we're within our filter period - ignore
+                    return
+
+            #  set the serial value variables
+            self.lastSerialValue = [ind, val]
+            self.serialValue = val
+
+            #  set the timer OK value to false and start the filter timer
+            self.serialIOTimerOK = False
+            self.serialIOTimer.start(self.serialIOTimerInterval)
+
+            #  finally - cycle the measurement
             if (self.forceOrder[ind] == '1'):
                 #  this measurement is an in order measurement
-                self.cycle(ind)
+                self.cycle(ind, device_id)
             else:
                 #  this measurement is an out of order measurement
-                self.outCycle(ind)
-        else:
-            # this device can provide multiple measurements - find next empty value
-            for i in self.iterator:
-                if (self.devices[i] == device_id):
-                    last_ind = i
-                    if (self.values[i] == None):
-                        if (self.forceOrder[i] == '1'):
-                            self.cycle(i)
-                        else:
-                            self.outCycle(i)
-                        return
-            # made it through without finding a None in the values, so they are all filled- do the last one
-            if (self.forceOrder[last_ind] == '1'):
-                self.cycle(last_ind)
-            else:
-                self.outCycle(last_ind)
+                self.outCycle(ind, device_id)
 
+
+        except Exception as e:
+            #  somehow we have received data from a device we didn't configure?
+            QMessageBox.warning(self, "Uh oh...", "<font size = 12>Error processing " +
+                    "device input: " + str(e))
+            return
 
 
     def btnInput(self):
@@ -572,13 +586,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  Check if this measurement is "in order" or out of order.
         if (self.forceOrder[ind] == '1'):
             #  measurement is in order
-            self.cycle(ind)
+            self.cycle(ind, None)
         else:
             #  this measurement is an out of order measurement
-            self.outCycle(ind)
+            self.outCycle(ind, None)
 
 
-    def cycle(self, i):
+    def cycle(self, i, device_id):
         '''cycle is called each time a measurement is taken. It performs the validations before
             passing measurement on to writeMeasurement.
         '''
@@ -609,6 +623,11 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             self.checkOrder(i)
             if self.orderCheckFlag:
                 return
+
+        #  if we're being called from a button press or auto-triggered software device
+        #  we need to get our device ID
+        if device_id is None:
+            device_id = self.getDeviceFromIndex(i)
 
         #  Get the measurement value
         if (self.interface[i] == 'Software'):
@@ -741,10 +760,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         if val:
             self.values[i]=val
-            self.writeMeasurement(i, True)
+            self.writeMeasurement(i, device_id, True)
 
 
-    def outCycle(self, i):
+    def outCycle(self, i, device_id):
         '''OutCycle is called each time an out of order serial measurement is taken. It performs the validations before
             passing measurement on to writeMeasurement.
         '''
@@ -764,6 +783,11 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             else:
                 # redo the measurement
                 return
+
+        #  if we're being called from a button press or auto-triggered software device
+        #  we need to get our device ID
+        if device_id is None:
+            device_id = self.getDeviceFromIndex(i)
 
         # get the value
         if self.interface[i] == 'Software':
@@ -891,10 +915,30 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         if val:
             self.values[i]=val
-            self.writeMeasurement(i, False)
+            self.writeMeasurement(i, device_id, False)
 
 
-    def writeMeasurement(self, i, keepGoing):
+
+    def getDeviceFromIndex(self, idx):
+        '''getDeviceFromIndex does a reverse lookup in self.devices to return a device
+        id given a measurement index. This is only used for software devices where we are
+        given an index but need to write a device id in the database.
+
+        '''
+        device_id = None
+        for d in self.devices:
+            for i in self.devices[d]:
+                if i == idx:
+                    device_id = d
+                    break
+
+            if device_id:
+                break
+
+        return device_id
+
+
+    def writeMeasurement(self, i, device_id, keepGoing):
         '''writeMeasurement is called each time a measurement is taken. It inserts or updates data in the db
             for that measurement type and also logs the SQL to a text file.
         '''
@@ -934,7 +978,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             sql = ("INSERT INTO measurements (ship, survey, event_id, sample_id, specimen_id, " +
                     "measurement_type, device_id, measurement_value) VALUES (" +self.ship+","+
                     self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey +
-                    ",'" + measure_type + "'," + self.devices[i] + ",'" + self.values[i] + "')")
+                    ",'" + measure_type + "'," + device_id + ",'" + self.values[i] + "')")
             self.db.dbExec(sql)
 
             # update table
@@ -959,7 +1003,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 # next measurement is forced - check if it is from a serial device
                 if self.interface[i+1]=='Software':# next input is software, fire it away
 
-                    self.cycle(i+1)
+                    self.cycle(i+1, None)
                     break
                 else:
                     # next measurement is serial, just wait for it
@@ -1156,26 +1200,70 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
     def setup(self):
         '''setup is called after a protocol has been selected
+
+        TODO: change device and protocol setup
+
+        Change devices module to gather all of the info for all devices. Include device_configuration
+        data. Still get all devices in CLAMSProcess and set up serial and network devices there.
+        Also import software device modules and store reference in the devices dict.
+
+        Add software devices for measurements that currently are serial or network. Since we are now
+        allowing multiple devices to provide a measurement, software devices will be used when a
+        protocol button is pressed which allows us to customize the "manual" entry dialog for every
+        measurement. For example, for length, we will specify both the numpad and lengthboard
+        devices for length measurements. Then when setting up the protocol in CLAMSSpecimen, the
+        numpad dialog will be linked to the length button so when it is pressed, it will display
+        the numpad to gather a length measurement. While we will be able to have multiple network
+        or serial devices configured for a measurement, only one software device can be defined
+        per measurement. We can of course only have a software device, and you could choose not
+        to define a software measurement for a measurement that usually comes from serial/network
+        but then there will be no way to manually enter in a value.
+
+        separate the device business from the protocol business:
+
+            Protocol stuff - measurement type, button labels, validations, conditionals, order,
+                             force order, values, val names, measurement type, sql string,
+                             n measurements, and sqlLengthIndex (?)
+
+            Device stuff - devices dict (which will contain devices, interfaces, sounds)
+
+            the "dialogs" stuff will be separate. When setting that up, we map the software
+            measurements to the butons (by matching measurement type)
+
+
         '''
         # hide all of the measurement buttons
         for btn in self.buttons:
             btn.hide()
 
+        '''
+        What follows is a hack. This code originally assumed a 1:1 mapping of devices to
+        measurement types. We are changing this, but a proper fix would required edits to
+        the at-sea database which we do not want to do at this time. So I am trying to
+        make this change with the least amount of disruption to this code.
+
+        Most of the management and bookkeeping of measurements was done with lists and
+        indexes into those lists.
+
+        '''
         #  initialize the various lists that store operational details
         self.measureType = []
-        self.devices = []
+
         self.forcing = []
         self.forceOrder = []
         self.label = []
-        self.sounds = []
         self.dialogs = []
-        self.interface = []
         self.validations = []
         self.valNames = []
         self.values = []
         self.sqlString = []
         self.sqlLengthIndex = None
         nMeasurements = 0
+        #  since we are not mapping multiple devices to a single measurement, we will
+        #  change the devices list to a dict and map device ID to the measurement index
+        self.devices = {}
+        self.interface = []
+        self.sounds = []
 
         # get the measurements for this species
         sql = ("SELECT PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE, MEASUREMENT_SETUP.DEVICE_ID," +
@@ -1188,20 +1276,45 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 "MEASUREMENT_SETUP.WORKSTATION_ID="+self.workStation+" AND  " +
                 "MEASUREMENT_SETUP.GUI_MODULE='Specimen' " +
                 "ORDER BY PROTOCOL_DEFINITIONS.MEASUREMENT_ORDER ASC")
-
         query = self.db.dbQuery(sql)
 
         #  Initialize length type combo box to disabled until you encounter a 'length' in the protocol
         self.lengthTypeBox.setEnabled(False)
 
         #  loop through the measurements we have found and extract the deets
-        for type,  device,  interface,  force_measurement, force_order, label in query:
-            self.measureType.append(type)
-            self.devices.append(device)
-            self.interface.append(interface)
-            self.forcing.append(force_measurement)
-            self.forceOrder.append(force_order)
-            self.label.append(label)
+        for type, device, interface, force_measurement, force_order, label in query:
+
+            if type not in self.measureType:
+                self.measureType.append(type)
+
+            #  get the index value for this measurement
+            idx = self.measureType.index(type)
+
+            #  devices is a dict that will map device ID to the measurement list index
+            #  since devices can provide multiple measurements, we're mapping to a
+            #  list of indices
+            if device not in self.devices:
+                self.devices[device] = [idx]
+            else:
+                #  this is a device that provides multiple measurements
+                self.devices[device].append(idx)
+
+            #  when we do a proper update to this code to support multiple devices
+            #  we will allow both software and hardware devices to be assigned to
+            #  a single measurement type. Until then, multiple devices must share
+            #  the same interface type and we store the first one we encounter
+            if len(self.interface) <= idx:
+                self.interface.append(interface)
+
+            #  forcing, forceOrder, and label will be replicated if there are multiple
+            #  devices assigned to a measurement so we just are about the first
+            #  one we encounter.
+            if len(self.forcing) <= idx:
+                self.forcing.append(force_measurement)
+            if len(self.forceOrder) <= idx:
+                self.forceOrder.append(force_order)
+            if len(self.label) <= idx:
+                self.label.append(label)
 
             # get the sounds for the device
             sql = ("SELECT device_configuration.PARAMETER_VALUE FROM device_configuration WHERE " +
@@ -1221,9 +1334,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             else:
                 soundFile = (self.settings['SoundsDir']+'softwareSound.wav')
             soundEffect.setSource(QUrl.fromLocalFile(soundFile))
-            self.sounds.append(soundEffect)
+            if len(self.sounds) <= idx:
+                self.sounds.append(soundEffect)
 
-           # for software inputs, get the dialog to be used
+            # for software inputs, get the dialog to be used
             if interface.lower() == 'software':
                 sql1=("SELECT device_configuration.PARAMETER_VALUE FROM device_configuration WHERE " +
                         "(device_configuration.DEVICE_ID = " + device + " ) AND (" +
@@ -1238,10 +1352,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                         dlgModule = ('measurementDialogs.'+dlg.lower())
                         dlgObj = importlib.import_module(dlgModule)
                         dlgObj = getattr(dlgObj, updlg)
-                        self.dialogs.append(dlgObj)
+                        thisDialog = dlgObj
                     except Exception as e:
                         #  there was a problem importing or instantiating the measurement dialog
-                        self.dialogs.append(None)
+                        thisDialog = None
                         self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
                             "Error importing or instantiating the " + dlg.lower() +
                             " measurement dialog.\nError text: '" + str(e) + "'\n"
@@ -1249,7 +1363,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                         self.message.exec()
                 else:
                     #  we were unable to find a Module entry in device_configuration for this device ID
-                    self.dialogs.append(None)
+                    thisDialog = None
 
                     #  get the device name for the error dialog
                     sql1 = ("SELECT device_name FROM devices WHERE device_id=" +device)
@@ -1268,7 +1382,11 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     self.message.exec()
             else:
                 #  this measurement does not have a dialog (aka hardware measurement)
-                self.dialogs.append(None)
+                thisDialog = None
+
+            #  add the software dialog (if any)
+            if len(self.dialogs) <= idx:
+                self.dialogs.append(thisDialog)
 
             # get validations
             sql1 = ("SELECT VALIDATION FROM VALIDATIONS WHERE ( "+
@@ -1287,8 +1405,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 valNames.append(validations)
                 vals.append(valObj)
 
-            self.valNames.append(valNames)
-            self.validations.append(vals)
+            if len(self.valNames) <= idx:
+                self.valNames.append(valNames)
+            if len(self.validations) <= idx:
+                self.validations.append(vals)
 
             #  build the measureView SQL list - this is a list of the measurements that
             #  we join with a comma to generate a string right before using it in the
@@ -1311,15 +1431,15 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 lengthType=self.lengthTypeBox.currentText()
                 QMessageBox.information(self, "Length Measurement Type", "<font size = 12>You should now measure " +lengthType)
 
-
             #  append this measurement onto our sqlString list
-            self.sqlString.append(type)
+            if type not in self.sqlString:
+                self.sqlString.append(type)
 
-            #  increment the measurements counter
-            nMeasurements = nMeasurements + 1
+                #  increment the measurements counter
+                nMeasurements = nMeasurements + 1
 
-            # initialize the value vector
-            self.values.append(None)
+                # initialize the value vector
+                self.values.append(None)
 
         #  set up the measurement buttons
         for i in range(len(self.label)):
@@ -1376,7 +1496,9 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 "workstation correctly.", 'info')
             self.message.exec()
         else:
-            self.cycle(0)
+            #  kick off the first measurement - if it is from a serial device, this will do
+            #  nothing, but if it is software device, it will trigger that dialog
+            self.cycle(0, None)
 
 
     def goDelete(self):
@@ -1634,7 +1756,6 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                       + " AND event_id=" + self.activeHaul + " AND specimen_id = " + self.specimenKey)
             lw_query = self.db.dbQuery(lw_sql)
             length, weight = lw_query.first()
-            print(length, weight)
             self.printer.print_label(self.protocol, self.activeSpcName, self.activeSpcCode, self.activeHaul,
                                      code, self.specimenKey, length, weight)
         else:
