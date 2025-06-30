@@ -994,7 +994,8 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                         insert_sql = ("INSERT INTO " + self.schema +
                                       ".event_data (ship, survey, event_id, partition, event_parameter, "
                                       "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
-                                      + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '" + dev_avg + "')")
+                                      + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
+                                      + str(dev_avg) + "')")
                         self.db.dbQuery(insert_sql)
                 else:
                     msg = "Missing EQ or HB for this tow, no averages can be calculated"

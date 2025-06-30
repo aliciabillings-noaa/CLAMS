@@ -123,7 +123,9 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  do some UI setup
         self.sciLabel.setText(self.scientist)
         self.firstName = self.scientist.split(' ')[0]
-        self.haulNum.setText(self.activeHaul)
+        # add partition to event
+        haul_txt = str(self.activeHaul) + " - " + str(self.activePartition)
+        self.haulNum.setText(haul_txt)
 
         #  set up tables for data display - most of this is done in QDesigner
         #  but some properties don't seem to "stick" (maybe QDesigner is buggy?)

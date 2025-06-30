@@ -104,6 +104,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         self.fullspcCList.itemClicked[QListWidgetItem].connect(self.getSpcSel)
         self.fullspcSList.itemClicked[QListWidgetItem].connect(self.getSpcSel)
         self.lineEdit.textEdited.connect(self.searchEdited)
+        self.space.clicked.connect(self.addSpace)
         self.backBtn.clicked.connect(self.clearOneChar)
         self.clearBtn.clicked.connect(self.clearAllChar)
         self.doneBtn.clicked.connect(self.close)
@@ -220,6 +221,11 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
 
     def clearOneChar(self):
         self.chars=self.chars[:-1]
+        self.lineEdit.setText(self.chars)
+        self.getList()
+    
+    def addSpace(self):
+        self.chars=self.chars + ' '
         self.lineEdit.setText(self.chars)
         self.getList()
 
