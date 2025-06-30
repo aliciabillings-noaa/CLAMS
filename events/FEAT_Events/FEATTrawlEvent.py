@@ -1095,13 +1095,14 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                         try:
                             avg_query = self.db.dbQuery(avg_sql)
                             dev_avg, = avg_query.first()
-                            # insert parameter into event_data
-                            insert_sql = ("INSERT INTO " + self.schema +
-                                          ".event_data (ship, survey, event_id, partition, event_parameter, "
-                                          "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
-                                          + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
-                                          + str(dev_avg) + "')")
-                            self.db.dbQuery(insert_sql)
+                            if dev_avg:
+                                # insert parameter into event_data
+                                insert_sql = ("INSERT INTO " + self.schema +
+                                              ".event_data (ship, survey, event_id, partition, event_parameter, "
+                                              "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
+                                              + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
+                                              + str(dev_avg) + "')")
+                                self.db.dbQuery(insert_sql)
                         except:
                             pass
                 else:
