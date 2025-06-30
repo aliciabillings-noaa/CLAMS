@@ -988,15 +988,19 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                         avg_sql = ("SELECT AVG(measurement_value) FROM " + self.schema
                                    + ".event_stream_data WHERE measurement_type='" + dev_name
                                    + "' AND time_stamp BETWEEN '" + td_time + "' AND '" + hb_time + "'")
-                        avg_query = self.db.dbQuery(avg_sql)
-                        dev_avg, = avg_query.first()
-                        # insert parameter into event_data
-                        insert_sql = ("INSERT INTO " + self.schema +
-                                      ".event_data (ship, survey, event_id, partition, event_parameter, "
-                                      "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
-                                      + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
-                                      + str(dev_avg) + "')")
-                        self.db.dbQuery(insert_sql)
+                        try:
+                            avg_query = self.db.dbQuery(avg_sql)
+                            dev_avg, = avg_query.first()
+                            if dev_avg:
+                                # insert parameter into event_data
+                                insert_sql = ("INSERT INTO " + self.schema +
+                                              ".event_data (ship, survey, event_id, partition, event_parameter, "
+                                              "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
+                                              + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
+                                              + str(dev_avg) + "')")
+                                self.db.dbQuery(insert_sql)
+                        except:
+                            pass
                 else:
                     msg = "Missing EQ or HB for this tow, no averages can be calculated"
                     self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg, 'warning')
