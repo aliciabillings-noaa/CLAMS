@@ -83,7 +83,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         self.meta_entered = False
         self.scientist = "Unknown"
         self.gear = "MFT"
-        self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth']
+        self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth18']
         self.meta_info = ['TrawlScientist', 'TargetDepth', 'TDLatitude', 'TDLongitude']
         self.streamEQHBLogInterval = None
         self.streamSlowLogInterval = None
