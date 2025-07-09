@@ -1255,6 +1255,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  update the tables
         self.updateTables()
+        self.activeSpcName = None
 
 
     def transferSample(self):
