@@ -16,23 +16,42 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout_3">
-     <item row="3" column="1" colspan="2">
-      <widget class="QPushButton" name="pb_wo">
+     <item row="7" column="0">
+      <widget class="QLabel" name="label">
+       <property name="font">
+        <font>
+         <pointsize>18</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Comment</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1" colspan="2">
+      <widget class="QPushButton" name="pb_com">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize">
         <size>
-         <width>250</width>
+         <width>0</width>
          <height>40</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>1000</width>
-         <height>16777215</height>
+         <width>500</width>
+         <height>40</height>
         </size>
        </property>
        <property name="font">
         <font>
-         <pointsize>18</pointsize>
+         <pointsize>9</pointsize>
          <bold>true</bold>
         </font>
        </property>
@@ -43,6 +62,63 @@
        </property>
        <property name="text">
         <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="minimumSize">
+        <size>
+         <width>300</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>18</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Net Width</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="label_8">
+       <property name="minimumSize">
+        <size>
+         <width>300</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>18</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Wire Out</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="minimumSize">
+        <size>
+         <width>300</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>18</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Bottom Depth</string>
        </property>
       </widget>
      </item>
@@ -76,64 +152,7 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="label">
-       <property name="font">
-        <font>
-         <pointsize>18</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Comment</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="minimumSize">
-        <size>
-         <width>300</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>18</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Net Width</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label_4">
-       <property name="minimumSize">
-        <size>
-         <width>300</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>150</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>18</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Net Height</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0" colspan="3">
+     <item row="8" column="0" colspan="3">
       <widget class="QTableWidget" name="netTable">
        <property name="maximumSize">
         <size>
@@ -178,6 +197,11 @@
        </column>
        <column>
         <property name="text">
+         <string>HR Depth</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
          <string>Wire Out</string>
         </property>
        </column>
@@ -188,12 +212,68 @@
        </column>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_8">
+     <item row="10" column="1">
+      <widget class="QPushButton" name="addRecordBtn">
+       <property name="minimumSize">
+        <size>
+         <width>165</width>
+         <height>35</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>16</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Add
+ Record</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1" colspan="2">
+      <widget class="QPushButton" name="pb_wo">
+       <property name="minimumSize">
+        <size>
+         <width>250</width>
+         <height>40</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>18</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QWidget {
+    background-color: white;
+}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_4">
        <property name="minimumSize">
         <size>
          <width>300</width>
          <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>150</width>
+         <height>16777215</height>
         </size>
        </property>
        <property name="font">
@@ -203,7 +283,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Wire Out</string>
+        <string>Net Height</string>
        </property>
       </widget>
      </item>
@@ -240,7 +320,7 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="2">
+     <item row="10" column="2">
       <widget class="QPushButton" name="okBtn">
        <property name="minimumSize">
         <size>
@@ -256,25 +336,6 @@
        </property>
        <property name="text">
         <string>Close</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_6">
-       <property name="minimumSize">
-        <size>
-         <width>300</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>18</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Bottom Depth</string>
        </property>
       </widget>
      </item>
@@ -308,29 +369,23 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="1" colspan="2">
-      <widget class="QPushButton" name="pb_com">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
+     <item row="4" column="1" colspan="2">
+      <widget class="QPushButton" name="pb_hd">
        <property name="minimumSize">
         <size>
-         <width>0</width>
+         <width>250</width>
          <height>40</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>500</width>
-         <height>40</height>
+         <width>1000</width>
+         <height>16777215</height>
         </size>
        </property>
        <property name="font">
         <font>
-         <pointsize>9</pointsize>
+         <pointsize>18</pointsize>
          <bold>true</bold>
         </font>
        </property>
@@ -344,23 +399,16 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
-      <widget class="QPushButton" name="addRecordBtn">
-       <property name="minimumSize">
-        <size>
-         <width>165</width>
-         <height>35</height>
-        </size>
-       </property>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_2">
        <property name="font">
         <font>
-         <pointsize>16</pointsize>
+         <pointsize>18</pointsize>
          <bold>true</bold>
         </font>
        </property>
        <property name="text">
-        <string>Add
- Record</string>
+        <string>Headrope Depth</string>
        </property>
       </widget>
      </item>
