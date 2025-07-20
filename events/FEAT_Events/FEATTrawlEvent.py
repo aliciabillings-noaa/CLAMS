@@ -318,7 +318,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                 if not self.button_order:
                     # enable the niw and com event buttons and the comment button
                     self.pb_niw.setEnabled(True)
-                    self.pb_com.setEnabled(True)
+                    #self.pb_com.setEnabled(True)
                     self.commentBtn.setEnabled(True)
                 # if both NIW and NOD have been pressed, (the tow is complete) disable all buttons
                 # except for metadata, comment, and the done button
@@ -345,39 +345,6 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                                 if i_max < i:
                                     i_max = i
                         self.buttons[i_max + 1].setEnabled(True)
-
-    def disable_enable_buttons(self, action, btn=None):
-        """
-        disables/enables buttons depending on passed action; used when the metadata information is
-        entered or not
-        :param action: the action (disable or enable) to complete
-        :param btn: if this is set, it is to apply action to that single button
-        :return: none
-        """
-        if btn == 'events':
-            # got through all event buttons, except for COM
-            for btn in self.buttons:
-                if btn.text().lower() != 'com':
-                    if action == 'disable':
-                        btn.setEnabled(False)
-                    else:
-                        btn.setEnabled(True)
-                else:
-                    btn.setEnabled(True)
-        elif btn:
-            if action == 'disable':
-                btn.setEnabled(False)
-            else:
-                btn.setEnabled(True)
-        else:
-            # abort (only disable), done, net dimensions
-            if action == 'disable':
-                self.pb_abort.setEnabled(False)
-                self.doneBtn.setEnabled(False)
-                # self.netDimBtn.setEnabled(False)
-            else:
-                self.doneBtn.setEnabled(True)
-                # self.netDimBtn.setEnabled(True)
 
     def display_time(self, t_type, show_only=False):
         """
@@ -999,22 +966,6 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                 self.event_entered = True
                 # deal with buttons
                 self.determine_buttons()
-                """
-                self.disable_enable_buttons('disable', 'events')
-                if not self.button_order:
-                    # enable the niw and com buttons
-                    self.disable_enable_buttons('enable', self.pb_niw)
-                    self.disable_enable_buttons('enable', self.pb_com)
-                else:
-                    i_max = 0
-                    for i in self.idxs:
-                        if i != 6:
-                            self.disable_enable_buttons('disable', self.buttons[i])
-                            if i_max < i:
-                                i_max = i
-                    self.disable_enable_buttons('enable', self.buttons[i_max + 1])
-                """
-
             else:
                 print("temp:" + str(temp))
         else:
