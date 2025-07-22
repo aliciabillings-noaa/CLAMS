@@ -1249,6 +1249,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                         self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
                         self.activeSampleKey)
                 self.db.dbExec(sql)
+                self.activeSpcName = None
 
             #  refresh the species list
             self.reloadSamplesList()

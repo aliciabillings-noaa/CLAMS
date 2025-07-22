@@ -62,10 +62,11 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
         self.buttons = {self.pb_nh: 'num',
                         self.pb_nw: 'num',
                         self.pb_bd: 'num',
+                        self.pb_hd: 'num',
                         self.pb_wo: 'num',
                         self.pb_com: 'key'}
         # todo: this should be pulled from the database in the future? Will need to rejigger dialog
-        self.measurements = ['NetVerticalOpening', 'NetHorizontalOpening', 'BottomDepth',
+        self.measurements = ['NetVerticalOpening', 'NetHorizontalOpening', 'BottomDepth', 'HeadropeDepth',
                              'TrawlWireOut', 'EventComments']
         self.edit_flag = False
         self.numpad = numpad.NumPad(self)
@@ -99,6 +100,7 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
             self.pb_nh.setText('')
             self.pb_nw.setText('')
             self.pb_bd.setText('')
+            self.pb_hd.setText('')
             self.pb_wo.setText('')
             self.pb_com.setText('')
 
@@ -108,6 +110,7 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
                 self.pb_nh.setEnabled(False)
                 self.pb_nw.setEnabled(False)
                 self.pb_bd.setEnabled(False)
+                self.pb_hd.setEnabled(False)
                 self.pb_wo.setEnabled(False)
                 self.pb_com.setEnabled(False)
                 self.addRecordBtn.setEnabled(False)
@@ -115,6 +118,7 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
                 self.pb_nh.setEnabled(True)
                 self.pb_nw.setEnabled(True)
                 self.pb_bd.setEnabled(True)
+                self.pb_hd.setEnabled(True)
                 self.pb_wo.setEnabled(True)
                 self.pb_com.setEnabled(True)
                 self.addRecordBtn.setEnabled(True)
@@ -247,6 +251,7 @@ class NetDlgFEAT(QDialog, ui_NetDlg_FEAT.Ui_netDlg):
             self.netTable.clearSelection()
         # new record
         else:
+            print(len(self.buttons.keys()), len(self.measurements))
             i = 0
             for btn in self.buttons.keys():
                 if not btn.text() == '':

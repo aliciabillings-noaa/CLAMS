@@ -87,11 +87,12 @@ class PrintLabel:
         z_doc.add_zpl_raw("^XZ")
 
         # print it out to the screen as an image for now
+        """
         png = z_doc.render_png(label_width=5, label_height=3)
         fake_file = io.BytesIO(png)
         img = Image.open(fake_file)
         #img.show()
-
+        """
         # print to network printer
         printer = NetworkPrinter(self.ip, self.port)
         try:

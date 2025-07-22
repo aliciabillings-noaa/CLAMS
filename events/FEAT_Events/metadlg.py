@@ -83,7 +83,7 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
                     'FootropeSBE': [self.cb_foot_sbe, 'ga'],
                     'CameraSBE': [self.cb_cam_sbe, 'ga'],
                     'CameraType': [self.cb_cam_type, 'ga'],
-                    'CameraView': [self.cb_cam_view, 'ga']}
+                    'CameraView': [self.cb_cam_view, 'ga'],}
 
         # load dropdown boxes
         self.load_dropdowns()
@@ -152,9 +152,10 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
             self.cb_gear.addItem(gear)
             self.cb_gear.setCurrentIndex(-1)
 
+        # TODO: update this from db 2025 offseason
         # list of tom weights
         tom_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
-                   "WHERE gear_accessory = 'Tom_weights' AND active = 1")
+                   "WHERE gear_accessory = 'TomWeights' AND active = 1")
         tom_query = self.db.dbQuery(tom_sql)
         for tom, in tom_query:
             self.cb_toms.addItem(tom)
@@ -162,7 +163,7 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
 
         # list of net numbers
         net_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
-                   "WHERE gear_accessory='Net_nums' AND active = 1")
+                   "WHERE gear_accessory='NetNumber' AND active = 1")
         net_query = self.db.dbQuery(net_sql)
         for net, in net_query:
             self.cb_netnums.addItem(net)
@@ -185,9 +186,9 @@ class MetaDlg(QDialog, ui_MetaDlg.Ui_metaDlg):
 
         # camera type and view
         cam_t_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
-                     "WHERE gear_accessory = 'Cam_type' AND active = 1")
+                     "WHERE gear_accessory = 'CameraType' AND active = 1")
         cam_v_sql = ("SELECT gear_accessory_option FROM gear_accessory_options "
-                     "WHERE gear_accessory = 'Cam_view' AND active = 1")
+                     "WHERE gear_accessory = 'CameraView' AND active = 1")
         cam_t_query = self.db.dbQuery(cam_t_sql)
         cam_v_query = self.db.dbQuery(cam_v_sql)
         for c_type, in cam_t_query:

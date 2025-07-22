@@ -83,7 +83,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         self.meta_entered = False
         self.scientist = "Unknown"
         self.gear = "MFT"
-        self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth']
+        self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth18']
         self.meta_info = ['TrawlScientist', 'TargetDepth', 'TDLatitude', 'TDLongitude']
         self.streamEQHBLogInterval = None
         self.streamSlowLogInterval = None
@@ -318,7 +318,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                 if not self.button_order:
                     # enable the niw and com event buttons and the comment button
                     self.pb_niw.setEnabled(True)
-                    self.pb_com.setEnabled(True)
+                    #self.pb_com.setEnabled(True)
                     self.commentBtn.setEnabled(True)
                 # if both NIW and NOD have been pressed, (the tow is complete) disable all buttons
                 # except for metadata, comment, and the done button
@@ -345,39 +345,6 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                                 if i_max < i:
                                     i_max = i
                         self.buttons[i_max + 1].setEnabled(True)
-
-    def disable_enable_buttons(self, action, btn=None):
-        """
-        disables/enables buttons depending on passed action; used when the metadata information is
-        entered or not
-        :param action: the action (disable or enable) to complete
-        :param btn: if this is set, it is to apply action to that single button
-        :return: none
-        """
-        if btn == 'events':
-            # got through all event buttons, except for COM
-            for btn in self.buttons:
-                if btn.text().lower() != 'com':
-                    if action == 'disable':
-                        btn.setEnabled(False)
-                    else:
-                        btn.setEnabled(True)
-                else:
-                    btn.setEnabled(True)
-        elif btn:
-            if action == 'disable':
-                btn.setEnabled(False)
-            else:
-                btn.setEnabled(True)
-        else:
-            # abort (only disable), done, net dimensions
-            if action == 'disable':
-                self.pb_abort.setEnabled(False)
-                self.doneBtn.setEnabled(False)
-                # self.netDimBtn.setEnabled(False)
-            else:
-                self.doneBtn.setEnabled(True)
-                # self.netDimBtn.setEnabled(True)
 
     def display_time(self, t_type, show_only=False):
         """
@@ -999,22 +966,6 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                 self.event_entered = True
                 # deal with buttons
                 self.determine_buttons()
-                """
-                self.disable_enable_buttons('disable', 'events')
-                if not self.button_order:
-                    # enable the niw and com buttons
-                    self.disable_enable_buttons('enable', self.pb_niw)
-                    self.disable_enable_buttons('enable', self.pb_com)
-                else:
-                    i_max = 0
-                    for i in self.idxs:
-                        if i != 6:
-                            self.disable_enable_buttons('disable', self.buttons[i])
-                            if i_max < i:
-                                i_max = i
-                    self.disable_enable_buttons('enable', self.buttons[i_max + 1])
-                """
-
             else:
                 print("temp:" + str(temp))
         else:
@@ -1092,15 +1043,19 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
                         avg_sql = ("SELECT AVG(measurement_value) FROM " + self.schema
                                    + ".event_stream_data WHERE measurement_type='" + dev_name
                                    + "' AND time_stamp BETWEEN '" + td_time + "' AND '" + hb_time + "'")
-                        avg_query = self.db.dbQuery(avg_sql)
-                        dev_avg, = avg_query.first()
-                        # insert parameter into event_data
-                        insert_sql = ("INSERT INTO " + self.schema +
-                                      ".event_data (ship, survey, event_id, partition, event_parameter, "
-                                      "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
-                                      + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
-                                      + str(dev_avg) + "')")
-                        self.db.dbQuery(insert_sql)
+                        try:
+                            avg_query = self.db.dbQuery(avg_sql)
+                            dev_avg, = avg_query.first()
+                            if dev_avg:
+                                # insert parameter into event_data
+                                insert_sql = ("INSERT INTO " + self.schema +
+                                              ".event_data (ship, survey, event_id, partition, event_parameter, "
+                                              "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
+                                              + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
+                                              + str(dev_avg) + "')")
+                                self.db.dbQuery(insert_sql)
+                        except:
+                            pass
                 else:
                     msg = "Missing TD or HB for this tow, no averages can be calculated"
                     self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg, 'warning')
