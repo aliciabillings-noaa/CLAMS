@@ -96,7 +96,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.meta_entered = False
         self.scientist = "Unknown"
         self.gear = gearTypeDefault
-        self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth']
+        self.displayMeasurements = ['Latitude', 'Longitude', 'BottomDepth18']
         self.meta_info = ['Operator', 'Collection', 'FishingMode']
         self.streamEQHBLogInterval = None
         self.streamSlowLogInterval = None
