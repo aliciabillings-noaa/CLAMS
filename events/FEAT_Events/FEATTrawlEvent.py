@@ -409,6 +409,7 @@ class Event(QDialog, ui_FEATTrawlEvent.Ui_FEATTrawlEvent):
         # go through each event type entered into database and add to the table
         row = 0
         for ev, ts in ev_query:
+            self.dataTable.setRowCount(row + 1)
             # add to button order list
             self.button_order.append(ev)
             # set the button text
