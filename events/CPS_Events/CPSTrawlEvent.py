@@ -680,7 +680,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         if self.dispVector:
             # iterate through SCS lat, long, and depth an display in table
             for val in self.dispVector:
-                self.dataTable.setItem(self.cur_dt_row, val + 2, QTableWidgetItem(self.dispVector[val]))
+                self.dataTable.setItem(ind, val + 2, QTableWidgetItem(self.dispVector[val]))
         self.dataTable.resizeColumnsToContents()
 
         # deal with the timers and buttons
