@@ -1000,6 +1000,9 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.basketTable.setItem(basketCount, 0, QTableWidgetItem(basketWeight))
             self.basketTable.setItem(basketCount, 1, QTableWidgetItem(count))
             self.basketTable.setItem(basketCount, 2, QTableWidgetItem(basketType))
+
+            if 'nwfsc' in self.settings['OrganizationName'].lower() and basketType == 'Measure':
+                self.basketTable.item(basketCount, 2).setBackground(QColor(127, 255, 212))
             basketCount += 1
 
         #  resize columns and scroll to bottom
