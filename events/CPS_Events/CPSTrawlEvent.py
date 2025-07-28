@@ -839,8 +839,11 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         """
 
         # get the timestamp
-        self.cur_time = self.dataTable.item(self.dataTable.currentRow(), 1).text()
-        self.net_btn = self.dataTable.item(self.dataTable.currentRow(), 0).text()
+        curTime = self.dataTable.item(self.dataTable.currentRow(), 1)
+        netBtn = self.dataTable.item(self.dataTable.currentRow(), 0)
+        # Checking for null values
+        self.cur_time = curTime.text() if curTime else ''
+        self.net_btn = netBtn.text() if netBtn else ''
 
         if self.net_btn in [Events.EQ.name, 
                             Events.Haulback.name, 

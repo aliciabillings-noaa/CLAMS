@@ -166,6 +166,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.speciesList.itemActivated.connect(self.getSpeciesFocus)
         self.basketTable.itemSelectionChanged.connect(self.getBasketRow)
         self.transBtn.clicked.connect(self.transferSample)
+        self.commentBtn.setDisabled(True)  # initially disabled
         self.commentBtn.clicked.connect(self.getComment)
         self.spcDlg.changed.connect(self.addSpecies)
 
@@ -638,6 +639,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         '''
         self.basketTable.setEnabled(True)
         self.sumTable.setEnabled(True)
+        self.commentBtn.setEnabled(True)
 
         # default setting for a species is no whole haul
 
@@ -1717,7 +1719,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.comment = keyDialog.dispEdit.toPlainText()
 
             #  strip newlines from the comment before updating database
-            newComment = self.comment.split('\n')
+            newComment = self.comment.replace('\n', '') if self.comment else ''
             commentText = ' '.join(newComment)
 
             #  update the comment in samples
