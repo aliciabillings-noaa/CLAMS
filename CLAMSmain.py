@@ -58,7 +58,7 @@ from ui import ui_CLAMSMain
 
 class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
 
-    def __init__(self, dataSource, user, password, settings, parent=None):
+    def __init__(self, dataSource, user, password, settings, schema=None, hostname=None, port=None, parent=None):
         #  initialize the superclasses
         super().__init__(parent)
 
@@ -72,11 +72,13 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
 
         #  set database credentials
         self.db = None
-        self.schema = user
+        self.schema = schema if schema else user
         self.dbName = dataSource
         self.dbUser = user
         self.dbPassword = password
         self.settings = settings
+        self.hostname = hostname
+        self.port = port
 
         #  restore the application state
         self.appSettings = QSettings('CLAMS', 'MainWindow')
@@ -280,7 +282,7 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
         #  create an instance of our dbConnection
         self.db = dbConnection.dbConnection(self.dbName, self.dbUser,
                 self.dbPassword, label=self.schema, isOracle=isOracle,
-                driver=driver)
+                driver=driver, hostname=self.hostname, port=self.port)
 
         #  and try to connect
         try:
@@ -497,7 +499,7 @@ class CLAMSMain(QMainWindow, ui_CLAMSMain.Ui_clamsMain):
             #  get the time the active event came on deck
             sql = ("SELECT parameter_value FROM " + self.schema +
                     ".event_data WHERE event_parameter IN ('Haulback', 'HB') AND event_id="+
-                    event + "AND ship="+self.ship+" AND survey="+self.survey)
+                    event + " AND ship="+self.ship+" AND survey="+self.survey)
             query = self.db.dbQuery(sql)
             eventTime, = query.first()
             if eventTime is None:
@@ -696,6 +698,10 @@ if __name__ == "__main__":
     dataSource = initSettings.value('ODBC_Data_Source', '')
     user = initSettings.value('User', '')
     password = initSettings.value('Password', '')
+    schema = initSettings.value('Schema', '')
+    hostname = initSettings.value('Hostname', '')
+    port = initSettings.value('Port', None)
+    port = int(port, 0) if port else None
 
     #  extract the application paths and settings
     settings = {}
@@ -711,7 +717,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     #  create an instance of the CLAMS main form
-    form = CLAMSMain(dataSource, user, password, settings)
+    form = CLAMSMain(dataSource, user, password, settings, schema, hostname, port)
 
     #  show it
     form.show()
