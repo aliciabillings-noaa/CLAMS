@@ -219,7 +219,7 @@ class dbConnection:
     '''
 
     def __init__(self, source, username, password, label='db', driver='QODBC',
-            isOracle=True, hostname=None):
+            isOracle=True, hostname=None, port=None):
 
 
         #  force isOracle keyword for drivers that are obviously *not* oracle
@@ -237,8 +237,9 @@ class dbConnection:
         self.db.setUserName(username)
         self.db.setPassword(password)
         if hostname:
+            port = port if port else 5432
             self.db.setHostName(hostname)
-            self.db.setPort(5432)
+            self.db.setPort(port)
 
         self.label = label
         self.lastError = ''
