@@ -248,14 +248,14 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         self.sensorMonitor.SensorError.connect(self.device_error)
 
         #  get the devices attached to this workstation
-        self.deviceData = devices.getDevices(self.db, self.workStation)
+        self.deviceData = devices.getDevices(self.db, self.workStation, self.schema)
         
         #  set up each device
         for deviceName in self.deviceData:
             #  try to get the configuration parameters for this device
             #  this will fail if a required parameter is missing.
             try:
-                deviceParams = devices.getDeviceParameters(self.db, deviceName,
+                deviceParams = devices.getDeviceParameters(self.db, self.schema, deviceName,
                                                            self.deviceData[deviceName]['id'],
                                                            self.deviceData[deviceName]['interface'])
             except Exception as e:

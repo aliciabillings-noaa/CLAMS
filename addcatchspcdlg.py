@@ -59,6 +59,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         self.mixCreateFlag = False
         self.mixAddFlag = False
         self.db = parent.db
+        self.schema = parent.schema
         self.ship = parent.ship
         self.survey = parent.survey
         self.activeHaul = parent.activeHaul
@@ -127,9 +128,9 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         self.historyHauls = []
 
         sql = ("SELECT a.event_id, a.gear FROM (SELECT event_id, gear, " +
-                "ship, survey FROM events) a JOIN (SELECT gear, gear_type " +
-                "FROM gear) b ON a.gear = b.gear JOIN (SELECT gear_type, " +
-                "retains_catch from gear_types) c ON b.gear_type = c.gear_type " +
+                "ship, survey FROM " + self.schema + ".events) a JOIN (SELECT gear, gear_type " +
+                "FROM " + self.schema + ".gear) b ON a.gear = b.gear JOIN (SELECT gear_type, " +
+                "retains_catch from " + self.schema + ".gear_types) c ON b.gear_type = c.gear_type " +
                 "WHERE a.ship = " + self.ship + " AND a.survey= " + self.survey +
                 " AND c.retains_catch > 0  ORDER BY event_id ASC")
         eventQuery = self.db.dbQuery(sql)
@@ -178,7 +179,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
             self.wholeHaulBtn.setEnabled(False)
 
         # find out if we have a mix1
-        sql = ("SELECT sample_id FROM samples WHERE ship=" + self.ship +
+        sql = ("SELECT sample_id FROM  " + self.schema + ".samples WHERE ship=" + self.ship +
                 " AND survey=" + self.survey+ " AND event_id=" + self.activeHaul +
                 " AND partition='" + self.activePartition + "' AND species_code=100002")
         query = self.db.dbQuery(sql)
@@ -190,7 +191,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
             self.subMix1Btn.setEnabled(False)
         else:
             # we have a mix 1 - check if we have a submix for mix 1
-            sql = ("SELECT sample_id FROM samples WHERE ship=" + self.ship +
+            sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
                     " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
                     " AND partition='" + self.activePartition + "' AND species_code=100003")
             query = self.db.dbQuery(sql)
@@ -200,7 +201,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
                 self.subMix1Btn.setEnabled(False)
 
         #  check if there is a mix2
-        sql = ("SELECT sample_id FROM samples WHERE ship=" + self.ship +
+        sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
                 " AND survey = " + self.survey+ " AND event_id=" + self.activeHaul +
                 " AND partition ='" + self.activePartition + "' AND species_code=100004")
         query = self.db.dbQuery(sql)
@@ -251,13 +252,13 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         self.fullspcSList.clear()
 
         if self.chars == '':
-            commonQuery = "SELECT species.common_name FROM species ORDER BY species.common_name"
-            sciQuery = "SELECT species.scientific_name FROM species WHERE species_code<999900 ORDER BY species.scientific_name"
+            commonQuery = "SELECT species.common_name FROM " + self.schema + ".species ORDER BY species.common_name"
+            sciQuery = "SELECT species.scientific_name FROM " + self.schema + ".species WHERE species_code<999900 ORDER BY species.scientific_name"
         else:
             like_exp = "'%"+self.chars+"%'"
-            commonQuery = ("SELECT species.common_name FROM species WHERE upper(species.common_name)" +
+            commonQuery = ("SELECT species.common_name FROM " + self.schema + ".species WHERE upper(species.common_name)" +
                 " LIKE upper(" + like_exp + ") AND species_code<999900 ORDER BY species.common_name")
-            sciQuery = ("SELECT species.scientific_name FROM species WHERE upper(species.scientific_name) "+
+            sciQuery = ("SELECT species.scientific_name FROM " + self.schema + ".species WHERE upper(species.scientific_name) "+
                 " LIKE upper(" + like_exp + ") AND species_code<999900 ORDER BY species.scientific_name")
 
         query = self.db.dbQuery(commonQuery)
@@ -284,12 +285,12 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         if self.nameTab.currentIndex() == 0:
             self.nameType='common'
             sql = ("SELECT species.species_code  "+
-                    "FROM species WHERE species.common_name='"+
+                    "FROM " + self.schema + ".species WHERE species.common_name='"+
                     self.listOrigin.currentItem().text()+"'")
         else:
             self.nameType='scientific'
             sql = ("SELECT species.species_code  "+
-                    "FROM species WHERE species.scientific_name='"+
+                    "FROM " + self.schema + ".species WHERE species.scientific_name='"+
                     self.listOrigin.currentItem().text()+"'")
 
         query = self.db.dbQuery(sql)
@@ -299,7 +300,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
 
         # check for species subcategories
         subcats = []
-        sql = ("SELECT subcategory FROM species_associations WHERE species_code="+
+        sql = ("SELECT subcategory FROM " + self.schema + ".species_associations WHERE species_code="+
                 self.activeSpcCode)
         query = self.db.dbQuery(sql)
         for subcat, in query:
@@ -339,7 +340,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
             #  yes, check if we have seen this species before
             self.previous = 0
             if int(self.activeSpcCode) < 99999:# not a mix
-                sql = ("SELECT parameter_value FROM species_data WHERE species_code="+
+                sql = ("SELECT parameter_value FROM " + self.schema + ".species_data WHERE species_code="+
                         self.activeSpcCode+" AND subcategory='"+self.activeSpcSubcat+
                         "' AND LOWER(species_parameter)='previous_occurrence'")
                 query = self.db.dbQuery(sql)
@@ -372,7 +373,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         # submix check
         if self.activeSpcCode == '100003':
             # find out if we have some mixes
-            sql = ("SELECT sample_id FROM samples WHERE ship=" + self.ship +
+            sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
                     " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
                     " AND partition='" + self.activePartition + "' AND species_code=100002")
             query = self.db.dbQuery(sql)
@@ -483,8 +484,8 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
         hauls = ','.join(self.historyHauls)
 
 
-        sql = ("SELECT species.common_name, species.species_code FROM species INNER " +
-                "JOIN samples ON species.species_code=samples.species_code WHERE " +
+        sql = ("SELECT species.common_name, species.species_code FROM " + self.schema + ".species INNER " +
+                "JOIN " + self.schema + ".samples ON species.species_code=samples.species_code WHERE " +
                 "(samples.event_id IN (" + hauls + ") AND (samples.survey = " +
                 self.survey+") AND species.species_code not in (100000, 100001) " +
                 "AND species.species_code<900000) GROUP BY species.common_name," +
@@ -495,7 +496,7 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
 
         for commonName, spCode in spQuery:
             spcList.append(commonName)
-            sql = ("SELECT SUM(BASKETS.WEIGHT) FROM BASKETS,SAMPLES WHERE " +
+            sql = ("SELECT SUM(BASKETS.WEIGHT) FROM " + self.schema + ".BASKETS, " + self.schema + ".SAMPLES WHERE " +
                     "((SAMPLES.SAMPLE_ID=BASKETS.SAMPLE_ID) AND (SAMPLES.SPECIES_CODE="+
                     spCode + ") AND (SAMPLES.SURVEY="+self.survey+ ") AND " +
                     "(SAMPLES.event_id IN(" + hauls + ")))" )

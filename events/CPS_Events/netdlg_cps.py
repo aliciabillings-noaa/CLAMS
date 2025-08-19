@@ -87,7 +87,7 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
         if cur_time:
             self.cur_time = cur_time
 
-            sql = ("SELECT measurement_type, measurement_value FROM EVENT_STREAM_DATA WHERE" +
+            sql = ("SELECT measurement_type, measurement_value FROM " + self.schema + ".EVENT_STREAM_DATA WHERE" +
                 " SHIP=" + self.ship + 
                 " and survey=" + self.survey +
                 " and event_id=" + self.activeEvent +

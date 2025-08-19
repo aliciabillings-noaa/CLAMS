@@ -140,7 +140,7 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         """
         # Overall lookups
         # List of scientists for the fisher
-        sci_sql = "SELECT scientist FROM personnel WHERE active=1 ORDER BY scientist"
+        sci_sql = "SELECT scientist FROM " + self.schema + ".personnel WHERE active=1 ORDER BY scientist"
         sci_query = self.db.dbQuery(sci_sql)
         for sci, in sci_query:
             self.cb_operator.addItem(sci)
@@ -155,7 +155,7 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
 
         # Gear tab
         # List of gear
-        gear_sql = "SELECT gear FROM gear WHERE active=1"
+        gear_sql = "SELECT gear FROM " + self.schema + ".gear WHERE active=1"
         gear_query = self.db.dbQuery(gear_sql)
         for gear, in gear_query:
             self.cb_gear.addItem(gear)

@@ -203,7 +203,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  First, check to see if haul form has been checked for codend partition
         if 'codend' in self.activePartition.lower():
-            sql = ("SELECT parameter_value FROM event_data WHERE ship="+self.ship+
+            sql = ("SELECT parameter_value FROM  " + self.schema + ".event_data WHERE ship="+self.ship+
                 " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                 " AND partition='" + self.activePartition +
                 "' AND event_parameter='PartitionWeightType'")
@@ -220,8 +220,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 return
 
         # get sample types
-        sql = ("SELECT gear_options.basket_type FROM gear_options INNER JOIN " +
-                "events ON gear_options.gear=events.gear WHERE events.ship=" + self.ship+
+        sql = ("SELECT gear_options.basket_type FROM " + self.schema + ".gear_options INNER JOIN " +
+                self.schema + ".events ON gear_options.gear=events.gear WHERE events.ship=" + self.ship+
                 " AND events.survey=" + self.survey + " AND events.event_id=" + self.activeHaul+
                 " AND gear_options.basket_type is not NULL ORDER BY gear_options.basket_type")
         query = self.db.dbQuery(sql)
@@ -237,7 +237,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.sumTable.setVerticalHeaderItem(i, headerItem)
 
         #  check if this is a plankton trawl  - they're handled a bit differently
-        sql = ("SELECT GEAR.GEAR_TYPE FROM events, GEAR WHERE (events.GEAR = "+
+        sql = ("SELECT GEAR.GEAR_TYPE FROM " + self.schema + ".events, " + self.schema + ".GEAR WHERE (events.GEAR = "+
                 "GEAR.GEAR ) and  ((events.SHIP = "+self.ship+" ) AND (events.SURVEY = "+
                 self.survey+" ) AND (events.event_id = "+self.activeHaul+"))")
         query = self.db.dbQuery(sql)
@@ -248,7 +248,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  Check if we have a label printer attached at this workstation. If so,
         #  create the printer object and if not, disable the print button
         sql = ("SELECT MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME " +
-                "FROM MEASUREMENT_SETUP INNER JOIN DEVICES ON " +
+                "FROM " + self.schema + ".MEASUREMENT_SETUP INNER JOIN  " + self.schema + ".DEVICES ON " +
                 "MEASUREMENT_SETUP.DEVICE_ID = DEVICES.DEVICE_ID WHERE " +
                 "MEASUREMENT_SETUP.WORKSTATION_ID = " +  self.workStation +
                 " AND DEVICES.DEVICE_NAME = 'Label_Printer'" +
@@ -278,8 +278,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.printer = None
             self.printBtn.setEnabled(False)
         #  set up the printer sound.
-        sql = ("select a.parameter_value from device_configuration a," +
-                "devices b where a.device_id=b.device_id " +
+        sql = ("select a.parameter_value from " + self.schema + ".device_configuration a," +
+                self.schema + ".devices b where a.device_id=b.device_id " +
                 "and b.device_name='Label_Printer' and a.device_parameter='SoundFile'")
         query = self.db.dbQuery(sql)
         soundFile, = query.first()
@@ -297,21 +297,21 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  setup parent sample. if not present, create whole catch sample which is
         #  the top level sample (no parent)
-        sql = ("SELECT sample_id FROM samples WHERE ship="+self.ship+" AND survey="+
+        sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship="+self.ship+" AND survey="+
                 self.survey+" AND event_id="+self.activeHaul+" AND partition ='"+self.activePartition+
                 "' AND species_code=100001")
         query = self.db.dbQuery(sql)
         sampleID, = query.first()
         if not sampleID:
             #  the parent sample doesn't exist yet, so create it.
-            sql = ("INSERT INTO samples (ship, survey, event_id, partition, " +
+            sql = ("INSERT INTO " + self.schema + ".samples (ship, survey, event_id, partition, " +
                     "sample_type,species_code, scientist) VALUES("+self.ship+","+self.survey+
                     ","+self.activeHaul+ ",'"+self.activePartition+"','SortingTable',100001,'"
                     +self.scientist+"')")
             self.db.dbExec(sql)
 
             #  now retrieve newly created sample ID from database
-            sql = ("SELECT sample_id FROM samples WHERE ship="+self.ship+
+            sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship="+self.ship+
                     " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND partition ='"+self.activePartition+"' AND species_code=100001")
             query = self.db.dbQuery(sql)
@@ -320,7 +320,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.sortingTableKey = sampleID
 
         # is this a splitter?  if so create whole haul parent key
-        sql = ("SELECT event_data.PARAMETER_VALUE FROM event_data  WHERE " +
+        sql = ("SELECT event_data.PARAMETER_VALUE FROM " + self.schema + ".event_data  WHERE " +
                 "(event_data.SHIP="+self.ship+") AND (event_data.SURVEY="+self.survey+
                 ") AND (event_data.event_id="+self.activeHaul+") AND "+
                 "(event_data.PARTITION='"+self.activePartition+"') AND "+
@@ -333,7 +333,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             if partitionWeightType.lower() != 'not_subsampled':
                 #  this is a splitter - check if we have the whole haul
                 #  sample and if not, create it.
-                sql = ("SELECT sample_id FROM samples WHERE ship="+self.ship+
+                sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship="+self.ship+
                         " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                         " AND partition ='"+self.activePartition+"' AND species_code=100000")
                 query = self.db.dbQuery(sql)
@@ -342,14 +342,14 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 if not wholeHaulID:
                     #  we don't already have this sample id- first catch has been run
                     #  for this event.
-                    sql = ("INSERT INTO samples (ship, survey, event_id, partition, " +
+                    sql = ("INSERT INTO " + self.schema + ".samples (ship, survey, event_id, partition, " +
                             " sample_type, species_code,scientist) VALUES("+self.ship+","+self.survey+
                             ","+self.activeHaul+",'"+self.activePartition+"'"+
                             ",'WholeHaul',100000, '"+self.scientist+"')")
                     self.db.dbExec(sql)
 
                     # retrieve newly created sample key from database
-                    sql = ("SELECT sample_id FROM samples WHERE ship="+self.ship+
+                    sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship="+self.ship+
                             " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                             " AND partition ='"+self.activePartition+"' AND species_code=100000")
 
@@ -359,7 +359,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 self.wholeHaulKey = wholeHaulID
 
                 # update parent key for 'sorting table' sample
-                sql = ("UPDATE samples SET parent_sample="+self.wholeHaulKey+" WHERE ship="+self.ship+
+                sql = ("UPDATE " + self.schema + ".samples SET parent_sample="+self.wholeHaulKey+" WHERE ship="+self.ship+
                     " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND partition ='"+self.activePartition+"' AND species_code=100001")
                 self.db.dbExec(sql)
@@ -374,7 +374,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.whHaulFlag=False
 
         #  get the list of possible subcategories
-        sql = ("SELECT subcategory FROM species_subcategories")
+        sql = ("SELECT subcategory FROM " + self.schema + ".species_subcategories")
         query = self.db.dbQuery(sql)
         for subcategory, in query:
             self.subcategories.append(subcategory)
@@ -433,7 +433,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  check if we have a mix
         for code in ['100002', '100003', '100004']:
             sql = ("SELECT species.common_name, samples.sample_id  " +
-                    "FROM samples, species WHERE species.species_code=samples.species_code " +
+                    "FROM " + self.schema + ".samples, " + self.schema + 
+                    ".species WHERE species.species_code=samples.species_code " +
                     "AND samples.species_code =" + code + " AND samples.ship=" + self.ship +
                     " AND samples.survey=" + self.survey + " AND samples.event_id=" +
                     self.activeHaul + " AND samples.partition='" + self.activePartition + "'")
@@ -467,7 +468,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 return
 
         #  insert this data into the samples table
-        sql = ("INSERT INTO samples (ship,survey,event_id,partition,sample_type," +
+        sql = ("INSERT INTO " + self.schema + ".samples (ship,survey,event_id,partition,sample_type," +
                 "species_code,subcategory,parent_sample,scientist) VALUES("+
                 self.ship+","+self.survey+","+ self.activeHaul+",'"+self.activePartition+
                 "','"+sampleType+"',"+code+",'"+subCat+"',"+parentSample+",'"+
@@ -475,7 +476,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.db.dbExec(sql)
 
         #  get the new sample ID for the just inserted sample
-        sql = ("SELECT max(sample_id) FROM samples WHERE ship="+self.ship+
+        sql = ("SELECT max(sample_id) FROM " + self.schema + ".samples WHERE ship="+self.ship+
                 " AND survey="+self.survey+" AND event_id="+ self.activeHaul+
                 " AND partition ='"+self.activePartition+"'")
         query = self.db.dbQuery(sql)
@@ -485,7 +486,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  insert the sample_display_name param in the sample_data table. This
         #  informs CLAMS as to which name (sci or common) to display in the UI
         #  for this sample.
-        sql = ("INSERT INTO sample_data (ship,survey,event_id,sample_id,sample_parameter,"
+        sql = ("INSERT INTO " + self.schema + ".sample_data (ship,survey,event_id,sample_id,sample_parameter,"
                 "parameter_value) VALUES("+self.ship+","+self.survey+","+
                 self.activeHaul+","+sample_id+",'sample_display_name','"+nameType+"')")
         self.db.dbExec(sql)
@@ -507,7 +508,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         sampleId = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
         parentSample = self.speciesList.item(self.speciesList.currentRow(), 1).text()
 
-        sql = ("SELECT sample_type from samples WHERE ship=" + self.ship +
+        sql = ("SELECT sample_type from " + self.schema + ".samples WHERE ship=" + self.ship +
                 " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
                 " AND sample_id=" + sampleId)
         query = self.db.dbQuery(sql)
@@ -540,7 +541,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.inMixFlag = False
 
         #  load this sample's comments
-        sql = ("SELECT comments FROM samples WHERE (ship=" + self.ship +
+        sql = ("SELECT comments FROM " + self.schema + ".samples WHERE (ship=" + self.ship +
                 " and survey=" + self.survey + " and event_id=" + self.activeHaul +
                 " and sample_id=" +self.activeSampleKey + ")")
         query = self.db.dbQuery(sql)
@@ -593,7 +594,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         checkSampleExists checks if the sample ID is still present in the database. Returns
         True if so, and False if not.
         '''
-        sql = ("SELECT sample_id from samples WHERE ship=" + self.ship +
+        sql = ("SELECT sample_id from " + self.schema + ".samples WHERE ship=" + self.ship +
                 " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
                 " AND sample_id=" + sampID)
         query = self.db.dbQuery(sql)
@@ -653,7 +654,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  check if the sample ID is still present in the database. It could have been
         #  deleted by a different user after it was added here.
         sampleId = self.speciesList.verticalHeaderItem(self.speciesList.currentRow()).text()
-        sql = ("SELECT sample_id, sample_type from samples WHERE ship=" + self.ship +
+        sql = ("SELECT sample_id, sample_type from " + self.schema + ".samples WHERE ship=" + self.ship +
                 " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
                 " AND sample_id=" + sampleId)
         query = self.db.dbQuery(sql)
@@ -719,7 +720,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         else:
             self.inMixFlag = False
 
-        sql = ("SELECT comments FROM samples WHERE (ship=" + self.ship +
+        sql = ("SELECT comments FROM " + self.schema + ".samples WHERE (ship=" + self.ship +
                 " and survey=" + self.survey + " and event_id=" +self.activeHaul +
                 " and sample_id=" + self.activeSampleKey + ")")
         query = self.db.dbQuery(sql)
@@ -978,7 +979,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  query the baskets for this sample ID and populate the baskets table
         sql = ("SELECT basket_id, weight, count, basket_type " +
-                "FROM baskets WHERE ship="+self.ship+" AND survey="+self.survey+
+                "FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+self.survey+
                 " AND event_id="+self.activeHaul+" AND sample_id ="+
                 self.activeSampleKey+" ORDER BY basket_id")
         query = self.db.dbQuery(sql)
@@ -1063,24 +1064,24 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 "Are you REALLY sure you want to delete these specimen?", 'choice')
         if self.message.exec():
             #  they want to do it - delete the measurements
-            sql = ("DELETE FROM measurements WHERE ship=" + self.ship +
+            sql = ("DELETE FROM " + self.schema + ".measurements WHERE ship=" + self.ship +
                     " AND survey = " + self.survey + " AND event_id=" + self.activeHaul +
                     " AND sample_id ="+ self.activeSampleKey)
             self.db.dbExec(sql)
 
             #  delete the specimen records
-            sql = ("DELETE FROM specimen WHERE ship=" + self.ship +
+            sql = ("DELETE FROM " + self.schema + ".specimen WHERE ship=" + self.ship +
                     " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                     " AND sample_id ="+self.activeSampleKey)
             self.db.dbExec(sql)
 
             #  try to delete from the catch summary and length histogram tables - these will be
             #  populated at this point if a user has come back into CLAMS to edit a past haul
-            sql = ("DELETE FROM catch_summary WHERE ship=" + self.ship +
+            sql = ("DELETE FROM " + self.schema + ".catch_summary WHERE ship=" + self.ship +
                     " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                     " AND sample_id ="+self.activeSampleKey)
             self.db.dbExec(sql)
-            sql = ("DELETE FROM length_histogram WHERE ship=" + self.ship +
+            sql = ("DELETE FROM " + self.schema + ".length_histogram WHERE ship=" + self.ship +
                     " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                     " AND sample_id ="+self.activeSampleKey)
             self.db.dbExec(sql)
@@ -1118,7 +1119,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         nMeasure = 0
 
         #  first check if we have specimen - this process a bit more complicated with specimen
-        sql = ("SELECT specimen_id FROM specimen WHERE ship="+self.ship+" AND survey="+
+        sql = ("SELECT specimen_id FROM " + self.schema + ".specimen WHERE ship="+self.ship+" AND survey="+
                 self.survey+" AND event_id="+self.activeHaul+" AND sample_id ="+self.activeSampleKey)
         query = self.db.dbQuery(sql)
         specimenID, = query.first()
@@ -1129,7 +1130,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  determine type and count of baskets for this sample. We need to know this because if
         #  the user is trying to delete the last "measure" basket and there are samples, the
         #  samples have to be deleted too.
-        sql = ("SELECT basket_type FROM baskets WHERE ship="+self.ship+
+        sql = ("SELECT basket_type FROM " + self.schema + ".baskets WHERE ship="+self.ship+
                 " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "
                 +self.activeSampleKey)
         query = self.db.dbQuery(sql)
@@ -1151,7 +1152,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             #  if there is only 1 measure basket left and there are specimen, check if the selected
             #  basket is that lone measure basket
             if nMeasure == 1 and hasSpecimen:
-                sql = ("SELECT basket_type FROM baskets WHERE ship="+self.ship+
+                sql = ("SELECT basket_type FROM " + self.schema + ".baskets WHERE ship="+self.ship+
                         " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND basket_id="+
                         self.selRecord[0])
                 query = self.db.dbQuery(sql)
@@ -1177,7 +1178,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
                 #  Either this basket wasn't a measure type or it was and we deleted all of the
                 #  associated specimen. Now we delete the basket
-                sql = ("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
+                sql = ("DELETE FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
                         self.survey+" AND event_id="+self.activeHaul+" AND basket_id="+
                         self.selRecord[0])
                 self.db.dbExec(sql)
@@ -1190,7 +1191,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                         "to permanently delete this basket, "+self.firstName+"?", 'choice')
                 if self.message.exec():
                     #  user chose to delete
-                    sql = ("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
+                    sql = ("DELETE FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
                             self.survey+" AND event_id="+self.activeHaul+" AND basket_id="+
                             self.selRecord[0])
                     self.db.dbExec(sql)
@@ -1225,7 +1226,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                         return
 
                     # kill the baskets
-                    sql = ("DELETE FROM baskets WHERE ship="+self.ship+" AND survey="+
+                    sql = ("DELETE FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
                             self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
                             self.activeSampleKey)
                     self.db.dbExec(sql)
@@ -1234,23 +1235,23 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 #  populated at this point if a user has come back into CLAMS to edit a past haul
                 #  (depending on the execution path this might have already been done but it doesn't
                 #  hurt to try again here.)
-                sql = ("DELETE FROM catch_summary WHERE ship=" + self.ship +
+                sql = ("DELETE FROM " + self.schema + ".catch_summary WHERE ship=" + self.ship +
                         " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                         " AND sample_id ="+self.activeSampleKey)
                 self.db.dbExec(sql)
-                sql = ("DELETE FROM length_histogram WHERE ship=" + self.ship +
+                sql = ("DELETE FROM " + self.schema + ".length_histogram WHERE ship=" + self.ship +
                         " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
                         " AND sample_id ="+self.activeSampleKey)
                 self.db.dbExec(sql)
 
                 # delete the sample_data
-                sql = ("DELETE FROM sample_data WHERE ship="+self.ship+" AND survey="+
+                sql = ("DELETE FROM " + self.schema + ".sample_data WHERE ship="+self.ship+" AND survey="+
                         self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
                         self.activeSampleKey)
                 self.db.dbExec(sql)
 
                 #  and then delete the sample
-                sql = ("DELETE FROM samples WHERE ship="+self.ship+" AND survey="+
+                sql = ("DELETE FROM " + self.schema + ".samples WHERE ship="+self.ship+" AND survey="+
                         self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
                         self.activeSampleKey)
                 self.db.dbExec(sql)
@@ -1387,7 +1388,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.returnFlag=False
 
         #  check for any mixes in this partition
-        sql = ("SELECT sample_id, sample_type, species_code from samples WHERE ship=" +
+        sql = ("SELECT sample_id, sample_type, species_code from " + self.schema + ".samples WHERE ship=" +
                 self.ship + " AND survey=" + self.survey+" AND event_id = " +
                 self.activeHaul+" AND partition='" + self.activePartition +
                 "' AND LOWER(sample_type) LIKE LOWER('%mix%')")
@@ -1428,7 +1429,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  check if all of the samples have at least one basket. First get the samples
         sql = ("SELECT species.common_name, samples.sample_id, samples.species_code, " +
-                "samples.subcategory FROM samples, species WHERE " +
+                "samples.subcategory FROM " + self.schema + ".samples, " + self.schema + ".species WHERE " +
                 "species.species_code=samples.species_code AND (LOWER(samples.sample_type)" +
                 "='species' OR LOWER(samples.sample_type) LIKE LOWER('%mix%')) " +
                 "AND samples.ship=" + self.ship + " AND samples.survey=" +
@@ -1438,7 +1439,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  loop thru each sample and check if it has at least one basket
         for commonName, sampleId, spCode, subcat in sampleQuery:
-            sql = ("SELECT COUNT(basket_id) FROM baskets WHERE ship="+self.ship+" AND survey="+
+            sql = ("SELECT COUNT(basket_id) FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
                     self.survey+" AND event_id = "+self.activeHaul+" AND sample_id = "+
                     sampleId)
             basketQuery = self.db.dbQuery(sql)
@@ -1475,7 +1476,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         '''
         #  get the mix subsample weight
         mixSubWeight = 0
-        sql = ("SELECT SUM(weight) FROM baskets WHERE ship="+self.ship+" AND survey="+
+        sql = ("SELECT SUM(weight) FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
                 self.survey+" AND event_id = "+self.activeHaul+" AND sample_id="+sampleId+
                 " AND basket_type = 'Measure'")
         query = self.db.dbQuery(sql)
@@ -1488,7 +1489,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  get the mix species weight
         mixSpeciesWeight = 0
-        sql = ("SELECT SUM(baskets.weight) FROM samples, baskets WHERE samples.sample_id = "+
+        sql = ("SELECT SUM(baskets.weight) FROM " + self.schema + ".samples, baskets WHERE samples.sample_id = "+
                 "baskets.sample_id AND samples.ship=baskets.ship AND " +
                 "samples.survey=baskets.survey AND samples.event_id=baskets.event_id " +
                 "AND samples.ship="+self.ship+" AND samples.survey="+
@@ -1538,7 +1539,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         # todo: AB - this would be nice if it could be ordered by the parent and then the sample_id
         sql = ("SELECT samples.sample_id, species.common_name, species.scientific_name," +
                 "species.species_code, samples.parent_sample, samples.subcategory, samples.sample_type"+
-                " FROM samples, species WHERE samples.species_code=species.species_code AND " +
+                " FROM " + self.schema + ".samples, " + self.schema + ".species WHERE samples.species_code=species.species_code AND " +
                 "samples.ship="+self.ship+" AND samples.survey=" + self.survey +
                 " AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
                 self.activePartition+"' AND samples.species_code NOT IN " +
@@ -1548,7 +1549,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             #  get the namespace - if the species is added using common name,
             #  then we display the common name. If added with the sci name,
             #  we display the sci name.
-            sql = ("SELECT parameter_value FROM sample_data WHERE sample_parameter=" +
+            sql = ("SELECT parameter_value FROM " + self.schema + ".sample_data WHERE sample_parameter=" +
                     "'sample_display_name' AND ship=" + self.ship + " AND survey=" +
                     self.survey + " AND event_id=" + self.activeHaul +
                     "AND sample_id="+ sampleId)
@@ -1578,7 +1579,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 name = species
 
             #  get the parent sample name
-            sql = ("SELECT b.common_name FROM samples a JOIN species b ON " +
+            sql = ("SELECT b.common_name FROM " + self.schema + ".samples a JOIN " + self.schema + ".species b ON " +
                     "a.species_code=b.species_code WHERE a.ship=" + self.ship +
                     " AND a.survey=" + self.survey+" AND a.event_id=" +
                     self.activeHaul + " AND a.sample_id=" + parentId)
@@ -1591,7 +1592,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 myParent = ''
 
             #  get the total basket weights for this sample
-            sql = ("SELECT SUM(weight) FROM baskets WHERE ship=" + self.ship +
+            sql = ("SELECT SUM(weight) FROM " + self.schema + ".baskets WHERE ship=" + self.ship +
                     " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
                     "AND sample_id="+ sampleId + " GROUP BY sample_id")
             wtQuery = self.db.dbQuery(sql)
@@ -1666,7 +1667,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 speciesCode = self.activeSpcCode=self.speciesDict[self.activeSpcName]
 
                 #  get the EQ time
-                sql = ("SELECT event_data.PARAMETER_VALUE FROM event_data  WHERE " +
+                sql = ("SELECT event_data.PARAMETER_VALUE FROM " + self.schema + ".event_data  WHERE " +
                     "(event_data.SHIP="+self.ship+") AND (event_data.SURVEY="+self.survey+
                     ") AND (event_data.event_id="+self.activeHaul+") AND "+
                     "(event_data.PARTITION='"+self.activePartition+"') AND "+
