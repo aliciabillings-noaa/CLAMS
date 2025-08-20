@@ -408,7 +408,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         td_elapsed = 0
 
         # get event types entered by timestamp
-        ev_sql = ("SELECT event_parameter, to_char(to_timestamp(parameter_value,'MMDDYYYY HH24:MI:SS.FF3')) AS times "
+        ev_sql = ("SELECT event_parameter, " + self.db.formatTimeStamp("parameter_value") + " AS times "
                   "FROM " + self.schema + ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey +
                   " AND event_id=" + self.activeEvent + " AND partition='MainTrawl' AND event_parameter IN "
                                                         "('"  + 
@@ -420,6 +420,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                                                         Events.NetOnDeck.name +
                                                         "')"
                                                         "ORDER BY times ASC")
+        print(ev_sql)
         ev_query = self.db.dbQuery(ev_sql)
 
         # go through each event type entered into database and add to the table

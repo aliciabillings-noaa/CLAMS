@@ -236,6 +236,7 @@ class dbConnection:
         self.db.setDatabaseName(source)
         self.db.setUserName(username)
         self.db.setPassword(password)
+        self.driver = driver
         if hostname:
             port = port if port else 5432
             self.db.setHostName(hostname)
@@ -258,6 +259,19 @@ class dbConnection:
         self.hasTransactions = False
         self.preparedQuery = None
 
+    def createTimeStamp(self, dateTime):
+        if (self.driver == 'QPSQL'):
+            return "to_timestamp('" + dateTime + "', 'MMDDYYYY HH24:MI:SS.FF3')"
+        else:
+            return dateTime
+        
+    def formatTimeStamp(self, dateName):
+        print('format time stamp ' + self.driver)
+        format = 'MMDDYYYY H24:MI:SS.FF3'
+        if (self.driver == 'QPSQL'):
+            return "to_char(to_timestamp(" + dateName + ", '" + format + "'), '" + format + "')"
+        else:
+            return "to_char(to_timestamp('" + dateName + "', " + format + "))"
 
     def startTransaction(self):
         '''
