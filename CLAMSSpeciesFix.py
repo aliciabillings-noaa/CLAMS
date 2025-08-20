@@ -17,6 +17,7 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
         self.setupUi(self)
         #self.setAttribute(Qt.WA_DeleteOnClose)
         self.db=parent.db
+        self.schema=parent.schema
         self.db.dbOpen()
         self.workStation=parent.workStation
         self.survey=parent.survey
@@ -41,7 +42,7 @@ class CLAMSSpeciesFix(QDialog, ui_CLAMSSpeciesFix.Ui_clamsSpeciesFix):
 
         # populate species window
         sql = ("SELECT species.common_name,species.scientific_name,samples.species_code," +
-                "samples.sample_id,  samples.subcategory FROM species, samples, baskets "+
+                "samples.sample_id,  samples.subcategory FROM " + self.schema + "species, samples, baskets "+
                 "WHERE species.species_code = samples.species_code AND samples.ship = baskets.ship "+
                 "AND samples.event_id = baskets.event_id AND samples.survey = baskets.survey "+
                 "AND samples.sample_id = baskets.sample_id AND samples.ship = "+self.ship+" AND samples.survey="+

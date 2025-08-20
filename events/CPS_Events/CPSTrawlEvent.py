@@ -420,7 +420,6 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                                                         Events.NetOnDeck.name +
                                                         "')"
                                                         "ORDER BY times ASC")
-        print(ev_sql)
         ev_query = self.db.dbQuery(ev_sql)
 
         # go through each event type entered into database and add to the table

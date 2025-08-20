@@ -1552,7 +1552,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             sql = ("SELECT parameter_value FROM " + self.schema + ".sample_data WHERE sample_parameter=" +
                     "'sample_display_name' AND ship=" + self.ship + " AND survey=" +
                     self.survey + " AND event_id=" + self.activeHaul +
-                    "AND sample_id="+ sampleId)
+                    " AND sample_id="+ sampleId)
             namespaceQuery = self.db.dbQuery(sql)
             namespace, = namespaceQuery.first()
 
@@ -1594,7 +1594,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             #  get the total basket weights for this sample
             sql = ("SELECT SUM(weight) FROM " + self.schema + ".baskets WHERE ship=" + self.ship +
                     " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
-                    "AND sample_id="+ sampleId + " GROUP BY sample_id")
+                    " AND sample_id="+ sampleId + " GROUP BY sample_id")
             wtQuery = self.db.dbQuery(sql)
             sampleWeight, = wtQuery.first()
             try:
