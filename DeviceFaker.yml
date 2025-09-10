@@ -29,27 +29,51 @@
 
 sensors:
 
+#    specimen_scale:
+#        type: UDP
+#        ip: 127.0.0.1
+#        port: 26000
+#        #  include the pre and post values to simulate the scale output string
+#        #  Current values simulate Marel M1100 series platform and specimen scales
+#        #  regex parsing string for M1100: ([0-9]+.[0-9]+)(?=.kg)
+#        #  parse index: 0
+#        pre:
+#        post:  kg P2 Y010e
+#
+#    basket_scale:
+#        type: UDP
+#        ip: 127.0.0.1
+#        port: 26001
+#        #  include the pre and post values to simulate the scale output string
+#        #  Current values simulate Marel M1100 series platform and specimen scales
+#        #  regex parsing string for M1100: ([0-9]+.[0-9]+)(?=.kg)
+#        #  parse index: 0
+#        pre:
+#        post:  kg P3 Y0200
+
+
     specimen_scale:
-        type: UDP
-        ip: 127.0.0.1
-        port: 26000
+        type: Serial
+        baud: 9600
+        comport: COM25
         #  include the pre and post values to simulate the scale output string
         #  Current values simulate Marel M1100 series platform and specimen scales
         #  regex parsing string for M1100: ([0-9]+.[0-9]+)(?=.kg)
         #  parse index: 0
-        pre:   
+        pre:
         post:  kg P2 Y010e
 
     basket_scale:
-        type: UDP
-        ip: 127.0.0.1
-        port: 26001
+        type: Serial
+        baud: 9600
+        comport: COM23
         #  include the pre and post values to simulate the scale output string
-        #  Current values simulate Marel M1100 series platform and specimen scales 
+        #  Current values simulate Marel M1100 series platform and specimen scales
         #  regex parsing string for M1100: ([0-9]+.[0-9]+)(?=.kg)
         #  parse index: 0
-        pre:   
+        pre:
         post:  kg P3 Y0200
+
 
     lengthboard:
         type: UDP

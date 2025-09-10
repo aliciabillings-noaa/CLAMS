@@ -71,7 +71,7 @@ class Clamsbase2Functions(object):
                             ".baskets.ship AND samples.ship="+self.ship+" AND samples.survey="+self.survey+
                             " AND samples.event_id="+haul+ " AND samples.partition = '"+partition+
                             "' AND samples.parent_sample="+table_id)
-                    t, =query3.first()
+                    t, = query3.first()
                     table_wt=float(t)
                     if table_wt==0.:
                         print('something stinks here...')
@@ -170,7 +170,7 @@ class Clamsbase2Functions(object):
                 # now the kicker - submix gets scaled by mi1 as well sor a super mix expansion
                 submix1_exp=submix1_exp
 
-            # run throught the "species" samples
+            # run through the "species" samples
             if subcategory=='All':
                 query2 = self.db.dbQuery("SELECT sample_id, parent_sample, sample_type, species_code, subcategory FROM "+self.db.bioSchema+".samples WHERE ship="+
                 self.ship+" AND survey="+self.survey+" AND event_id="+haul+" AND sample_type='Species' AND partition='"+partition+"' AND species_code ="+species_code)
@@ -184,19 +184,20 @@ class Clamsbase2Functions(object):
                     query5 = self.db.dbQuery("SELECT count(*) FROM "+self.db.bioSchema+".specimen WHERE ship="+self.ship+" AND survey="+self.survey+
                     " AND event_id="+haul+" AND sampling_method='random' AND sample_id="+sample_id)
                     specimen_cnt, =query5.first()
-                    val=[sample_id,                     # sample id
-                                 spc_code,                  # species code
-                                 subcat,                        # subcategory
-                                 int(sample_id),                # sample id
-                                 0.0,      # Weight In Haul
-                                 0.0,              # Sampled Weight
-                                 int(specimen_cnt),# Number In Haul
-                                 int(specimen_cnt),                   # Sampled Number
-                                 1.0,    #
-                                 0,                         #
-                                 0]                     #
+                    val=[sample_id,                 # sample id
+                                 spc_code,          # species code
+                                 subcat,            # subcategory
+                                 int(sample_id),    # sample id
+                                 0.0,               # Weight In Haul
+                                 0.0,               # Sampled Weight
+                                 int(specimen_cnt), # Number In Haul
+                                 int(specimen_cnt), # Sampled Number
+                                 1.0,               #
+                                 0,                 #
+                                 0]                 #
                     self.catchSum.append(val)
                     return (True, self.catchSum)
+
                     #[sample id, species code, subcategory, sample id
                 else:# physical catch paritions
                     # subsample expansions

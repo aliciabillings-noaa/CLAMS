@@ -222,10 +222,21 @@ class dbConnection:
             isOracle=True, hostname=None, port=None):
 
 
-        #  force isOracle keyword for drivers that are obviously *not* oracle
-        if (driver not in ['QODBC', 'QOCI']):
+        #  Postgres handles ForwardOnly queries differently than other drivers
+        #  so we need to track if we're using the postgres driver.
+        self.isPostgres = False
+
+        #  There is also some Oracle only special sauce in this class so we track
+        #  if we're connected to an Oracle database or now. Here we force isOracle
+        #  keyword for drivers that are obviously *not* oracle
+        if (driver.lower() not in ['qodbc', 'qoci']):
             #  this is for sure not an oracle driver
             isOracle=False
+
+            if driver.lower() == 'qpsql':
+                #  Postgres doesn't handle ForwardOnly queries like other drivers
+                #  so we will disable forward only by default when using the QPSQL driver.
+                self.isPostgres = True
 
         #  create an instance of QSqlDatabase - if None is passed as the label
         #  we'll create the Qt "default" connection.
@@ -233,13 +244,16 @@ class dbConnection:
             self.db = QtSql.QSqlDatabase.addDatabase(driver)
         else:
             self.db = QtSql.QSqlDatabase.addDatabase(driver, label)
+
+        #  set the source, username and password
         self.db.setDatabaseName(source)
         self.db.setUserName(username)
         self.db.setPassword(password)
-        self.driver = driver
+
+        #  set the hostname and port
         if hostname:
-            port = port if port else 5432
             self.db.setHostName(hostname)
+        if port:
             self.db.setPort(port)
 
         self.label = label
@@ -260,15 +274,14 @@ class dbConnection:
         self.preparedQuery = None
 
     def createTimeStamp(self, dateTime):
-        if (self.driver == 'QPSQL'):
+        if (self.isPostgres):
             return "to_timestamp('" + dateTime + "', 'MMDDYYYY HH24:MI:SS.FF3')"
         else:
             return dateTime
         
     def formatTimeStamp(self, dateName):
-        print('format time stamp ' + self.driver)
         format = 'MMDDYYYY HH24:MI:SS.FF3'
-        if (self.driver == 'QPSQL'):
+        if (self.isPostgres):
             return "to_char(to_timestamp(" + dateName + ", '" + format + "'), '" + format + "')"
         else:
             return "to_char(to_timestamp(" + dateName + ",'" + format + "'))"
@@ -532,7 +545,7 @@ class dbConnection:
             self.lastError = ''
 
 
-    def dbQuery(self, sql, forwardOnly=True, asDict=False):
+    def dbQuery(self, sql, asDict=False, **kwargs):
         '''
         dbQuery executes the provided SQL statement and returns either a
         dbQueryResults object that can be used to iterate through the result
@@ -562,9 +575,18 @@ class dbConnection:
         brain.
         '''
 
-        #  if returning a dict of results force forwardOnly for efficiency
-        if (asDict):
-            forwardOnly=True
+        #  handle the forwardOnly keyword argument. Since, as stated above, Postgres
+        #  doesn't allow for nested queries when in ForwardOnly mode, we don't enable
+        #  forwardOnly mode by default for Postgres.
+        if 'forwardOnly' in kwargs:
+            #  forwardOnly was explicitly passed so use that value
+            forwardOnly = kwargs['forwardOnly']
+        else:
+            #  forwardOnly was not passed, set the default based on the driver
+            if self.isPostgres:
+                forwardOnly = False
+            else:
+                forwardOnly = True
 
         #  create the structures required for our dbSelectResults class
         columns = []
@@ -606,13 +628,32 @@ class dbConnection:
                         dateFormatString=self.qtDateFormatString)
 
 
-    def dbExec(self, sql, forwardOnly=False):
+    def dbExec(self, sql, **kwargs):
         '''
         dbExec is a simple wrapper function that checks if your sql statement executed
         successfully and raises an error if it didn't.
 
+        This method is intended to be used directly for queries that do not return results.
+        So it is best used for INSERT, UPDATE, DELETE statements as well as calling
+        stored procedures or functions that don't return results.
+
+        Use dbQuery for queries that return results.
+
         it returns the qSqlQuery object used to execute the passed sql.
         '''
+
+        #  handle the forwardOnly keyword argument. Since, as stated above, Postgres
+        #  doesn't allow for nested queries when in ForwardOnly mode, we don't enable
+        #  forwardOnly mode by default for Postgres.
+        if 'forwardOnly' in kwargs:
+            #  forwardOnly was explicitly passed so use that value
+            forwardOnly = kwargs['forwardOnly']
+        else:
+            #  forwardOnly was not passed, set the default based on the driver
+            if self.isPostgres:
+                forwardOnly = False
+            else:
+                forwardOnly = True
 
         #  define a query object
         query = QtSql.QSqlQuery(self.db)
