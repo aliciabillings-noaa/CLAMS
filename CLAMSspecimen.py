@@ -700,7 +700,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         missing_validations = []
         for valObj, valName in zip(self.validations[i], self.valNames[i]):
             # instantiate the validation object with the database credentials and the current species
-            valObj = valObj(self.db, self.activeSpcCode)
+            valObj = valObj(self.db, self.schema, self.activeSpcCode)
             # perform the validation
             result = valObj.validate(val, self.measureType, self.values)
             if not result[0] and not result[0] == None:
@@ -855,7 +855,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         missing_validations = []
         for valObj, valName in zip(self.validations[i], self.valNames[i]):
             # instantiate the validation object with the database credentials and the current species
-            valObj = valObj(self.db, self.activeSpcCode)
+            valObj = valObj(self.db, self.schema, self.activeSpcCode)
             # perform the validation
             result = valObj.validate(val, self.measureType, self.values)
             if not result[0] and not result[0] == None:
@@ -1181,7 +1181,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  set the model view SQL
         if self.admin:
             #  admin mode shows all measurements
-            sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM V_SPECIMEN_MEASUREMENTS WHERE " +
+            sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM " + self.schema + 
+                   ".V_SPECIMEN_MEASUREMENTS WHERE " +
                     "ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND sample_id="+self.activeSample+"  AND " +
                     "PROTOCOL_NAME = '" + self.protocol +"'" + sqlStringEnd +
@@ -1189,7 +1190,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             self.measureModel.setQuery(sql, self.db.db)
         else:
             #  regular mode shows only measurements at that station
-            sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM V_SPECIMEN_MEASUREMENTS WHERE " +
+            sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM " + self.schema + 
+                   ".V_SPECIMEN_MEASUREMENTS WHERE " +
                   "ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
                   " AND sample_id="+self.activeSample+
                   " AND PROTOCOL_NAME = '" + self.protocol + "' AND WORKSTATION_ID = " +
@@ -1763,7 +1765,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         else:
             #  get data from db - query everything *BUT* length
             sql = ("SELECT ship, survey, event_id, specimen_id, species_code, common_name, "+
-                    "organism_weight, sex, maturity, scientist, barcode FROM v_specimen_measurements WHERE "+
+                    "organism_weight, sex, maturity, scientist, barcode FROM " + self.schema + ".v_specimen_measurements WHERE "+
                     "survey=" + self.survey +" AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
             query = self.db.dbQuery(sql)
             data = query.first()
