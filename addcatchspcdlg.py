@@ -422,12 +422,12 @@ class AddCatchSpcDlg(QDialog, ui_AddCatchSpcDlg.Ui_addcatchspcDlg):
                 #  we do, update the Previous_Occurrence parameter in the species_data table for this species
                 if self.previous < 0:
                     #  no Previous_Occurrence parameter in the database for this species, add it
-                    sql = ("INSERT INTO species_data (species_code,subcategory,species_parameter," +
+                    sql = ("INSERT INTO " + self.schema + ".species_data (species_code,subcategory,species_parameter," +
                             "parameter_value) VALUES (" + self.activeSpcCode + ",'" + self.activeSpcSubcat +
                             "','Previous_Occurrence','1')")
                 else:
                     #  Previous_Occurrence parameter is in the database. Update it.
-                    sql = ("UPDATE species_data SET parameter_value='1' WHERE " +
+                    sql = ("UPDATE " + self.schema + ".species_data SET parameter_value='1' WHERE " +
                             "species_code=" + self.activeSpcCode + " AND subcategory='" +
                             self.activeSpcSubcat+"' AND species_parameter='Previous_Occurrence'")
                 self.db.dbExec(sql)

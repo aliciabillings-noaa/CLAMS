@@ -574,7 +574,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             headerItem.setFont(self.headerFont)
             self.basketTable.setHorizontalHeaderItem(2, headerItem)
 
-            #  sero out summary values
+            #  zero out summary values
             for i in range(len(self.basketTypes)):
                 self.sumTable.setItem(i, 0, QTableWidgetItem('0'))
                 self.sumTable.setItem(i, 1, QTableWidgetItem('0'))
@@ -928,12 +928,12 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  write basket record for this basket
         if self.count == None:
-            sql = ("INSERT INTO baskets (ship,survey,event_id,sample_id,basket_type," +
+            sql = ("INSERT INTO " + self.schema + ".baskets (ship,survey,event_id,sample_id,basket_type," +
                     "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+
                     self.activeHaul+","+self.activeSampleKey+",'"+self.basketType+"',"
                     +str(self.currentBasketWt)+","+self.activeDeviceId+")")
         else:
-            sql = ("INSERT INTO baskets (ship,survey,event_id,sample_id,basket_type,count," +
+            sql = ("INSERT INTO " + self.schema + ".baskets (ship,survey,event_id,sample_id,basket_type,count," +
                     "weight,device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul +
                     ","+self.activeSampleKey+",'"+self.basketType+"',"+self.count+"," +
                     str(self.currentBasketWt)+","+self.activeDeviceId+")")
