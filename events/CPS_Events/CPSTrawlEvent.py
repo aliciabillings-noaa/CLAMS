@@ -805,7 +805,34 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         popup for entering the performance of the operation and allowing to check/enter comments
         :return:
         """
-        if Events.NetOnDeck.name in self.button_order:
+        # Check all metadata fields have been entered in event_data and gear_accessory tables
+        isValid = True
+        errorMsg = "Metadata values missing, metadata must be completed before event can be completed."
+        sql = ("SELECT count(*) FROM " + self.schema + 
+                    ".event_data where event_id=" + str(self.activeEvent) + ' and ' +
+                    "event_parameter in ('Collection', 'WireOut', 'TowSpeedSTW', 'TowSpeedSOG'," +
+                    "'Operator', 'State', 'Country', 'Gear','FishingMode', 'ArcedTow', 'SeaCondition'," +
+                    "'Clouds', 'DownswellTow')")
+        resuls = self.db.dbQuery(sql)
+        count, = resuls.first()
+
+        if int(count) < 13:
+            self.message.setMessage(self.errorIcons[0], self.errorSounds[0], errorMsg, "error")
+            self.message.show()
+            isValid = False
+
+        sql = ("SELECT count(*) FROM " + self.schema + 
+                    ".gear_accessory where event_id=" + str(self.activeEvent) +
+                    " and gear_accessory in ('HeadropeTDR', 'FootropeTDR', 'Camera', 'Pingers')")
+        resuls = self.db.dbQuery(sql)
+        count, = resuls.first()
+
+        if int(count) < 4 and isValid:
+            self.message.setMessage(self.errorIcons[0], self.errorSounds[0], errorMsg, "error")
+            self.message.show()
+            isValid = False
+
+        if Events.NetOnDeck.name in self.button_order and isValid:
             # stop recording
             self.recording = False
             # set up the finish dialog
