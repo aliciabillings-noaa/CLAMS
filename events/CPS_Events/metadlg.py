@@ -70,10 +70,7 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         # load dropdown boxes
         self.load_dropdowns()
 
-        self.pbs = {'Collection': [self.pb_collection, 'ed', 'np'],
-                    'WireOut': [self.pb_wire_out, 'ed', 'np'],
-                    'TowSpeedSTW': [self.pb_tow_speed_stw, 'ed', 'np'],
-                    'TowSpeedSOG': [self.pb_tow_speed_sog, 'ed', 'np']}
+        self.pbs = {'Collection': [self.pb_collection, 'ed', 'np']}
         self.cbs = {'Operator': [self.cb_operator, 'ed'],
                     'State': [self.cb_state, 'ed'],
                     'Country': [self.cb_country, 'ed'],
@@ -85,7 +82,6 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         self.tf = {'DownswellTow': [self.tf_downswell_tow, 'ed'],
                     'HeadropeTDR': [self.tf_headrope, 'ga'],
                     'FootropeTDR': [self.tf_footrope, 'ga'],
-                    'Camera': [self.tf_camera, 'ga'],
                     'Pingers': [self.tf_pingers, 'ga']}
         
         # set up numpad ane keypad

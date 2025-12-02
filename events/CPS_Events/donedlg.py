@@ -84,6 +84,27 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
         # init reason
         self.cb_perf.setCurrentIndex(-1)
         
+        # get average values from events_data table
+        if (hasattr(parent, 'avgLabels') and len(parent.avgLabels) > 0):
+            formattAvgLabels = ", ".join([f"'{x}'" for x in parent.avgLabels])
+            avgQuery = ("SELECT event_parameter, parameter_value FROM " + self.schema +
+                        ".event_data WHERE ship=" + self.ship + " AND survey=" + self.survey + 
+                        " AND event_id=" + self.activeEvent +
+                        " AND event_parameter in (" + formattAvgLabels + ") ")
+            avg_query = self.db.dbQuery(avgQuery)
+
+            # display average values
+            row = 0
+            for val in avg_query:
+                label = QLabel("<b>" + val[0] + ':</b>')
+                label.setMinimumHeight(20)
+                self.avgVals.addWidget(label, row, 0)
+
+                value = QLabel(val[1])
+                value.setMinimumHeight(20)
+                self.avgVals.addWidget(value, row, 1)
+                row+=1
+
         # init reason options and set current reason
         for perfCode, desc in perf_query:
             perf_txt = str(perfCode) + " - " + desc
