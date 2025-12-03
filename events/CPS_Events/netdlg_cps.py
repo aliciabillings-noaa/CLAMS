@@ -132,7 +132,7 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
                 sql = ("SELECT * FROM " + self.schema + ".event_stream_data WHERE" + 
                        " event_id=" + self.activeEvent + 
                        " AND measurement_type='" + key + 
-                       "' AND time_stamp='" + self.db.createTimestamp(self.cur_time))
+                       "' AND time_stamp=" + self.db.createTimeStamp(self.cur_time))
                 query = self.db.dbQuery(sql)
                 val = query.first()
                 if val[0] != None and len(val) > 0:
@@ -140,15 +140,15 @@ class NetDlgCPS(QDialog, ui_NetDlg_CPS.Ui_netDlg):
                            " SET measurement_value=" + self.values[key] +
                            " WHERE event_id=" + self.activeEvent + 
                            " AND measurement_type='" + key +
-                           "' AND time_stamp=" + self.db.createTimestamp(self.cur_time))
+                           "' AND time_stamp=" + self.db.createTimeStamp(self.cur_time))
                     self.db.dbExec(sql)
                 else:
                     # Enter data into event_stream_data table
                     sql = ("INSERT INTO " + self.schema + ".event_stream_data (ship,survey, " +
                                             "event_id, device_id, time_stamp, measurement_type, measurement_value) " +
                                             "VALUES (" + self.ship + ", " + self.survey + ", " + self.activeEvent +
-                                            ", 3, " + self.db.createTimestamp(self.cur_time) +
-                                            key + "', '" + self.values[key] +"')")
+                                            ", 3, " + self.db.createTimeStamp(self.cur_time) +
+                                            ", '" + key + "', '" + self.values[key] +"')")
                     self.db.dbExec(sql)
         self.close()
 
