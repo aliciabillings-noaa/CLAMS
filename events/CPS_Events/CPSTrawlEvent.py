@@ -812,26 +812,29 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         # Check all metadata fields have been entered in event_data and gear_accessory tables
         isValid = True
         errorMsg = "Metadata values missing, metadata must be completed before event can be completed."
+
+        metadataFields = [member.value for member in metadlg.MetadataFields]
+        formattedMeta = ", ".join([f"'{x}'" for x in metadataFields])
         sql = ("SELECT count(*) FROM " + self.schema + 
                     ".event_data where event_id=" + str(self.activeEvent) + ' and ' +
-                    "event_parameter in ('Collection', 'WireOut', " +
-                    "'Operator', 'State', 'Country', 'Gear','FishingMode', 'ArcedTow', 'SeaCondition'," +
-                    "'Clouds', 'DownswellTow')")
+                    "event_parameter in (" + formattedMeta + ")")
         resuls = self.db.dbQuery(sql)
         count, = resuls.first()
 
-        if int(count) < 0:
+        if int(count) != len(metadlg.MetadataFields):
             self.message.setMessage(self.errorIcons[0], self.errorSounds[0], errorMsg, "error")
             self.message.show()
             isValid = False
 
+        gearFields = [member.value for member in metadlg.GearTypeFields]
+        formattedGear = ", ".join([f"'{x}'" for x in gearFields])
         sql = ("SELECT count(*) FROM " + self.schema + 
                     ".gear_accessory where event_id=" + str(self.activeEvent) +
-                    " and gear_accessory in ('HeadropeTDR', 'FootropeTDR', 'Pingers')")
+                    " and gear_accessory in (" + formattedGear + ")")
         resuls = self.db.dbQuery(sql)
         count, = resuls.first()
 
-        if int(count) < 0 and isValid:
+        if int(count) != len(metadlg.GearTypeFields):
             self.message.setMessage(self.errorIcons[0], self.errorSounds[0], errorMsg, "error")
             self.message.show()
             isValid = False

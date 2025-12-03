@@ -41,7 +41,24 @@ from ui import ui_CPSMetaDlg
 import numpad
 import keypad
 import messagedlg
+from enum import Enum
 
+class MetadataFields(Enum):
+    Collection = 'Collection'
+    Operator = 'Operator'
+    State = 'State'
+    Country = 'Country'
+    Gear = 'Gear'
+    FishingMode = 'FishingMode'
+    ArcedTow = 'ArcedTow'
+    SeaCondition = 'SeaCondition'
+    Clouds = 'Clouds'
+    DownswellTow = 'DownswellTow'
+
+class GearTypeFields(Enum):
+    HeadropeTDR = 'HeadropeTDR'
+    FootropeTDR = 'FootropeTDR'
+    Pingers = 'Pingers'
 
 class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
 
@@ -65,24 +82,24 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
         self.message = messagedlg.MessageDlg(self)
 
         # this is all hard-coded for now todo: should use DB for this later
-        self.required_params = ['Collection', 'Operator']
+        self.required_params = [MetadataFields.Collection.value, MetadataFields.Operator.value]
 
         # load dropdown boxes
         self.load_dropdowns()
 
-        self.pbs = {'Collection': [self.pb_collection, 'ed', 'np']}
-        self.cbs = {'Operator': [self.cb_operator, 'ed'],
-                    'State': [self.cb_state, 'ed'],
-                    'Country': [self.cb_country, 'ed'],
-                    'Gear': [self.cb_gear, 'ed'],
-                    'FishingMode': [self.cb_fishing_mode, 'ed'],
-                    'ArcedTow': [self.cb_arced_tow, 'ed'],
-                    'SeaCondition': [self.cb_sea_cond, 'ed'],
-                    'Clouds': [self.cb_clouds, 'ed']}
-        self.tf = {'DownswellTow': [self.tf_downswell_tow, 'ed'],
-                    'HeadropeTDR': [self.tf_headrope, 'ga'],
-                    'FootropeTDR': [self.tf_footrope, 'ga'],
-                    'Pingers': [self.tf_pingers, 'ga']}
+        self.pbs = {MetadataFields.Collection.value: [self.pb_collection, 'ed', 'np']}
+        self.cbs = {MetadataFields.Operator.value: [self.cb_operator, 'ed'],
+                    MetadataFields.State.value: [self.cb_state, 'ed'],
+                    MetadataFields.Country.value: [self.cb_country, 'ed'],
+                    MetadataFields.Gear.value: [self.cb_gear, 'ed'],
+                    MetadataFields.FishingMode.value: [self.cb_fishing_mode, 'ed'],
+                    MetadataFields.ArcedTow.value: [self.cb_arced_tow, 'ed'],
+                    MetadataFields.SeaCondition.value: [self.cb_sea_cond, 'ed'],
+                    MetadataFields.Clouds.value: [self.cb_clouds, 'ed']}
+        self.tf = {MetadataFields.DownswellTow.value: [self.tf_downswell_tow, 'ed'],
+                    GearTypeFields.HeadropeTDR.value: [self.tf_headrope, 'ga'],
+                    GearTypeFields.FootropeTDR.value: [self.tf_footrope, 'ga'],
+                    GearTypeFields.Pingers.value: [self.tf_pingers, 'ga']}
         
         # set up numpad ane keypad
         self.numpad = numpad.NumPad(self)
@@ -109,7 +126,7 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
             if exists != 0:
                 pb.setText(exists)
             # init collection number to 4791 + event num
-            elif param == 'Collection':
+            elif param == MetadataFields.Collection.value:
                 currEvent = startingEventNum + int(self.activeEvent)
                 pb.setText(str(currEvent))
         # refill any drop downs
@@ -171,7 +188,7 @@ class MetaDlg(QDialog, ui_CPSMetaDlg.Ui_metaDlg):
             if btn_name == btn.objectName():
                 np_name = np
 
-        if txt != 'Collection':
+        if txt != MetadataFields.Collection.value:
             return
         elif np_name == 'np':
             self.numpad.msgLabel.setText("Enter value")
