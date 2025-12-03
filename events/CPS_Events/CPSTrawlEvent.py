@@ -311,6 +311,9 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         :return:
         """
         self.disable_enable_buttons('disable', self.doneBtn)
+        if Events.NetOnDeck.name in self.button_order:
+            self.doneBtn.setEnabled(True)
+        
         self.disable_enable_buttons('disable', self.pb_abort)
 
         # disable all event buttons (except com)
