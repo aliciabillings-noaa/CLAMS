@@ -54,6 +54,7 @@ from acquisition.SensorMonitor import SensorMonitor
 import messagedlg
 import listseldialog
 import codendstatusdlg
+import swfsc.CatchHome as catchHomeSWFSC
 
 
 class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
@@ -92,11 +93,13 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.catchBtn.setPalette(self.black)
         self.lengthBtn.setPalette(self.black)
         self.specBtn.setPalette(self.black)
+        self.swfscCatchBtn.setPalette(self.black)
 
         #  Set up the signals and slots
         self.partitionBox.activated[int].connect(self.getPartition)
         self.haulBtn.clicked.connect(self.getHaul)
         self.catchBtn.clicked.connect(self.getCatch)
+        self.swfscCatchBtn.clicked.connect(self.getCatchSWFSC)
         self.specBtn.clicked.connect(self.getSpecimen)
         self.lengthBtn.clicked.connect(self.getLength)
         self.fixSpeciesBtn.clicked.connect(self.goFixSpecies)
@@ -161,6 +164,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         #  Set the visibility of the action buttons based on the actions specified for this station
         self.haulBtn.hide()
         self.catchBtn.hide()
+        self.swfscCatchBtn.hide()
         self.lengthBtn.hide()
         self.specBtn.hide()
         if 'haul' in parent.modules:
@@ -171,6 +175,8 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
             self.lengthBtn.show()
         if 'specimen' in parent.modules:
             self.specBtn.show()
+        if 'catchswfsc' in parent.modules:
+            self.swfscCatchBtn.show()
         self.haulBtn.setEnabled(True)
 
         #  check if we're reloading data and enable buttons if so
@@ -443,6 +449,14 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
             #  and specimen buttons.
             self.lengthBtn.setEnabled(True)
             self.specBtn.setEnabled(True)
+
+    def getCatchSWFSC(self):
+        #  show the catch form
+        catchWindow = catchHomeSWFSC.CatchHome(self)
+        catchWindow.exec()
+
+        #  set the button color back now that the form is closed
+        self.catchBtn.setPalette(self.black)
 
 
     def getLength(self):
