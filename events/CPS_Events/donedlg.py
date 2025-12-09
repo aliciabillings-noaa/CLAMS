@@ -117,6 +117,7 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
         self.te_comment.selectionChanged.connect(self.display_keypad)
         self.pb_done.clicked.connect(self.save)
         self.pb_cancel.clicked.connect(self.cancel)
+        self.ckb_man.hide()
 
     def display_keypad(self):
         """
