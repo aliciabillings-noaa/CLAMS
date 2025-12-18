@@ -14,28 +14,18 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-.. module:: CLAMScatch
+.. module:: unsortedCatch
 
-    :synopsis: CLAMScatch presents the CLAMS catch form. The catch form
-               is used  to specify what was caught in the catch, as well
-               as if/how it will be further processed. The catch module
-               is used when the catch is sorted and weighed.
+    :synopsis: Large CPS Hauls > 5 baskets information is entered here. 
 
-| Developed by:  Rick Towler   <rick.towler@noaa.gov>
-|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| Developed by:  Melina Shak <melina.shak@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
 | National Marine Fisheries Service (NMFS)
-| Alaska Fisheries Science Center (AFSC)
-| Midwater Assesment and Conservation Engineering Group (MACE)
 |
 | Author:
-|       Rick Towler   <rick.towler@noaa.gov>
-|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Melina Shak <melina.shak@noaa.gov>
 | Maintained by:
-|       Rick Towler   <rick.towler@noaa.gov>
-|       Kresimir Williams   <kresimir.williams@noaa.gov>
-|       Mike Levine   <mike.levine@noaa.gov>
-|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+|       Melina Shak <melina.shak@noaa.gov>
 """
 
 #  imports
@@ -44,25 +34,22 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from PyQt6.QtMultimedia import QSoundEffect
-from ui import ui_SWFSCUnsortedCatch
-import addcatchspcdlg
+from ui import ui_CPSUnsortedCatch
 import numpad
 import typeseldialog
 import basketeditdlg
 import keypad
 import transferdlg
 import messagedlg
-import ZebraLabelPrinter
-import FEATZebraPrinter
 import measurementDialogs.FEATProjectDlg as project
+import CPS.sortedCatch as sortedCatch
 
-
-class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
+class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
 
     def __init__(self, parent=None):
 
         #  call superclass init methods and GUI form setup method
-        super(UnsortedCatch, self).__init__(parent)
+        super(unsortedCatch, self).__init__(parent)
         self.setupUi(self)
 
         #  copy some info from parent for convenience
@@ -88,13 +75,17 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
         self.activeFullName = None
         self.samplePicture = None
         self.comment = ''
-        self.validList = [1, 1, 1, 1]# sets valid sample type choices
+
+        # get sample types
+        self.basketTypes = (['Sort', 'Toss'])
+        # sets valid sample type choices
+        self.validList = [1, 1]
+
         self.freeze = False
         self.whHaulFlag = False
         self.devices = {}
         self.sounds = {}
         self.speciesProtos = {}
-        self.basketTypes = []
         self.subcategories = []
         self.manualDevice ='0'
         self.parentSamples = {}
@@ -150,13 +141,11 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
         self.message = messagedlg.MessageDlg(self)
         self.numpad = numpad.NumPad(self)
         self.typeDlg = typeseldialog.TypeSelDialog(self)
-        self.spcDlg = addcatchspcdlg.AddCatchSpcDlg(self)
 
         #  connect signals and slots
         self.manualBtn.clicked.connect(self.getManual)
-        self.doneBtn.clicked.connect(self.close)
+        self.doneBtn.clicked.connect(self.showCatch)
         self.delBtn.clicked.connect(self.goDelete)
-        self.printBtn.clicked.connect(self.printLabel)
         self.editBtn.clicked.connect(self.editTable)
         self.basketTable.itemSelectionChanged.connect(self.getBasketRow)
         self.transBtn.clicked.connect(self.transferSample)
@@ -203,279 +192,32 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
 
             query = self.db.dbQuery(sql)
             pwt, = query.first()
-            print('pwwwww')
-            print(pwt)
             if not pwt:
                 #  No partition intialized yet, insert a dummy one
                 sql = ("INSERT INTO " + self.schema + ".EVENT_DATA (ship, survey, event_id, partition, "
                     "event_parameter, parameter_value) "
-                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'WholeHaul',"
+                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
                     "'PartitionWeightType','not_subsampled')")
                 self.db.dbExec(sql)
                 
                 sql = ("INSERT INTO " + self.schema + ".EVENT_DATA (ship, survey, event_id, partition, "
                     "event_parameter, parameter_value) "
-                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'WholeHaul',"
+                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
                     "'PartitionWeight','TBD')")
                 self.db.dbExec(sql)
 
                 sql = ("INSERT INTO " + self.schema + ".SAMPLES (ship, survey, event_id, partition, "
                     "sample_type, species_code, scientist) "
-                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'WholeHaul',"
-                    "'WholeHaul',100001,'" + self.scientist + "')")
+                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
+                    "'WholeHaul',1 ,'" + self.scientist + "')")
                 self.db.dbExec(sql)
-                return
 
-        # get sample types
-        sql = ("SELECT gear_options.basket_type FROM " + self.schema + ".gear_options INNER JOIN " +
-                self.schema + ".events ON gear_options.gear=events.gear WHERE events.ship=" + self.ship+
-                " AND events.survey=" + self.survey + " AND events.event_id=" + self.activeHaul+
-                " AND gear_options.basket_type is not NULL ORDER BY gear_options.basket_type")
-        query = self.db.dbQuery(sql)
-        for basketType, in query:
-            self.basketTypes.append(basketType)
-
-        #  set up the basket summary table based on the basket types available for this gear
-        self.sumTable.clearContents()
-        self.sumTable.setRowCount(len(self.basketTypes))
-        for i, bType in enumerate(self.basketTypes):
-            headerItem = QTableWidgetItem(bType)
-            headerItem.setFont(self.headerFont)
-            self.sumTable.setVerticalHeaderItem(i, headerItem)
-
-        #  Check if we have a label printer attached at this workstation. If so,
-        #  create the printer object and if not, disable the print button
-        sql = ("SELECT MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME " +
-                "FROM " + self.schema + ".MEASUREMENT_SETUP INNER JOIN  " + self.schema + ".DEVICES ON " +
-                "MEASUREMENT_SETUP.DEVICE_ID = DEVICES.DEVICE_ID WHERE " +
-                "MEASUREMENT_SETUP.WORKSTATION_ID = " +  self.workStation +
-                " AND DEVICES.DEVICE_NAME = 'Label_Printer'" +
-                " GROUP BY MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME")
-        query = self.db.dbQuery(sql)
-        printerId, printerName = query.first()
-        if printerId:
-            #  initialize the Label Printer
-            if 'nwfsc' in self.settings['OrganizationName'].lower() or \
-                    'swfsc' in self.settings['OrganizationName'].lower():
-                # get the ip and port
-                printer_sql = ("SELECT device_parameter, parameter_value "
-                               "FROM " + self.schema + ".device_configuration WHERE device_id = " + printerId)
-                print_query = self.db.dbQuery(printer_sql)
-                ip = None
-                port = None
-                for param, val in print_query:
-                    if param.lower() == 'networkaddress':
-                        ip = val
-                    elif param.lower() == 'networkport':
-                        port = val
-                self.printer = FEATZebraPrinter.PrintLabel(self.ship, self.survey, ip, port)
-            else:
-                self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, printerName)
-        else:
-            #  no printer configured
-            self.printer = None
-            self.printBtn.setEnabled(False)
-        #  set up the printer sound.
-        sql = ("select a.parameter_value from " + self.schema + ".device_configuration a," +
-                self.schema + ".devices b where a.device_id=b.device_id " +
-                "and b.device_name='Label_Printer' and a.device_parameter='SoundFile'")
-        query = self.db.dbQuery(sql)
-        soundFile, = query.first()
-        if soundFile:
-            hasExt = soundFile.split('.')
-            if len(hasExt) > 1:
-                soundFile = self.settings['SoundsDir'] + soundFile
-            else:
-                soundFile = self.settings['SoundsDir'] + soundFile + '.wav'
-            soundEffect = QSoundEffect()
-            soundEffect.setSource(QUrl.fromLocalFile(soundFile))
-            self.printSound = soundEffect
-        else:
-            self.printSound = None
-
-        #  setup parent sample. if not present, create whole catch sample which is
-        #  the top level sample (no parent)
-        sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship="+self.ship+" AND survey="+
-                self.survey+" AND event_id="+self.activeHaul+" AND partition ='"+self.activePartition+
-                "' AND species_code=100001")
-        query = self.db.dbQuery(sql)
-        sampleID, = query.first()
-        if not sampleID:
-            #  the parent sample doesn't exist yet, so create it.
-            sql = ("INSERT INTO " + self.schema + ".samples (ship, survey, event_id, partition, " +
-                    "sample_type,species_code, scientist) VALUES("+self.ship+","+self.survey+
-                    ","+self.activeHaul+ ",'"+self.activePartition+"','SortingTable',100001,'"
-                    +self.scientist+"')")
-            self.db.dbExec(sql)
-
-            #  now retrieve newly created sample ID from database
-            sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship="+self.ship+
-                    " AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                    " AND partition ='"+self.activePartition+"' AND species_code=100001")
-            query = self.db.dbQuery(sql)
-            sampleID, = query.first()
-
-        self.sortingTableKey = sampleID
-
-        # is this a splitter?  if so create whole haul parent key
-        sql = ("SELECT event_data.PARAMETER_VALUE FROM " + self.schema + ".event_data  WHERE " +
-                "(event_data.SHIP="+self.ship+") AND (event_data.SURVEY="+self.survey+
-                ") AND (event_data.event_id="+self.activeHaul+") AND "+
-                "(event_data.PARTITION='"+self.activePartition+"') AND "+
-                "(event_data.event_parameter='PartitionWeightType')")
-
-        query = self.db.dbQuery(sql)
-        partitionWeightType, = query.first()
-
-        sql = ("SELECT sample_id from " + self.schema + ".samples where event_id=" + self.activeHaul + " and species_code=100001")
-        query = self.db.dbQuery(sql)
-        self.activeSampleKey, = query.first()
-        self.inMixFlag = False
-        print('sett active sample ')
-        print(self.activeSampleKey)
-
-        #  get the list of possible subcategories
-        sql = ("SELECT subcategory FROM " + self.schema + ".species_subcategories")
-        query = self.db.dbQuery(sql)
-        for subcategory, in query:
-            self.subcategories.append(subcategory)
-
-        # set up device sounds
-        #self.loadDeviceSounds()
-
-        #  reload the species list - this populates the species list
-        self.reloadSamplesList()
-
-
-        self.updateParentKeys()
-
-
-    def getSpecies(self):
-        '''getSpecies is called when the Add Species button is pressed and it pauses
-        device input and displays the add species dialog.
-        '''
-        #  set freeze to ignore sensor/device input while adding species
-        self.freeze=True
-
-        #  show the add species dialog
-        self.spcDlg.exec()
-
-        #  unset freeze to continue processing sensor/device input
-        self.freeze=False
-
-
- 
-
-    def updateParentKeys(self):
-
-        #  check if we have a mix
-        for code in ['100002', '100003', '100004']:
-            sql = ("SELECT species.common_name, samples.sample_id  " +
-                    "FROM " + self.schema + ".samples, " + self.schema + 
-                    ".species WHERE species.species_code=samples.species_code " +
-                    "AND samples.species_code =" + code + " AND samples.ship=" + self.ship +
-                    " AND samples.survey=" + self.survey + " AND samples.event_id=" +
-                    self.activeHaul + " AND samples.partition='" + self.activePartition + "'")
-            query = self.db.dbQuery(sql)
-            common_name, sample_id = query.first()
-
-            if common_name:
-                #  yes, we have a mix
-                spcName = common_name
-                parentKey = sample_id
-                if not parentKey in self.parentSamples:
-                    self.parentSamples.update({spcName:parentKey})
-
-        if not self.wholeHaulKey in self.parentSamples:
-            self.parentSamples.update({'WholeHaul':self.wholeHaulKey})
-        if not self.sortingTableKey in self.parentSamples:
-            self.parentSamples.update({'SortingTable':self.sortingTableKey})
-
-
-    def createSample(self, code, name, subCat, nameType, parentSample, sampleType):
-
-        #  insert this data into the samples table
-        sql = ("INSERT INTO " + self.schema + ".samples (ship,survey,event_id,partition,sample_type," +
-                "species_code,subcategory,parent_sample,scientist) VALUES("+
-                self.ship+","+self.survey+","+ self.activeHaul+",'"+self.activePartition+
-                "','"+sampleType+"',"+code+",'"+subCat+"',"+parentSample+",'"+
-                self.scientist+"')")
-        self.db.dbExec(sql)
-
-        #  get the new sample ID for the just inserted sample
-        sql = ("SELECT max(sample_id) FROM " + self.schema + ".samples WHERE ship="+self.ship+
-                " AND survey="+self.survey+" AND event_id="+ self.activeHaul+
-                " AND partition ='"+self.activePartition+"'")
-        query = self.db.dbQuery(sql)
-        sample_id, = query.first()
-
-
-        #  insert the sample_display_name param in the sample_data table. This
-        #  informs CLAMS as to which name (sci or common) to display in the UI
-        #  for this sample.
-        sql = ("INSERT INTO " + self.schema + ".sample_data (ship,survey,event_id,sample_id,sample_parameter,"
-                "parameter_value) VALUES("+self.ship+","+self.survey+","+
-                self.activeHaul+","+sample_id+",'sample_display_name','"+nameType+"')")
-        self.db.dbExec(sql)
-
-
-    
-
-
-    def setActiveSampleType(self, sampleType):
-        '''setActiveSampleType enables/disables basket creation and other
-        UI elements based on the sample type. The "Present" sample type
-        (if enabled) cannot have baskets assigned to it so this method
-        will disable controls that allow adding baskets.
-        '''
-
-        if sampleType == 'Present':
-            enabled = False
-
-            #  clear basket table
-            self.basketTable.clearContents()
-            self.basketTable.setRowCount(0)
-
-            headerItem = QTableWidgetItem("Weight (kg)")
-            headerItem.setFont(self.headerFont)
-            self.basketTable.setHorizontalHeaderItem(0, headerItem)
-            headerItem = QTableWidgetItem("Count")
-            headerItem.setFont(self.headerFont)
-            self.basketTable.setHorizontalHeaderItem(1, headerItem)
-            headerItem = QTableWidgetItem("Basket Type")
-            headerItem.setFont(self.headerFont)
-            self.basketTable.setHorizontalHeaderItem(2, headerItem)
-
-            #  sero out summary values
-            for i in range(len(self.basketTypes)):
-                self.sumTable.setItem(i, 0, QTableWidgetItem('0'))
-                self.sumTable.setItem(i, 1, QTableWidgetItem('0'))
-
-        else:
-            enabled = True
-
-        self.basketTable.setEnabled(enabled)
-        self.sumTable.setEnabled(enabled)
-        self.manualBtn.setEnabled(enabled)
-        self.transBtn.setEnabled(enabled)
-        self.editBtn.setEnabled(enabled)
-
-
-    def checkSampleExists(self, sampID):
-        '''
-        checkSampleExists checks if the sample ID is still present in the database. Returns
-        True if so, and False if not.
-        '''
-        sql = ("SELECT sample_id from " + self.schema + ".samples WHERE ship=" + self.ship +
-                " AND survey=" + self.survey + " AND event_id=" + self.activeHaul+
-                " AND sample_id=" + sampID)
-        query = self.db.dbQuery(sql)
-        sampleID, = query.first()
-        if sampleID:
-            return True
-        else:
-            return False
-
+        # initialize active sample key
+        sql = ("SELECT SAMPLE_ID FROM " + self.schema + ".samples where event_id="+self.activeHaul+ 
+               " AND partition='Codend' AND sample_type = 'WholeHaul'")
+        self.activeSampleKey, = self.db.dbQuery(sql).first()
+        if self.activeSampleKey is not None:
+            self.updateTables()
 
 
     def getManual(self):
@@ -598,24 +340,6 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
                 #  user has rejected the measurement
                 return False
 
-        #  if this is a mix, check for mix subsample weight and stuff
-        if self.inMixFlag:
-            #  yes, this is a mix
-
-            (mixSubWeight, mixSpeciesWeight) = self.mixValidation(self.activeSampleKey, self.activeSpcCode)
-
-            # validation for mix sub weight - can't have more weight in sub part of mix than in mix subsample
-            if (mixSubWeight * (1 + float(self.settings['MaxMixDev']) / 100) <
-                    (mixSpeciesWeight + float(self.currentBasketWt))):
-                self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
-                        self.firstName + ", it appears that the total weight of species" +
-                        " in the mix exceeds the mix subsample by more than " +
-                        self.settings['MaxMixDev']+" % - this is usually bad. " +
-                        "Do you want to fix this now?",'info')
-                if self.message.exec():
-                    #  user has rejected the measurement
-                    return False
-
         #  weight passes basic validation
         return True
 
@@ -626,13 +350,6 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
         the basket is a measure, count, or toss basket.
 
         '''
-
-        #  first, if we're in a mix, disable the count button
-        print(self.validList)
-        print(self.basketTypes)
-        self.validList[self.basketTypes.index('Count')] = 0
-        self.validList[self.basketTypes.index('Measure')] = 0
-
         #  display the basket type dialog
         self.typeDlg.buttonSetup(self.validList, self.basketTypes)
         if self.typeDlg.exec():
@@ -932,71 +649,6 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
                             self.survey+" AND event_id="+self.activeHaul+" AND basket_id="+
                             self.selRecord[0])
                     self.db.dbExec(sql)
-
-        #  if the focus is on the sample list so we're going to delete the entire sample
-        '''elif self.focus == 'speciesList':
-
-            #  make sure the user really wants to do the
-            if hasSpecimen:
-                #  if there are specimen associated with this sample, we present a different dialog
-                #  and then have to first delete the specimen
-                self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "There are "+
-                        str(nMeasure+nOther)+" basket weights for this species AND you have " +
-                        "collected specimen data too. Are SURE you want permanatly delete this "
-                        "species and ALL of these baskets and ALL of your specimen data?",'choice')
-                if self.message.exec():
-                    #  user chose to delete the everything from this sample so first delete the specimen
-                    ok = self.deleteSpecimen()
-
-                    if not ok:
-                        #  user changed their mind when we asked if they're sure - we're done here
-                        return
-            else:
-                #  no specimen yet so we present a differently worded dialog. Only present a dialog
-                #  if there are baskets though. Otherwise we just delete the sample.
-                if nMeasure+nOther > 0:
-                    self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "There are "+
-                            str(nMeasure+nOther)+" basket weights for this species. " +
-                            "Are sure you want to permanantly delete ALL of them?", 'choice')
-                    if not self.message.exec():
-                        #  user changed their mind
-                        return
-
-                    # kill the baskets
-                    sql = ("DELETE FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
-                            self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
-                            self.activeSampleKey)
-                    self.db.dbExec(sql)
-
-                #  try to delete from the catch summary and length histogram tables - these will be
-                #  populated at this point if a user has come back into CLAMS to edit a past haul
-                #  (depending on the execution path this might have already been done but it doesn't
-                #  hurt to try again here.)
-                sql = ("DELETE FROM " + self.schema + ".catch_summary WHERE ship=" + self.ship +
-                        " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
-                        " AND sample_id ="+self.activeSampleKey)
-                self.db.dbExec(sql)
-                sql = ("DELETE FROM " + self.schema + ".length_histogram WHERE ship=" + self.ship +
-                        " AND survey = " +self.survey + " AND event_id=" + self.activeHaul +
-                        " AND sample_id ="+self.activeSampleKey)
-                self.db.dbExec(sql)
-
-                # delete the sample_data
-                sql = ("DELETE FROM " + self.schema + ".sample_data WHERE ship="+self.ship+" AND survey="+
-                        self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
-                        self.activeSampleKey)
-                self.db.dbExec(sql)
-
-                #  and then delete the sample
-                sql = ("DELETE FROM " + self.schema + ".samples WHERE ship="+self.ship+" AND survey="+
-                        self.survey+" AND event_id="+self.activeHaul+" AND sample_id = "+
-                        self.activeSampleKey)
-                self.db.dbExec(sql)
-                self.activeSpcName = None
-
-            #  refresh the species list
-            self.reloadSamplesList()
-'''
         #  update the tables
         self.updateTables()
 
@@ -1115,330 +767,6 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
 
         self.updateTables()
 
-    def exitValidation(self):
-        '''exitValidation checks for mixes and if found will check if the
-        sum of the mix baskets is close enough to the mix subsample weight and
-        alert the user if not. It also checks to make sure each sample has
-        at least one basket and if not, informs the user.
-        '''
-
-        self.returnFlag=False
-
-        #  check for any mixes in this partition
-        sql = ("SELECT sample_id, sample_type, species_code from " + self.schema + ".samples WHERE ship=" +
-                self.ship + " AND survey=" + self.survey+" AND event_id = " +
-                self.activeHaul+" AND partition='" + self.activePartition +
-                "' AND LOWER(sample_type) LIKE LOWER('%mix%')")
-        query = self.db.dbQuery(sql)
-        for sampleId, sampleType, speciesCode in query:
-
-            #  mix validation
-            (mixSubWeight, mixSpeciesWeight) = self.mixValidation(sampleId, self.activeSpcCode)
-            if mixSubWeight == 0:
-                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
-                        self.firstName+ ", there's no mix basket subsample weight for "+
-                        sampleType + " in the system. This must be corrected.", 'info')
-                self.message.exec()
-                self.returnFlag = True
-                return
-
-            #  check the mix parts more or less make up the weight of the total
-            dev = (mixSubWeight - mixSpeciesWeight) / mixSubWeight * 100.
-
-            #  check that the deviation is below the allowed value
-            if (abs(dev) > float(self.settings['MaxMixDev'])):
-                #  it is not, issue a warning and ask user what they want to do
-                self.message.setMessage(self.errorIcons[2], self.errorSounds[1], self.firstName+
-                        ", the weight of the mix components is more or less than "+ str(dev) +
-                        " % of the mix subsample weight for  "+self.mixtureNames[speciesCode]+
-                        ". Does this bother you? ", 'choice')
-                if self.message.exec():
-                    #  user is bothered by this - set the failed validation flag
-                    self.returnFlag = True
-                else:
-                    if speciesCode in self.parentSamples:
-                        #  user doesn't care, make note of this and move on
-                        sql = ("INSERT INTO " + self.schema + ".overrides (scientist, record_id, " +
-                                "table_name,description) VALUES ('" + self.scientist + "'," +
-                                self.parentSamples[speciesCode] + ",'sample', 'mix components are "+str(dev)+
-                                " % less than the mix subsample weight')")
-                        self.db.dbExec(sql)
-
-        #  check if all of the samples have at least one basket. First get the samples
-        sql = ("SELECT species.common_name, samples.sample_id, samples.species_code, " +
-                "samples.subcategory FROM " + self.schema + ".samples, " + self.schema + ".species WHERE " +
-                "species.species_code=samples.species_code AND (LOWER(samples.sample_type)" +
-                "='species' OR LOWER(samples.sample_type) LIKE LOWER('%mix%')) " +
-                "AND samples.ship=" + self.ship + " AND samples.survey=" +
-                self.survey + " AND samples.event_id=" + self.activeHaul +
-                " AND samples.partition='" + self.activePartition + "'")
-        sampleQuery = self.db.dbQuery(sql)
-
-        #  loop thru each sample and check if it has at least one basket
-        for commonName, sampleId, spCode, subcat in sampleQuery:
-            sql = ("SELECT COUNT(basket_id) FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
-                    self.survey+" AND event_id = "+self.activeHaul+" AND sample_id = "+
-                    sampleId)
-            basketQuery = self.db.dbQuery(sql)
-            numBaskets, = basketQuery.first()
-
-            if numBaskets == 0:
-                # no baskets for this species
-                if subcat.lower() != 'none':
-                    spcName = commonName + " " + subcat
-                else:
-                    spcName = commonName
-                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
-                        self.firstName + ", There are are no basket weights for " +
-                        spcName + ". Does this bother you?", 'choice')
-                if self.message.exec():
-                    self.returnFlag = True
-                    return
-
-            # As part of the last open station check, process should
-            # check for empty baskets and allow for deletion.
-
-                # we're commenting this out because its caousing problems with multi catch input
-#                    else:
-#                        # remove stray sample record
-#                        query =QtSql.QSqlQuery("DELETE FROM samples WHERE ship="+self.ship+" AND survey="+
-#                                        self.survey+" AND event_id = "+self.activeHaul+" AND sample_id = "+query.value(1).toString(),  self.db)
-#                        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
-
-
-    def mixValidation(self, sampleId, speciesCode):
-        '''mixValidation queries out the mix subsample weight and the
-        species weight for the specified mix sample ID and species.
-
-        '''
-        #  get the mix subsample weight
-        mixSubWeight = 0
-        sql = ("SELECT SUM(weight) FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
-                self.survey+" AND event_id = "+self.activeHaul+" AND sample_id="+sampleId+
-                " AND basket_type = 'Measure'")
-        query = self.db.dbQuery(sql)
-        subWeight, = query.first()
-        if subWeight:
-            try:
-                mixSubWeight = (float(subWeight))
-            except:
-                pass
-
-        #  get the mix species weight
-        mixSpeciesWeight = 0
-        sql = ("SELECT SUM(baskets.weight) FROM " + self.schema + ".samples, baskets WHERE samples.sample_id = "+
-                "baskets.sample_id AND samples.ship=baskets.ship AND " +
-                "samples.survey=baskets.survey AND samples.event_id=baskets.event_id " +
-                "AND samples.ship="+self.ship+" AND samples.survey="+
-                self.survey+" AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
-                self.activePartition+"' AND samples.parent_sample="+sampleId)
-        query = self.db.dbQuery(sql)
-        mixWeight, = query.first()
-        if mixWeight:
-            try:
-                mixSpeciesWeight = (float(mixWeight))
-            except:
-                pass
-
-        return mixSubWeight, mixSpeciesWeight
-
-
-    def reloadSamplesList(self):
-        '''reloadSamplesList updates the Samples table
-
-        '''
-
-        #  disconnect the selection changed signal so we don't
-        #  trigger it when the list is cleared.
-        #self.speciesList.itemSelectionChanged.disconnect()
-
-        # clear out the existing entries
-        #self.speciesList.clearContents()
-        #self.speciesList.setRowCount(0)
-        self.speciesDict = {}
-        nSamples = 0
-
-        #  set the column headers
-        headerItem = QTableWidgetItem("Species")
-        headerItem.setFont(self.headerFont)
-        #self.speciesList.setHorizontalHeaderItem(0, headerItem)
-        headerItem = QTableWidgetItem("Parent")
-        headerItem.setFont(self.headerFont)
-        #self.speciesList.setHorizontalHeaderItem(1, headerItem)
-        headerItem = QTableWidgetItem("Type")
-        headerItem.setFont(self.headerFont)
-        #self.speciesList.setHorizontalHeaderItem(2, headerItem)
-        headerItem = QTableWidgetItem("Weight (kg)")
-        headerItem.setFont(self.headerFont)
-        #self.speciesList.setHorizontalHeaderItem(3, headerItem)
-
-        #  loop thru the samples and add them to the species list table
-        # todo: AB - this would be nice if it could be ordered by the parent and then the sample_id
-        sql = ("SELECT samples.sample_id, species.common_name, species.scientific_name," +
-                "species.species_code, samples.parent_sample, samples.subcategory, samples.sample_type"+
-                " FROM " + self.schema + ".samples, " + self.schema + ".species WHERE samples.species_code=species.species_code AND " +
-                "samples.ship="+self.ship+" AND samples.survey=" + self.survey +
-                " AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
-                self.activePartition+"' AND samples.species_code NOT IN " +
-                "(100000,100001) ORDER BY samples.sample_id ASC")
-        sampleQuery = self.db.dbQuery(sql)
-        for sampleId, commonName, sciName, spCode, parentId, subcat, sample_type in sampleQuery:
-            #  get the namespace - if the species is added using common name,
-            #  then we display the common name. If added with the sci name,
-            #  we display the sci name.
-            sql = ("SELECT parameter_value FROM " + self.schema + ".sample_data WHERE sample_parameter=" +
-                    "'sample_display_name' AND ship=" + self.ship + " AND survey=" +
-                    self.survey + " AND event_id=" + self.activeHaul +
-                    " AND sample_id="+ sampleId)
-            namespaceQuery = self.db.dbQuery(sql)
-            namespace, = namespaceQuery.first()
-
-            #  if there is a sample_display_name set, use it to
-            #  set the species name
-            if namespace:
-                #  there is a sample_display_name entry
-                if namespace.lower() == 'scientific':
-                    #  display the scientific name
-                    species = sciName
-                else:
-                    #  display the common name
-                    species = commonName
-            else:
-                #  by default we display the common name
-                species = commonName
-
-            #  if applicable, add the subcategory to the name
-            if subcat is None:
-                name = species
-            elif subcat.lower() != 'none':
-                name = species+'-'+ subcat
-            else:
-                name = species
-
-            #  get the parent sample name
-            sql = ("SELECT b.common_name FROM " + self.schema + ".samples a JOIN " + self.schema + ".species b ON " +
-                    "a.species_code=b.species_code WHERE a.ship=" + self.ship +
-                    " AND a.survey=" + self.survey+" AND a.event_id=" +
-                    self.activeHaul + " AND a.sample_id=" + parentId)
-            parentQuery = self.db.dbQuery(sql)
-            parentName, = parentQuery.first()
-
-            if parentName:
-                myParent = parentName
-            else:
-                myParent = ''
-
-            #  get the total basket weights for this sample
-            sql = ("SELECT SUM(weight) FROM " + self.schema + ".baskets WHERE ship=" + self.ship +
-                    " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
-                    " AND sample_id="+ sampleId + " GROUP BY sample_id")
-            wtQuery = self.db.dbQuery(sql)
-            sampleWeight, = wtQuery.first()
-            try:
-                sampleWeight = float(sampleWeight)
-                sampleWeight = round(sampleWeight, self.basketPrecision)
-            except:
-                sampleWeight = 0
-
-            #  add this sample to the table
-           # self.speciesList.insertRow(nSamples)
-            headerItem = QTableWidgetItem(sampleId)
-            headerItem.setFont(self.headerFont)
-           #self.speciesList.setVerticalHeaderItem(nSamples,headerItem)
-           # self.speciesList.setItem(nSamples, 0, QTableWidgetItem(name))
-           # self.speciesList.setItem(nSamples, 1, QTableWidgetItem(myParent))
-           # self.speciesList.setItem(nSamples, 2, QTableWidgetItem(sample_type))
-            #  display the sample weight total based on type
-            if sample_type in ['Present']:
-                sampleWeight = ''
-            else:
-                sampleWeight = str(sampleWeight)
-           #self.speciesList.setItem(nSamples, 3, QTableWidgetItem(sampleWeight))
-
-            # change the background color if the species is in the protocol map
-            if 'DisplayProtoSp' in self.settings:
-                if self.settings['DisplayProtoSp'] == 'True':
-                    # check if species is in the protocol_map table as Active
-                    proto_sql = ("SELECT protocol_name, species_code FROM " +
-                                 self.schema + ".protocol_map WHERE species_code=" + spCode)
-                    proto_query = self.db.dbQuery(proto_sql)
-                    sp_protos = ['BagNTag']
-                    for protocol, sp_code in proto_query:
-                        sp_protos.append(protocol)
-                        #self.speciesList.item(nSamples, 0).setBackground(QColor(127, 255, 212))
-                    self.speciesProtos[spCode] = sp_protos
-
-            nSamples += 1
-            self.speciesDict.update({species:spCode})
-       #self.speciesList.resizeColumnsToContents()
-
-        #  reconnect the selection changed signal now that we're done changing the list
-      #  self.speciesList.itemSelectionChanged.connect(self.getActiveSpc)
-      #  self.speciesList.scrollToBottom()
-
-
-    def printLabel(self):
-        '''
-            printLabel prints a label for whole fish samples
-        '''
-
-        #  ensure that a species is selcted
-        if (self.activeSpcName == None):
-            #  no species selected - show error dialog
-            self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                    "Please pick a sample to print a label for, " +
-                    self.firstName + ".", 'info')
-            self.message.exec()
-            return
-        else:
-            if 'nwfsc' in self.settings['OrganizationName'].lower() \
-                    or 'swfsc' in self.settings['OrganizationName'].lower():
-                # get the project to apply the sample to for the species
-                selected_project = project.FEATProjectDlg(self)
-                if selected_project.result() == 1:
-                    self.printer.print_label(selected_project.project_name, self.activeSpcName, self.activeSpcCode,
-                                             self.activeHaul, selected_project.code, self.activeSampleKey)
-            else:
-                #  get species code
-                speciesCode = self.activeSpcCode=self.speciesDict[self.activeSpcName]
-
-                #  get the EQ time
-                sql = ("SELECT event_data.PARAMETER_VALUE FROM " + self.schema + ".event_data  WHERE " +
-                    "(event_data.SHIP="+self.ship+") AND (event_data.SURVEY="+self.survey+
-                    ") AND (event_data.event_id="+self.activeHaul+") AND "+
-                    "(event_data.PARTITION='"+self.activePartition+"') AND "+
-                    "(event_data.event_parameter='EQ')")
-                query = self.db.dbQuery(sql)
-                eqTime, = query.first()
-                if eqTime:
-                    EQDate = eqTime.split(' ')[0]
-                else:
-                    EQDate = ''
-
-                #  ask how many fish are being frozen
-                self.numpad.msgLabel.setText("How many " + self.activeSpcName + " are you freezing?")
-                if not self.numpad.exec():
-                    return
-                number = self.numpad.value
-
-                data={'title':self.settings['OrganizationName'],
-                      'ship':self.ship,
-                      'survey':self.survey,
-                      'haul':self.activeHaul,
-                      'species_code':speciesCode,
-                      'common_name':self.activeSpcName,
-                      'date':EQDate,
-                      'sample_type':'whole fish',
-                      'count':number,
-                      'scientist':self.scientist
-                     }
-
-                #  print the label
-                self.printer.printSpecialSampleLabel2(data)
-
-                # print sound
-                if self.printSound:
-                    self.printSound.play()
 
     def getComment(self):
         '''getComment is called when the user clicks the "Comment"
@@ -1464,29 +792,6 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
                     " AND survey=" + self.survey + " AND event_id = " + self.activeHaul +
                     " AND sample_id = "+self.activeSampleKey)
             self.db.dbExec(sql)
-
-    def closeEvent(self, event):
-        '''closeEvent is called when the form is closed. It performs some
-        validations then exits.
-        '''
-
-        #  run our catch validations
-        self.exitValidation()
-
-        #self.refreshTimer.stop()
-
-        if self.returnFlag:
-            #  There was a validation error the user chose to address.
-            #  ignore this close event.
-            event.ignore()
-        else:
-            #  No validation issues or the user doesn't care - accept
-            #  the event to close the dialog.
-            event.accept()
-
-            #  store the window size and position
-            self.appSettings.setValue('winposition', self.pos())
-            self.appSettings.setValue('winsize', self.size())
 
     def checkWindowLocation(self, position, size, padding=[5, 25]):
         '''
@@ -1555,6 +860,9 @@ class UnsortedCatch(QDialog, ui_SWFSCUnsortedCatch.Ui_clamsCatch):
                 newSize.setHeight(screenGeometry.height() - newPosition.y() - padding[1])
  
         return [newPosition, newSize]
-
-
-
+    
+    def showCatch(self):
+        self.close()
+        #  show the catch form
+        catchWindow = sortedCatch.sortedCatch(self)
+        catchWindow.exec()

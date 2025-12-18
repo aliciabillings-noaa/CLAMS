@@ -14,38 +14,31 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-.. module:: donedlg
+.. module:: catchHome
 
-    :synopsis: donedlg is a dialog that collects the gear performance and overall comments from a tow;
-                used by the NWFSC;
-                created by Alicia Billings <alicia.billings@noaa.gov>
+    :synopsis: catchHome is a dialog that allows user to select between
+                sorted and unsorted catch data entry.
 
-| Developed by:  Rick Towler   <rick.towler@noaa.gov>
-|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| Developed by:  Melina Shak <melina.shak@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
 | National Marine Fisheries Service (NMFS)
-| Alaska Fisheries Science Center (AFSC)
-| Midwater Assesment and Conservation Engineering Group (MACE)
 |
 | Author:
-|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Melina Shak <melina.shak@noaa.gov>
 | Maintained by:
-|       Rick Towler   <rick.towler@noaa.gov>
-|       Kresimir Williams   <kresimir.williams@noaa.gov>
-|       Mike Levine   <mike.levine@noaa.gov>
-|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+|       Melina Shak <melina.shak@noaa.gov>
 """
 
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
-from ui import ui_SWFSCCatchHome
-import swfsc.UnsortedCatch as unsortedCatch
-import CLAMScatch
+from ui import ui_CPSCatchHome
+import CPS.unsortedCatch as unsortedCatch
+import CPS.sortedCatch as sortedCatch
 
-class CatchHome(QDialog, ui_SWFSCCatchHome.Ui_SWFSCCatchHome):
+class catchHome(QDialog, ui_CPSCatchHome.Ui_CPSCatchHome):
 
     def __init__(self, parent=None):
-        super(CatchHome, self).__init__(parent)
+        super(catchHome, self).__init__(parent)
         self.setupUi(self)
 
         self.db = parent.db
@@ -81,10 +74,11 @@ class CatchHome(QDialog, ui_SWFSCCatchHome.Ui_SWFSCCatchHome):
 
     def getUnsorted(self):
         #  show the catch form
-        unsorted = unsortedCatch.UnsortedCatch(self)
+        unsorted = unsortedCatch.unsortedCatch(self)
         unsorted.exec()
 
     def getSorted(self):
         #  show the catch form
-        catchWindow = CLAMScatch.CLAMSCatch(self)
+        self.close()
+        catchWindow = sortedCatch.sortedCatch(self)
         catchWindow.exec()

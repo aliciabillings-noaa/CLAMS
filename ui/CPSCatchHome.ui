@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SWFSCCatchHome</class>
- <widget class="QDialog" name="SWFSCCatchHome">
+ <class>CPSCatchHome</class>
+ <widget class="QDialog" name="CPSCatchHome">
   <property name="geometry">
    <rect>
     <x>0</x>

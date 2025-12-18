@@ -54,7 +54,7 @@ from acquisition.SensorMonitor import SensorMonitor
 import messagedlg
 import listseldialog
 import codendstatusdlg
-import swfsc.CatchHome as catchHomeSWFSC
+import CPS.catchHome as catchHomeSWFSC
 
 
 class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
@@ -452,7 +452,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
 
     def getCatchSWFSC(self):
         #  show the catch form
-        catchWindow = catchHomeSWFSC.CatchHome(self)
+        catchWindow = catchHomeSWFSC.catchHome(self)
         catchWindow.exec()
 
         #  set the button color back now that the form is closed

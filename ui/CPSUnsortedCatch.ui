@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>clamsCatch</class>
- <widget class="QDialog" name="clamsCatch">
+ <class>CPSUnsortedCatch</class>
+ <widget class="QDialog" name="CPSUnsortedCatch">
   <property name="windowModality">
    <enum>Qt::NonModal</enum>
   </property>
@@ -397,27 +397,6 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
-      <widget class="QPushButton" name="printBtn">
-       <property name="minimumSize">
-        <size>
-         <width>165</width>
-         <height>35</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <family>Arial Black</family>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Print Label</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="commentBtn">
        <property name="minimumSize">
         <size>
@@ -468,7 +447,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Done</string>
+        <string>Move to Sorted Baskets</string>
        </property>
       </widget>
      </item>
