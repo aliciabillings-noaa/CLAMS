@@ -203,13 +203,19 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             query = self.db.dbQuery(sql)
             pwt, = query.first()
             if not pwt:
-                #  there isn't a partition weight type for this partition so
-                #  we can't go on.
-                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                        "You need to visit haul form before you can enter codend catch.",'info')
-                self.message.exec()
-                self.close()
-                return
+                #  no partition weight so add one 
+                #  No partition intialized yet, insert a dummy one
+                sql = ("INSERT INTO " + self.schema + ".EVENT_DATA (ship, survey, event_id, partition, "
+                    "event_parameter, parameter_value) "
+                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
+                    "'PartitionWeightType','not_subsampled')")
+                self.db.dbExec(sql)
+                
+                sql = ("INSERT INTO " + self.schema + ".EVENT_DATA (ship, survey, event_id, partition, "
+                    "event_parameter, parameter_value) "
+                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
+                    "'PartitionWeight','TBD')")
+                self.db.dbExec(sql)
 
         #  setup parent sample. if not present, create whole catch sample which is
         #  the top level sample (no parent)
