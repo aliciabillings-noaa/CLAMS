@@ -71,6 +71,7 @@ class catchHome(QDialog, ui_CPSCatchHome.Ui_CPSCatchHome):
         # set up signals and slots
         self.unsortedBtn.clicked.connect(self.getUnsorted)
         self.sortedBtn.clicked.connect(self.getSorted)
+        self.doneBtn.clicked.connect(self.closeHome)
 
     def getUnsorted(self):
         #  show the catch form
@@ -82,3 +83,7 @@ class catchHome(QDialog, ui_CPSCatchHome.Ui_CPSCatchHome):
         self.close()
         catchWindow = sortedCatch.sortedCatch(self)
         catchWindow.exec()
+    
+    def closeHome(self):
+        #  close the dialog
+        self.reject()
