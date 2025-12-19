@@ -80,9 +80,6 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
 
         # set comment to db comment
         self.te_comment.setText(val[1])
-
-        # init reason
-        self.cb_perf.setCurrentIndex(-1)
         
         # get average values from events_data table
         if (hasattr(parent, 'avgLabels') and len(parent.avgLabels) > 0):
@@ -109,10 +106,10 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
         for perfCode, desc in perf_query:
             perf_txt = str(perfCode) + " - " + desc
             self.cb_perf.addItem(perf_txt)
-            if val[0] == perfCode:
-                self.cb_perf.setCurrentIndex(i)
-            i += 1
 
+        # init reason
+        self.cb_perf.setCurrentIndex(0)
+      
         # set signals and slots
         self.te_comment.selectionChanged.connect(self.display_keypad)
         self.pb_done.clicked.connect(self.save)
