@@ -73,6 +73,25 @@ class catchHome(QDialog, ui_CPSCatchHome.Ui_CPSCatchHome):
         self.sortedBtn.clicked.connect(self.getSorted)
         self.doneBtn.clicked.connect(self.closeHome)
 
+        # if haul is small and only sorted info has been entered
+        # disabled unsorted button.
+        sql = ("SELECT count(*) FROM " + self.schema + ".samples" + 
+               " WHERE ship="+self.ship+
+               " AND survey="+self.survey+
+               " AND event_id="+self.activeHaul +
+               " AND sample_type in ('SortingTable')")
+        sortingPresent, = self.db.dbQuery(sql).first()
+
+        sql = ("SELECT count(*) FROM " + self.schema + ".samples" + 
+               " WHERE ship="+self.ship+
+               " AND survey="+self.survey+
+               " AND event_id="+self.activeHaul +
+               " AND sample_type in ('WholeHaul')")
+        wholeHaulPresent, = self.db.dbQuery(sql).first()
+
+        if sortingPresent and int(sortingPresent) == 1 and not wholeHaulPresent:
+            self.unsortedBtn.setEnabled(False)
+
     def getUnsorted(self):
         #  show the catch form
         unsorted = unsortedCatch.unsortedCatch(self)

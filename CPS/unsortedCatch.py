@@ -862,7 +862,7 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         return [newPosition, newSize]
     
     def showCatch(self):
-        self.close()
         #  show the catch form
         catchWindow = sortedCatch.sortedCatch(self)
         catchWindow.exec()
+        self.close()

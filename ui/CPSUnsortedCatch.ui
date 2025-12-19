@@ -206,12 +206,17 @@
          </attribute>
          <column>
           <property name="text">
+           <string>Weight (kg)</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
            <string>Count</string>
           </property>
          </column>
          <column>
           <property name="text">
-           <string>Type</string>
+           <string>Basket Type</string>
           </property>
          </column>
         </widget>
