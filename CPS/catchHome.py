@@ -89,7 +89,7 @@ class catchHome(QDialog, ui_CPSCatchHome.Ui_CPSCatchHome):
                " AND sample_type in ('WholeHaul')")
         wholeHaulPresent, = self.db.dbQuery(sql).first()
 
-        if sortingPresent and int(sortingPresent) == 1 and not wholeHaulPresent:
+        if int(sortingPresent) == 1 and int(wholeHaulPresent) == 0:
             self.unsortedBtn.setEnabled(False)
 
     def getUnsorted(self):
