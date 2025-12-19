@@ -202,18 +202,25 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
                     "'PartitionWeight','TBD')")
                 self.db.dbExec(sql)
 
-                sql = ("INSERT INTO " + self.schema + ".SAMPLES (ship, survey, event_id, partition, "
+        #  Check for WholeHaul sample, if not insert a one
+        sql = ("SELECT sample_id FROM  " + self.schema + ".samples WHERE ship="+self.ship+
+                " AND survey="+self.survey+" AND event_id="+self.activeHaul + 
+                " AND sample_type = 'WholeHaul'")
+        self.activeSampleKey, = self.db.dbQuery(sql).first()
+
+        if self.activeSampleKey is None:
+            sql = ("INSERT INTO " + self.schema + ".SAMPLES (ship, survey, event_id, partition, "
                     "sample_type, species_code, scientist) "
                     "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
                     "'WholeHaul',1 ,'" + self.scientist + "')")
-                self.db.dbExec(sql)
+            self.db.dbExec(sql)
+            
+            # initialize active sample key
+            sql = ("SELECT SAMPLE_ID FROM " + self.schema + ".samples where event_id="+self.activeHaul+ 
+                " AND partition='Codend' AND sample_type = 'WholeHaul'")
+            self.activeSampleKey, = self.db.dbQuery(sql).first()
 
-        # initialize active sample key
-        sql = ("SELECT SAMPLE_ID FROM " + self.schema + ".samples where event_id="+self.activeHaul+ 
-               " AND partition='Codend' AND sample_type = 'WholeHaul'")
-        self.activeSampleKey, = self.db.dbQuery(sql).first()
-        if self.activeSampleKey is not None:
-            self.updateTables()
+        self.updateTables()
 
 
     def getManual(self):
