@@ -197,12 +197,8 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
                 sql = ("INSERT INTO " + self.schema + ".EVENT_DATA (ship, survey, event_id, partition, "
                     "event_parameter, parameter_value) "
                     "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
-                    "'PartitionWeightType','not_subsampled')")
-                self.db.dbExec(sql)
-                
-                sql = ("INSERT INTO " + self.schema + ".EVENT_DATA (ship, survey, event_id, partition, "
-                    "event_parameter, parameter_value) "
-                    "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
+                    "'PartitionWeightType','not_subsampled'),"
+                    "(" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
                     "'PartitionWeight','TBD')")
                 self.db.dbExec(sql)
 
