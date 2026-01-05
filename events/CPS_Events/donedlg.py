@@ -63,6 +63,10 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
         self.cur_coms = ""
 
         self.message = messagedlg.MessageDlg(self)
+        self.cb_perf.setCurrentIndex(0)
+
+        # list to hold performance codes
+        perfVal = []
 
         # set up performance box
         # fill the performance dialog
@@ -70,7 +74,12 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
         perf_sql = ("SELECT event_performance.performance_code, event_performance.description "
                     "FROM " + self.schema + ".event_performance ORDER BY event_performance.performance_code DESC")
         perf_query = self.db.dbQuery(perf_sql)
-        i = 0
+
+        # init reason options and set current reason
+        for perfCode, desc in perf_query:
+            perf_txt = str(perfCode) + " - " + desc
+            self.cb_perf.addItem(perf_txt)
+            perfVal.append(perfCode)
 
         # get overall comments and performance code from db to display
         query = ("SELECT performance_code, comments FROM " + self.schema + ".events WHERE ship=" +
@@ -80,6 +89,12 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
 
         # set comment to db comment
         self.te_comment.setText(val[1])
+
+        # set cb_perf index
+        if val[0] is not None:
+            # find index of performance code
+            index = perfVal.index(val[0])
+            self.cb_perf.setCurrentIndex(index)
         
         # get average values from events_data table
         if (hasattr(parent, 'avgLabels') and len(parent.avgLabels) > 0):
@@ -102,14 +117,6 @@ class DoneDlg(QDialog, ui_DoneDlg.Ui_doneDlg):
                 self.avgVals.addWidget(value, row, 1)
                 row+=1
 
-        # init reason options and set current reason
-        for perfCode, desc in perf_query:
-            perf_txt = str(perfCode) + " - " + desc
-            self.cb_perf.addItem(perf_txt)
-
-        # init reason
-        self.cb_perf.setCurrentIndex(0)
-      
         # set signals and slots
         self.te_comment.selectionChanged.connect(self.display_keypad)
         self.pb_done.clicked.connect(self.save)
