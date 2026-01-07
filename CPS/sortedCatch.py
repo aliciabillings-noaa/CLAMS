@@ -145,7 +145,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.numpad = numpad.NumPad(self)
         self.addspec = addspecdlg.addspecedlg(self)
         self.typeDlg = typeseldialog.TypeSelDialog(self)
-        self.spcDlg = cpsAddCatchSpcDlg.cpsAddCatchSpcDlg(self)
+        
 
         #  connect signals and slots
         self.addspcBtn.clicked.connect(self.getSpecies)
@@ -160,7 +160,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.transBtn.clicked.connect(self.transferSample)
         self.commentBtn.setDisabled(True)  # initially disabled
         self.commentBtn.clicked.connect(self.getComment)
-        self.spcDlg.changed.connect(self.addSpecies)
+        
 
         #  connect the SensorMonitor SerialDataReceived signal to the
         #  getAuto method which processes input from devices.
@@ -253,6 +253,8 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             query = self.db.dbQuery(sql)
             self.parentSamples, = query.first()
 
+        self.spcDlg = cpsAddCatchSpcDlg.cpsAddCatchSpcDlg(self)
+        self.spcDlg.changed.connect(self.addSpecies)
         self.sortingTableKey = self.parentSamples
 
         #  get the list of possible subcategories
@@ -296,11 +298,12 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         spcName = self.spcDlg.activeSpcName
         subCat = self.spcDlg.activeSpcSubcat
         sampleType = self.spcDlg.activeSampleType
+        isSubMix = self.spcDlg.isSubMix
 
         # parent sample
         #parentKey  = self.parentSamples[self.spcDlg.parentSample]
         
-        self.createSample(code, spcName, subCat,  self.spcDlg.nameType,  self.parentSamples, sampleType)
+        self.createSample(code, spcName, subCat,  self.spcDlg.nameType,  self.parentSamples, sampleType, isSubMix)
 
         #
         #self.updateParentKeys()
@@ -337,7 +340,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.parentSamples.update({'SortingTable':self.sortingTableKey})
 
 
-    def createSample(self, code, name, subCat, nameType, parentSample, sampleType):
+    def createSample(self, code, name, subCat, nameType, parentSample, sampleType, isSubMix):
 
         #  check if the species that we're being told to add is already in
         #  out list of samples.
@@ -349,6 +352,15 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             if self.speciesList.findItems(name, Qt.MatchFlag.MatchExactly):
                 #  species is already in the list - just return
                 return
+            
+        # Get parentId of submix and add count to basket types
+        if isSubMix:
+            sql = ("select sample_id from samples where survey=" + self.survey + 
+               " AND event_id=" + self.activeHaul + 
+               " AND parent_sample=" + self.parentSamples + 
+               " AND sample_type='SubMix'")
+            query = self.db.dbQuery(sql)
+            parentSample, = query.first()
 
         #  insert this data into the samples table
         sql = ("INSERT INTO " + self.schema + ".samples (ship,survey,event_id,partition,sample_type," +
@@ -590,7 +602,11 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         if self.settings['EnablePresentSampleType'] in ['1', 'true', 'True']:
             self.setActiveSampleType(self.activeSampleType)
 
-        # look for previous data on species
+        # look for previous data on 
+        if parentSample == 'SubMix':
+            self.basketTypes = ['Measure', 'Toss', 'Count']
+        else:
+            self.basketTypes = ['Measure', 'Toss']
         self.updateTables()
         self.focus='speciesList'
 

@@ -68,6 +68,9 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.settings = parent.settings
         self.mixtureNames = {'100000':'WholeHaul', '100001':'SortingTable',
                 '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2'}
+        self.parentSamples = parent.parentSamples
+        self.scientist = parent.scientist
+        self.isSubMix = False
 
         #  restore the application state
         self.appSettings = QSettings('CLAMS', 'AddCatchSppDialog')
@@ -105,9 +108,11 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.addBtn.clicked.connect(self.sendSel)
         self.radio10.toggled[bool].connect(self.getSpcHistory)
         self.radioFull.toggled[bool].connect(self.clearAllChar)
+        self.inStateWaters.clicked.connect(self.toggleStateWaters)
+        self.subMixBtn.clicked.connect(self.setParentToSubMix)
 
         # parent sample buttons
-        self.buttons=[self.subMix1Btn]
+        self.buttons=[self.subMixBtn]
 
         #  connect the sample button clicked signal to a method that manages their exclusivity
         #  it seems autoexclusive buttons in a container cannot all be unchecked. Once one is
@@ -175,7 +180,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
 
         if not sampleId:
             # no mix 1 in the system
-            self.subMix1Btn.setEnabled(False)
+            self.subMixBtn.setEnabled(False)
         else:
             # we have a mix 1 - check if we have a submix for mix 1
             sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
@@ -185,7 +190,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
             mixId, = query.first()
             if not mixId:
                 # no submix1
-                self.subMix1Btn.setEnabled(False)
+                self.subMixBtn.setEnabled(False)
 
         #  check if there is a mix2
         sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
@@ -229,6 +234,30 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.chars = newChars
         self.getList()
 
+    def toggleStateWaters(self):
+        if (self.inStateWaters.isChecked()):
+            self.subMixBtn.setEnabled(True)
+            
+        else:
+            self.subMixBtn.setEnabled(False)
+    
+    def setParentToSubMix(self):
+        self.isSubMix = True
+        # Check if submix already exists
+        sql = ("select sample_id from samples where survey=" + self.survey + 
+               " AND event_id=" + self.activeHaul + 
+               " AND parent_sample=" + self.parentSamples + 
+               " AND sample_type='SubMix'")
+        query = self.db.dbQuery(sql)
+        hasSubMix, = query.first()
+
+        # Insert submix if it doesn't already exist
+        if not hasSubMix:
+            sql = ("INSERT INTO " + self.schema + ".samples (ship,survey,event_id,partition,sample_type," +
+                "species_code,subcategory,parent_sample,scientist) VALUES("+
+                self.ship +"," + self.survey+"," + self.activeHaul+",'" + self.activePartition+
+                "','SubMix',3 ,'None', " + self.parentSamples+",'" + self.scientist+"')")
+            self.db.dbExec(sql)
 
     def getList(self):
 
@@ -377,9 +406,6 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
 
     def sendSel(self):
 
-        #  default set to sorting table
-        self.parentSample = 'SortingTable'
-
         if self.listOrigin == None:
             return
 
@@ -436,6 +462,9 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         #  only clear the text box and list if this isn't a history pick
         if not self.radio10.isChecked():
             self.clearAllChar()
+        
+        # Reset submix back to false, will be set to true if submix button selected
+        self.isSubMix = False
 
 
     def getSpcHistory(self):

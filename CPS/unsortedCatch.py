@@ -37,9 +37,8 @@ from PyQt6.QtMultimedia import QSoundEffect
 from ui import ui_CPSUnsortedCatch
 import numpad
 import typeseldialog
-import basketeditdlg
+import CPS.cpsBasketEditDlg as cpsBasketEditDlg
 import keypad
-import transferdlg
 import messagedlg
 import measurementDialogs.FEATProjectDlg as project
 import CPS.sortedCatch as sortedCatch
@@ -130,12 +129,9 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         headerItem = QTableWidgetItem("Weight (kg)")
         headerItem.setFont(self.headerFont)
         self.basketTable.setHorizontalHeaderItem(0, headerItem)
-        headerItem = QTableWidgetItem("Count")
-        headerItem.setFont(self.headerFont)
-        self.basketTable.setHorizontalHeaderItem(1, headerItem)
         headerItem = QTableWidgetItem("Basket Type")
         headerItem.setFont(self.headerFont)
-        self.basketTable.setHorizontalHeaderItem(2, headerItem)
+        self.basketTable.setHorizontalHeaderItem(1, headerItem)
 
         # set up recurring dialogs
         self.message = messagedlg.MessageDlg(self)
@@ -148,7 +144,6 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         self.delBtn.clicked.connect(self.goDelete)
         self.editBtn.clicked.connect(self.editTable)
         self.basketTable.itemSelectionChanged.connect(self.getBasketRow)
-        self.transBtn.clicked.connect(self.transferSample)
         self.commentBtn.setDisabled(True)  # initially disabled
         self.commentBtn.clicked.connect(self.getComment)
 
@@ -357,7 +352,6 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         self.typeDlg.buttonSetup(self.validList, self.basketTypes)
         if self.typeDlg.exec():
             self.basketType = self.typeDlg.basketType
-            self.count = self.typeDlg.count
         else:
             self.message.setMessage(self.errorIcons[2],self.errorSounds[2],
                     "You didn't choose a Basket type. This basket weight will be ignored.",'info')
@@ -390,16 +384,10 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
             return
 
         #  write basket record for this basket
-        if self.count == None:
-            sql = ("INSERT INTO " + self.schema + ".baskets (ship,survey,event_id,sample_id,basket_type," +
-                    "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+
-                    self.activeHaul+","+self.activeSampleKey+",'"+self.basketType+"',"
-                    +str(self.currentBasketWt)+","+self.activeDeviceId+")")
-        else:
-            sql = ("INSERT INTO " + self.schema + ".baskets (ship,survey,event_id,sample_id,basket_type,count," +
-                    "weight,device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul +
-                    ","+self.activeSampleKey+",'"+self.basketType+"',"+self.count+"," +
-                    str(self.currentBasketWt)+","+self.activeDeviceId+")")
+        sql = ("INSERT INTO " + self.schema + ".baskets (ship,survey,event_id,sample_id,basket_type," +
+                "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+
+                self.activeHaul+","+self.activeSampleKey+",'"+self.basketType+"',"
+                +str(self.currentBasketWt)+","+self.activeDeviceId+")")
         self.db.dbExec(sql)
 
         # update the GUI
@@ -417,11 +405,9 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         #  create some dicts to handle basket totals by sample type. We accumulate
         #  totals for the summary table below when populating the baskets table
         basketTotalWeight = {}
-        basketTotalCount = {}
         sumTableRows = {}
         for i, bType in enumerate(self.basketTypes):
             basketTotalWeight[bType] = 0
-            basketTotalCount[bType] = 0
             sumTableRows[bType] = i
 
         #  update the basket table - first, clear the contents
@@ -433,29 +419,24 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         headerItem = QTableWidgetItem("Weight (kg)")
         headerItem.setFont(self.headerFont)
         self.basketTable.setHorizontalHeaderItem(0, headerItem)
-        headerItem = QTableWidgetItem("Count")
-        headerItem.setFont(self.headerFont)
-        self.basketTable.setHorizontalHeaderItem(1, headerItem)
         headerItem = QTableWidgetItem("Basket Type")
         headerItem.setFont(self.headerFont)
-        self.basketTable.setHorizontalHeaderItem(2, headerItem)
+        self.basketTable.setHorizontalHeaderItem(1, headerItem)
 
         #  query the baskets for this sample ID and populate the baskets table
-        sql = ("SELECT basket_id, weight, count, basket_type " +
+        sql = ("SELECT basket_id, weight, basket_type " +
                 "FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+self.survey+
                 " AND event_id="+self.activeHaul+" AND sample_id ="+
                 self.activeSampleKey+" ORDER BY basket_id")
         query = self.db.dbQuery(sql)
-        for basketId, basketWeight, count, basketType in query:
+        for basketId, basketWeight, basketType in query:
             #  convert the weight to float and accumulate totals
             try:
                 basketWeight = float(basketWeight)
                 basketTotalWeight[basketType] += basketWeight
-                basketTotalCount[basketType] += 1
             except:
                 basketWeight = 0
                 basketTotalWeight[basketType] += 0
-                basketTotalCount[basketType] += 1
 
             #  add this basket to the table
             basketWeight = str(round(basketWeight, self.basketPrecision))
@@ -464,8 +445,7 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
             headerItem.setFont(self.headerFont)
             self.basketTable.setVerticalHeaderItem(basketCount, headerItem)
             self.basketTable.setItem(basketCount, 0, QTableWidgetItem(basketWeight))
-            self.basketTable.setItem(basketCount, 1, QTableWidgetItem(count))
-            self.basketTable.setItem(basketCount, 2, QTableWidgetItem(basketType))
+            self.basketTable.setItem(basketCount, 1, QTableWidgetItem(basketType))
 
             if 'nwfsc' in self.settings['OrganizationName'].lower() and basketType == 'Measure':
                 self.basketTable.item(basketCount, 2).setBackground(QColor(127, 255, 212))
@@ -478,10 +458,8 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         #  now update the basket summary table
         totalSampleWeight = 0
         for basketType in self.basketTypes:
-            count = str(basketTotalCount[basketType])
             weight = str(round(basketTotalWeight[basketType], self.basketPrecision))
             totalSampleWeight += basketTotalWeight[basketType]
-            self.sumTable.setItem(sumTableRows[basketType], 0, QTableWidgetItem(count))
             self.sumTable.setItem(sumTableRows[basketType], 1, QTableWidgetItem(weight))
 
         #  lastly, update the total sample weight in the samples table
@@ -504,7 +482,6 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
             self.selRecord.append(self.basketTable.verticalHeaderItem(selectedRow).text())
             self.selRecord.append(self.basketTable.item(selectedRow,0).text())
             self.selRecord.append(self.basketTable.item(selectedRow,1).text())
-            self.selRecord.append(self.basketTable.item(selectedRow,2).text())
 
 
     def deleteSpecimen(self):
@@ -655,59 +632,6 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         #  update the tables
         self.updateTables()
 
-
-    def transferSample(self):
-        '''transferSample is called when the "Transfer Weights" button is pressed. It
-        presents the transfer dialog which allows the user to transfer weight from one
-        sample to another. An example of use would be when a basket is weighed, then
-        a different species is found in the basket, the weight of that other species
-        would be transferred to the correct sample.
-
-        The "transfer" is accomplished by creating two new basket records. The first
-        removes the weight (and count, if applicable) from the source sample by creating
-        a record with negative weights (and counts, if applicable) and then it creates
-        a basket record in the destination sample with positive weights and counts.
-        '''
-
-        #  pause all processing while the transfer dialog is displayed.
-        self.freeze = True
-
-        #  display the transfer dialog
-        transDlg = transferdlg.TransferDlg(self)
-        if not transDlg.exec():
-            #  user cancelled action
-            self.freeze = False
-            return
-
-        # write basket records - first write the "from" record
-        if transDlg.fromType=='Count':
-            count=str(-transDlg.transCount)
-        else:
-            count='NULL'
-        sql = ("INSERT INTO " + self.schema + ". (ship, survey, event_id, sample_id, basket_type, count," +
-                "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul+
-                ","+transDlg.fromSampleKey+",'"+transDlg.fromType+"',"+count+","+
-                str(-transDlg.transWeight)+"," + transDlg.transDevice+")")
-        self.db.dbExec(sql)
-
-        #  then write the "to" record
-        if transDlg.toType == 'Count':
-            count = str(transDlg.transCount)
-        else:
-            count='NULL'
-
-        sql = ("INSERT INTO " + self.schema + ".baskets (ship, survey, event_id, sample_id, basket_type, count," +
-                "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul+
-                ","+transDlg.toSampleKey+",'"+transDlg.toType+"',"+count+","+
-                str(transDlg.transWeight)+","+ transDlg.transDevice+")")
-        self.db.dbExec(sql)
-
-        # update basket tables
-        self.activeSampleKey = transDlg.toSampleKey
-        self.updateTables()
-
-        self.freeze=False
-
     def editTable(self):
         '''editTable is called when the "Edit" button is pressed. This will present
         the Edit Basket dialog which allows the user to edit a specific basket.
@@ -715,10 +639,10 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         self.freeze=True
 
         # turn off count sample type for mixes
-        if self.activeSampleType and 'mix' in self.activeSampleType.lower():
-            self.validList[self.basketTypes.index('Count')] = 0
-        else:
-            self.validList[self.basketTypes.index('Count')] = 1
+        #if self.activeSampleType and 'mix' in self.activeSampleType.lower():
+        #    self.validList[self.basketTypes.index('Count')] = 0
+        #else:
+        #    self.validList[self.basketTypes.index('Count')] = 1
 
         #  set up the basket type dialog button states
         #  set getCount to False because we will handle the count
@@ -746,21 +670,17 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
             selRecord.append(item.text())
 
         #  present the edit dialog
-        header = ['Basket ID', 'Weight', 'Count', 'Sample Type' ]
-        editDlg = basketeditdlg.BasketEditDlg(header, selRecord, self)
+        header = ['Basket ID', 'Weight', 'Sample Type' ]
+        editDlg = cpsBasketEditDlg.CPSBasketEditDlg(header, selRecord, self)
         editDlg.exec()
         if not editDlg.okFlag:
             #  user cancelled action
             return
 
-        # update database - first check if this is a non-count basket type
-        if editDlg.count in ['-', '', 'NULL', 'null']:
-            #  this is not a count basket - set count to NULL
-            editDlg.count = 'NULL'
 
         # update basket table
-        sql = ("UPDATE baskets SET basket_type='"+editDlg.basketType+"', count = "+
-                editDlg.count+", weight = "+editDlg.weight+"  WHERE ship="+self.ship+
+        sql = ("UPDATE baskets SET basket_type='"+editDlg.basketType+"', weight = "+
+                editDlg.weight+"  WHERE ship="+self.ship+
                 " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                 " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
                 self.selRecord[0])

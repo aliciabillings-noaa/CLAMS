@@ -947,14 +947,14 @@
        <number>4</number>
       </property>
       <item>
-       <widget class="QCheckBox" name="checkBox">
+       <widget class="QCheckBox" name="inStateWaters">
         <property name="text">
          <string>Click here if you are in state waters (&lt; 3 nm from land)</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="subMix1Btn">
+       <widget class="QPushButton" name="subMixBtn">
         <property name="minimumSize">
          <size>
           <width>0</width>
