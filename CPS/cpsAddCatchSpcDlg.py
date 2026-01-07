@@ -141,9 +141,6 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.getSpcHistory()
         self.radio10.setChecked(True)
 
-        #  set up the sample buttons
-        self.setSampleBtnEnable()
-
 
     def handleSampleBtnEx(self):
         '''
@@ -155,50 +152,6 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
             btn.setChecked(False)
         #  and check the button pressed
         self.sender().setChecked(True)
-
-
-    def setSampleBtnEnable(self):
-        '''
-        setSampleBtnEnable enables/disables the parent sample buttons based on
-        the
-        '''
-
-        #  set all buttons enabled
-        for btn in self.buttons:
-            btn.setEnabled(True)
-
-        #  uncheck all buttons
-        for btn in self.buttons:
-            btn.setChecked(False)
-
-        # find out if we have a mix1
-        sql = ("SELECT sample_id FROM  " + self.schema + ".samples WHERE ship=" + self.ship +
-                " AND survey=" + self.survey+ " AND event_id=" + self.activeHaul +
-                " AND partition='" + self.activePartition + "' AND species_code=100002")
-        query = self.db.dbQuery(sql)
-        sampleId, = query.first()
-
-        if not sampleId:
-            # no mix 1 in the system
-            self.subMixBtn.setEnabled(False)
-        else:
-            # we have a mix 1 - check if we have a submix for mix 1
-            sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
-                    " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
-                    " AND partition='" + self.activePartition + "' AND species_code=100003")
-            query = self.db.dbQuery(sql)
-            mixId, = query.first()
-            if not mixId:
-                # no submix1
-                self.subMixBtn.setEnabled(False)
-
-        #  check if there is a mix2
-        sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
-                " AND survey = " + self.survey+ " AND event_id=" + self.activeHaul +
-                " AND partition ='" + self.activePartition + "' AND species_code=100004")
-        query = self.db.dbQuery(sql)
-        mixId, = query.first()
-
 
     def getDigit(self):
 
@@ -456,8 +409,6 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
 
         #  emit the changed signal to update parent
         self.changed.emit()
-
-        self.setSampleBtnEnable()
 
         #  only clear the text box and list if this isn't a history pick
         if not self.radio10.isChecked():

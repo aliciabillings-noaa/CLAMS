@@ -1436,7 +1436,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 "samples.ship="+self.ship+" AND samples.survey=" + self.survey +
                 " AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
                 self.activePartition+"' AND samples.species_code NOT IN " +
-                "(1,100000,100001) ORDER BY samples.sample_id ASC")
+                "(1,3,100000,100001) ORDER BY samples.sample_id ASC")
         sampleQuery = self.db.dbQuery(sql)
         for sampleId, commonName, sciName, spCode, parentId, subcat, sample_type in sampleQuery:
             #  get the namespace - if the species is added using common name,
