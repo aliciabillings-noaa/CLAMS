@@ -85,7 +85,7 @@ class BarcodeAlphaNumeric(QObject):
             will slow data collection.
         '''
 
-        if re.search(r'^.\d+$', currentValue):
+        if re.search(r'^[a-zA-Z]\d+$', currentValue):
             #  barcode is o.k.
             result = (True, '')
         else:
