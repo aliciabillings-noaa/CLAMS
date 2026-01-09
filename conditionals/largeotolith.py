@@ -14,25 +14,21 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-    :module:: NoOvaryWhenMale
+    :module:: LargeOtolith
 
-    :synopsis: NoOvaryWhenMale is a conditional that checks if a body should be frozen
+    :synopsis: LargeOtolith is a conditional that checks if a fish is larger than a threshold to save its otolith outside of standard protocol
 
-| Developed by:  Rick Towler   <rick.towler@noaa.gov>
-|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| Developed by:  Kelsey James <kelsey.james@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
 | National Marine Fisheries Service (NMFS)
-| Alaska Fisheries Science Center (AFSC)
-| Midwater Assesment and Conservation Engineering Group (MACE)
+| Southwest Fisheries Science Center (SWFSC)
+| Fisheries Resources Division (FRD)
 |
 | Author:
 |       Rick Towler   <rick.towler@noaa.gov>
 |       Kresimir Williams   <kresimir.williams@noaa.gov>
 | Maintained by:
-|       Rick Towler   <rick.towler@noaa.gov>
-|       Kresimir Williams   <kresimir.williams@noaa.gov>
-|       Mike Levine   <mike.levine@noaa.gov>
-|       Nathan Lauffenburger   <nathan.lauffenburger@noaa.gov>
+|       Kelsey James <kelsey.james@noaa.gov>
         Melina Shak <melina.shak@noaa.gov>
 """
 import unittest
@@ -40,23 +36,34 @@ import unittest
 from PyQt6.QtCore import *
 
 
-class NoOvaryWhenMale(QObject):
+class LargeOtolith(QObject):
 
     def __init__(self, db, schema, speciesCode):
         '''
-            The init methods of CLAMS conditionals are run whenever a new protocol
+            The init methods of CLAMS validations are run whenever a new protocol
             or species is selected in the specimen module. Any setup that the
-            conditional requires should be done here. The three input arguments are:
+            validation requires should be done here. The three input arguments are:
 
                 db - a reference to the active dbConnection class object
+                speciesCode - the species code of the current specimen
+                subcategory - the subcategory of the current specimen
 
             If you need to pass additional data to a validation, you should
             add this data to the species_data table and query it out here in
             the init method (see LengthRange.py for example.)
-
         '''
+
         #  call the superclass init
         QObject.__init__(self, None)
+
+        #  Get the large length for this species from the species_data table
+        sql = ("SELECT parameter_value FROM " + schema + ".species_data WHERE species_code=" + speciesCode +
+               " AND species_parameter='Large_Length'")
+        query = db.dbQuery(sql)
+        largeLength, = query.first()
+        
+        #  extract returned results
+        self.largeLength=float(largeLength)
 
 
     def evaluate(self,   measurements,  values,  result):
@@ -74,58 +81,32 @@ class NoOvaryWhenMale(QObject):
                     In order of the measurements.
                 result -
 
-            For example, this conditional is for the body count measurement and when
-            a count value is logged, it will check to see if that value is greater than 50.
+            For example, this validation checks if the measured length is a large length
+            for this species+subcategory and then lets you know an otolith is needed.
 
-            This is a fairly simple example, but the conditional can be
+            This is a fairly simple example, but the validation can be
             more complex (but usually don't need to be.) Also, remember that
-            these run each time a measurement configured for the conditional
+            these run each time a measurement configured for the validation
             runs so you don't want them to take too long to execute as it
             will slow data collection.
 
         '''
 
-        # figure out the rule
-        if values[measurements.index('sex')] is not None:
-            sex=str(values[measurements.index('sex')])
-            if (sex.lower() != 'female'):
+        length = values[measurements.index('standard_length_mm')]
+        # check if the length is larger than the species 'largeLength', if yes, Otolith barcode is mandatory
+        if length is not None:
+            length=float(length)
+            if length > self.largeLength:# this is a large fish, take its otolith
                 try:
-                    result[measurements.index('ovary_taken')]=False
-                    result[measurements.index('gonad_weight')]=False
-                    result[measurements.index('liver_weight')]=False
+                    result[measurements.index('alpha_barcode')]=True
+                except:
+                    pass
+            else:
+                try:
+                    result[measurements.index('alpha_barcode')]=False
                 except:
                     pass
 
 
         return result
-
-'''
-The conditionalTest class enables testing of conditionals by creating an 
-instance of the conditional object, and then executing its evaluate method.
-
-This class will need to be customized a bit for each individual validation.
-'''
-class conditionalTest(unittest.TestCase):
-    db = None
-    schema = None
-    speciesCode = None
-    noOvaryWhenMale = NoOvaryWhenMale(db, schema, speciesCode)
-
-    measurements = ['sex', 'ovary_taken', 'liver_weight', 'gonad_weight']
-
-    def testMale(self):
-        values = ['male']
-        results = [1, 2, 3, 4]
-
-        ok = self.noOvaryWhenMale.evaluate(self.measurements, values, results)
-        self.assertEqual([1, False, False, False], ok)
-
-    def testFemale(self):
-        values = ['female']
-        results = [1, 2, 3, 4]
-
-        ok = self.noOvaryWhenMale.evaluate(self.measurements, values, results)
-        self.assertEqual([1, 2, 3, 4], ok)
-
-if __name__ == '__main__':
-    unittest.main()
+       

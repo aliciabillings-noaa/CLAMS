@@ -1028,7 +1028,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 self.buttonEnable.append(True)
 
             for condObj in self.conditionals:
-                condObj = condObj(self.db)
+                condObj = condObj(self.db, self.schema, self.activeSpcCode)
                 self.buttonEnable = condObj.evaluate(self.measureType,  self.values, self.buttonEnable)
 
             for i in self.iterator:

@@ -16,7 +16,7 @@ from math import ceil
 
 class BodyCount10(QObject):
 
-    def __init__(self, db):
+    def __init__(self, db, schema, speciesCode):
         '''
             The init methods of CLAMS conditionals are run whenever a new protocol
             or species is selected in the specimen module. Any setup that the

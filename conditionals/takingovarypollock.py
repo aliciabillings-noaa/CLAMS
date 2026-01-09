@@ -41,7 +41,7 @@ from PyQt6.QtCore import *
 
 class TakingOvaryPollock(QObject):
 
-    def __init__(self, db):
+    def __init__(self, db, schema, speciesCode):
         '''
             The init methods of CLAMS conditionals are run whenever a new protocol
             or species is selected in the specimen module. Any setup that the
@@ -116,7 +116,9 @@ This class will need to be customized a bit for each individual validation.
 '''
 class conditionalTest(unittest.TestCase):
     db = None
-    takingOvaryPollock = TakingOvaryPollock(db)
+    schema = None
+    speciesCode = None
+    takingOvaryPollock = TakingOvaryPollock(db, schema, speciesCode)
 
     measurements = ['sex', 'ovary_taken', 'liver_weight', 'gonad_weight']
 

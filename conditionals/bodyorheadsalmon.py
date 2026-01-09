@@ -40,7 +40,7 @@ from PyQt6.QtCore import *
 
 class BodyOrHeadSalmon(QObject):
 
-    def __init__(self, db):
+    def __init__(self, db, schema, speciesCode):
         '''
             The init methods of CLAMS conditionals are run whenever a new protocol
             or species is selected in the specimen module. Any setup that the
@@ -142,10 +142,12 @@ class conditionalTest(QObject):
             values = [1, None, None]
             results = [3, 4]
             db = None
+            schema = None
+            speciesCode = None
             ok = None
 
             #  create the validation using an empty db connection
-            self.evaluate = BodyOrHeadSalmon(db)
+            self.evaluate = BodyOrHeadSalmon(db, schema, speciesCode)
 
             #  execute the validation 11 times
             for x in range(30):
