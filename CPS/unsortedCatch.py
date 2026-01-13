@@ -140,7 +140,8 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
 
         #  connect signals and slots
         self.manualBtn.clicked.connect(self.getManual)
-        self.doneBtn.clicked.connect(self.showCatch)
+        self.sortedBtn.clicked.connect(self.showCatch)
+        self.doneBtn.clicked.connect(self.close)
         self.delBtn.clicked.connect(self.goDelete)
         self.editBtn.clicked.connect(self.editTable)
         self.basketTable.itemSelectionChanged.connect(self.getBasketRow)
@@ -786,6 +787,6 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
     
     def showCatch(self):
         #  show the catch form
+        self.close()
         catchWindow = sortedCatch.sortedCatch(self)
         catchWindow.exec()
-        self.close()

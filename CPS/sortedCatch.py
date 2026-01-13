@@ -48,7 +48,7 @@ import ZebraLabelPrinter
 import addspecdlg
 import FEATZebraPrinter
 import measurementDialogs.FEATProjectDlg as project
-
+import CPS.unsortedCatch as unsortedCatch
 
 class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
@@ -118,6 +118,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         # add partition to event
         haul_txt = str(self.activeHaul) + " - " + str(self.activePartition)
         self.haulNum.setText(haul_txt)
+        self.transBtn.hide()
 
         #  set up tables for data display - most of this is done in QDesigner
         #  but some properties don't seem to "stick" (maybe QDesigner is buggy?)
@@ -157,10 +158,9 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.speciesList.itemSelectionChanged.connect(self.getActiveSpc)
         self.speciesList.itemActivated.connect(self.getSpeciesFocus)
         self.basketTable.itemSelectionChanged.connect(self.getBasketRow)
-        self.transBtn.clicked.connect(self.transferSample)
         self.commentBtn.setDisabled(True)  # initially disabled
         self.commentBtn.clicked.connect(self.getComment)
-        
+        self.unsortedBtn.clicked.connect(self.showUnsorted)
 
         #  connect the SensorMonitor SerialDataReceived signal to the
         #  getAuto method which processes input from devices.
@@ -271,6 +271,11 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
 
         #self.updateParentKeys()
+
+    def showUnsorted(self):
+        self.close()
+        unsorted = unsortedCatch.unsortedCatch(self)
+        unsorted.exec()
 
 
     def getSpecies(self):
@@ -480,7 +485,6 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.setEnabled(enabled)
         self.sumTable.setEnabled(enabled)
         self.manualBtn.setEnabled(enabled)
-        self.transBtn.setEnabled(enabled)
         self.editBtn.setEnabled(enabled)
 
 

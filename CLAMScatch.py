@@ -135,6 +135,9 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.horizontalHeader().setStretchLastSection(True)
         self.speciesList.horizontalHeader().setStretchLastSection(True)
 
+        # Hide go to unsorted button, this is only for SWFSC
+        self.unsortedBtn.hide()
+
         #  set up the the basket table headers
         self.basketTable.clearContents()
         self.basketTable.setRowCount(0)
