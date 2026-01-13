@@ -83,7 +83,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.samplePicture = None
         self.comment = ''
         self.validList = [1, 1]# sets valid sample type choices
-        self.basketTypes = ['Measure', 'Toss']
+        self.basketTypes = ['Measure', 'Count', 'Toss']
         self.freeze = False
         self.whHaulFlag = False
         self.devices = {}
@@ -603,10 +603,6 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             self.setActiveSampleType(self.activeSampleType)
 
         # look for previous data on 
-        if parentSample == 'SubMix':
-            self.basketTypes = ['Measure', 'Toss', 'Count']
-        else:
-            self.basketTypes = ['Measure', 'Toss']
         self.updateTables()
         self.focus='speciesList'
 
