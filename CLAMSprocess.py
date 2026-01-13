@@ -88,6 +88,11 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.black = QPalette()
         self.black.setColor(QPalette.ColorRole.ButtonText,QColor(0, 0, 0))
 
+        # hide fix species and edit codend button for SWFSC mode
+        if self.settings['OrganizationName'] == 'SWFSC':
+            self.fixSpeciesBtn.hide()
+            self.editCodendStateBtn.hide()
+
         # set up button colors
         self.haulBtn.setPalette(self.black)
         self.catchBtn.setPalette(self.black)
