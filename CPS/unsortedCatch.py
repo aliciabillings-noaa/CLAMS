@@ -406,9 +406,11 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         #  create some dicts to handle basket totals by sample type. We accumulate
         #  totals for the summary table below when populating the baskets table
         basketTotalWeight = {}
+        basketTotalCount = {}
         sumTableRows = {}
         for i, bType in enumerate(self.basketTypes):
             basketTotalWeight[bType] = 0
+            basketTotalCount[bType] = 0
             sumTableRows[bType] = i
 
         #  update the basket table - first, clear the contents
@@ -435,9 +437,11 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
             try:
                 basketWeight = float(basketWeight)
                 basketTotalWeight[basketType] += basketWeight
+                basketTotalCount[basketType] += 1
             except:
                 basketWeight = 0
                 basketTotalWeight[basketType] += 0
+                basketTotalCount[basketType] += 1
 
             #  add this basket to the table
             basketWeight = str(round(basketWeight, self.basketPrecision))
@@ -459,8 +463,10 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         #  now update the basket summary table
         totalSampleWeight = 0
         for basketType in self.basketTypes:
+            count = str(basketTotalCount[basketType])
             weight = str(round(basketTotalWeight[basketType], self.basketPrecision))
             totalSampleWeight += basketTotalWeight[basketType]
+            self.sumTable.setItem(sumTableRows[basketType], 0, QTableWidgetItem(count))
             self.sumTable.setItem(sumTableRows[basketType], 1, QTableWidgetItem(weight))
 
         #  lastly, update the total sample weight in the samples table
