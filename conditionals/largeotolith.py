@@ -16,7 +16,8 @@
 """
     :module:: LargeOtolith
 
-    :synopsis: LargeOtolith is a conditional that checks if a fish is larger than a threshold to save its otolith outside of standard protocol
+    :synopsis: LargeOtolith is a conditional that checks if a fish is larger than a threshold 
+    to save its otolith outside of standard protocol
 
 | Developed by:  Kelsey James <kelsey.james@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
@@ -25,8 +26,7 @@
 | Fisheries Resources Division (FRD)
 |
 | Author:
-|       Rick Towler   <rick.towler@noaa.gov>
-|       Kresimir Williams   <kresimir.williams@noaa.gov>
+|       Kelsey James <kelsey.james@noaa.gov>
 | Maintained by:
 |       Kelsey James <kelsey.james@noaa.gov>
         Melina Shak <melina.shak@noaa.gov>
@@ -101,12 +101,5 @@ class LargeOtolith(QObject):
                     result[measurements.index('alpha_barcode')]=True
                 except:
                     pass
-            else:
-                try:
-                    result[measurements.index('alpha_barcode')]=False
-                except:
-                    pass
-
-
         return result
        

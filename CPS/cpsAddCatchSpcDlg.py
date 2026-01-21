@@ -109,17 +109,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.radio10.toggled[bool].connect(self.getSpcHistory)
         self.radioFull.toggled[bool].connect(self.clearAllChar)
         self.inStateWaters.clicked.connect(self.toggleStateWaters)
-        self.subMixBtn.clicked.connect(self.setParentToSubMix)
         self.subMixBtn.setEnabled(False)
-
-        # parent sample buttons
-        self.buttons=[self.subMixBtn]
-
-        #  connect the sample button clicked signal to a method that manages their exclusivity
-        #  it seems autoexclusive buttons in a container cannot all be unchecked. Once one is
-        #  checked, you can't uncheck it (at least by calling setChecked()
-        for btn in self.buttons:
-            btn.clicked.connect(self.handleSampleBtnEx)
 
 
         # set default tab, get past haul species
@@ -141,18 +131,6 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
 
         self.getSpcHistory()
         self.radio10.setChecked(True)
-
-
-    def handleSampleBtnEx(self):
-        '''
-        handleSampleBtnEx manages the exclusivity of the parent sample buttons
-        This
-        '''
-        #  uncheck all buttons
-        for btn in self.buttons:
-            btn.setChecked(False)
-        #  and check the button pressed
-        self.sender().setChecked(True)
 
     def getDigit(self):
 
@@ -193,24 +171,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
             self.subMixBtn.setEnabled(True)
         else:
             self.subMixBtn.setEnabled(False)
-    
-    def setParentToSubMix(self):
-        self.isSubMix = True
-        # Check if submix already exists
-        sql = ("select sample_id from samples where survey=" + self.survey + 
-               " AND event_id=" + self.activeHaul + 
-               " AND parent_sample=" + self.parentSamples + 
-               " AND sample_type='SubMix'")
-        query = self.db.dbQuery(sql)
-        hasSubMix, = query.first()
-
-        # Insert submix if it doesn't already exist
-        if not hasSubMix:
-            sql = ("INSERT INTO " + self.schema + ".samples (ship,survey,event_id,partition,sample_type," +
-                "species_code,subcategory,parent_sample,scientist) VALUES("+
-                self.ship +"," + self.survey+"," + self.activeHaul+",'" + self.activePartition+
-                "','SubMix',3 ,'None', " + self.parentSamples+",'" + self.scientist+"')")
-            self.db.dbExec(sql)
+            self.subMixBtn.setChecked(False)
 
     def getList(self):
 
@@ -351,13 +312,27 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
                         "There's no Mix1 sample for this partition. " +
                         "You need to create it before using the SubMix1", 'info')
                 self.message.exec()
-            else:
-                # you can only choose Mix1!!
-                for btn in self.buttons:
-                    btn.setEnabled(False)
 
 
     def sendSel(self):
+        status = self.subMixBtn.isChecked()
+        if status:
+            self.isSubMix = True
+            # Check if submix already exists
+            sql = ("select sample_id from samples where survey=" + self.survey + 
+                " AND event_id=" + self.activeHaul + 
+                " AND parent_sample=" + self.parentSamples + 
+                " AND sample_type='SubMix'")
+            query = self.db.dbQuery(sql)
+            hasSubMix, = query.first()
+
+            # Insert submix if it doesn't already exist
+            if not hasSubMix:
+                sql = ("INSERT INTO " + self.schema + ".samples (ship,survey,event_id,partition,sample_type," +
+                    "species_code,subcategory,parent_sample,scientist) VALUES("+
+                    self.ship +"," + self.survey+"," + self.activeHaul+",'" + self.activePartition+
+                    "','SubMix',3 ,'None', " + self.parentSamples+",'" + self.scientist+"')")
+                self.db.dbExec(sql)
 
         if self.listOrigin == None:
             return
