@@ -790,9 +790,9 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         '''
         # turn off count sample type when sample is a submix
         if self.isCurrSubMix:
-            self.validList[self.basketTypes.index('Count')] = 0
-        else:
             self.validList[self.basketTypes.index('Count')] = 1
+        else:
+            self.validList[self.basketTypes.index('Count')] = 0
 
         #  display the basket type dialog
         self.typeDlg.buttonSetup(self.validList, self.basketTypes)
