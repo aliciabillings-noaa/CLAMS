@@ -108,7 +108,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.addBtn.clicked.connect(self.sendSel)
         self.radio10.toggled[bool].connect(self.getSpcHistory)
         self.radioFull.toggled[bool].connect(self.clearAllChar)
-        self.inStateWaters.clicked.connect(self.toggleStateWaters)
+        self.inStateWatersBtn.clicked.connect(self.toggleStateWaters)
         self.subMixBtn.setEnabled(False)
 
 
@@ -167,7 +167,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.getList()
 
     def toggleStateWaters(self):
-        if (self.inStateWaters.isChecked()):
+        if (self.inStateWatersBtn.isChecked()):
             self.subMixBtn.setEnabled(True)
         else:
             self.subMixBtn.setEnabled(False)

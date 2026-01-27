@@ -82,7 +82,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.activeFullName = None
         self.samplePicture = None
         self.comment = ''
-        self.validList = [1, 1]# sets valid sample type choices
+        self.validList = [1, 1, 1]# sets valid sample type choices
         self.basketTypes = ['Measure', 'Count', 'Toss']
         self.freeze = False
         self.whHaulFlag = False
@@ -97,6 +97,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.wholeHaulKey = None
         self.headerFont = QFont("Arial Black", 11, -1, False)
         self.activeSampleType = None
+        self.isCurrSubMix = False
 
         #  set the basket precision - basket weights will be rounded to this many
         #  digits after the decimal. Note that currently the database supports
@@ -572,6 +573,11 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         speciesName = self.speciesList.item(self.speciesList.currentRow(), 0).text()
         parentSample = self.speciesList.item(self.speciesList.currentRow(), 1).text()
 
+        if parentSample == 'SubMix':
+            self.isCurrSubMix = True
+        else:
+            self.isCurrSubMix = False
+
         #  display the dialog for confirming active species - this was introduced
         #  after it was discovered that if you select one item, then roll your
         #  finger to a different item, the first item appears visually to be
@@ -782,6 +788,11 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         the basket is a measure, count, or toss basket.
 
         '''
+        # turn off count sample type when sample is a submix
+        if self.isCurrSubMix:
+            self.validList[self.basketTypes.index('Count')] = 0
+        else:
+            self.validList[self.basketTypes.index('Count')] = 1
 
         #  display the basket type dialog
         self.typeDlg.buttonSetup(self.validList, self.basketTypes)
