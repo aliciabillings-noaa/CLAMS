@@ -90,9 +90,9 @@ class NoOvaryWhenMale(QObject):
             sex=str(values[measurements.index('sex')])
             if (sex.lower() != 'female'):
                 try:
-                    result[measurements.index('ovary_taken')]=False
-                    result[measurements.index('gonad_weight')]=False
-                    result[measurements.index('liver_weight')]=False
+                    result[measurements.index('ovary_taken')]=[False]
+                    result[measurements.index('gonad_weight')]=[False]
+                    result[measurements.index('liver_weight')]=[False]
                 except:
                     pass
 

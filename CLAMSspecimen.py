@@ -989,6 +989,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             # check conditionals
             self.checkConditionals()
 
+            self.resetColors()
+
             if keepGoing:
                 self.moveOn(i)
 
@@ -1025,7 +1027,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             self.buttonEnable = []
 
             for i in self.iterator:
-                self.buttonEnable.append(True)
+                self.buttonEnable.append([True, False])
 
             for condObj in self.conditionals:
                 condObj = condObj(self.db, self.schema, self.activeSpcCode)
@@ -1033,9 +1035,12 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
             for i in self.iterator:
                 btn = self.buttons[i]
-                btn.setEnabled(self.buttonEnable[i])
-                if not self.buttonEnable[i]:
+                btn.setEnabled(self.buttonEnable[i][0])
+                if not self.buttonEnable[i][0]:
                     btn.setStyleSheet("background-color: gray")
+                
+                if self.buttonEnable[i][1]:
+                    self.forcing[i] = '1'
 
 
     def getNext(self, skipChecks=False):
@@ -1098,6 +1103,8 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         for i in self.iterator:
             self.values[i] = None
             self.buttons[i].setEnabled(True)
+            self.forcing[i] = self.origForcing[i]
+
         #  reset the specimen key
         self.specimenKey = None
         self.specimenLabel.setText('')
@@ -1254,6 +1261,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.measureType = []
 
         self.forcing = []
+        self.origForcing = []
         self.forceOrder = []
         self.label = []
         self.dialogs = []
@@ -1315,6 +1323,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             #  one we encounter.
             if len(self.forcing) <= idx:
                 self.forcing.append(force_measurement)
+                self.origForcing.append(force_measurement)
             if len(self.forceOrder) <= idx:
                 self.forceOrder.append(force_order)
             if len(self.label) <= idx:

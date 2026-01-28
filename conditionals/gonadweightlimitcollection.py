@@ -92,18 +92,18 @@ class GonadWeightLimitCollection(QObject):
         if sex is not None:
             if sex=='Male':
                 try:
-                    result[measurements.index('gonad_weight')]=False
-                    result[measurements.index('ovary_taken')]=False
-                    result[measurements.index('liver_weight')]=False
+                    result[measurements.index('gonad_weight')]=[False]
+                    result[measurements.index('ovary_taken')]=[False]
+                    result[measurements.index('liver_weight')]=[False]
                 except:
                     pass
             else: # sex is female
                 if maturity is not None:
                     if not maturity in self.stages:
                         try:
-                            result[measurements.index('gonad_weight')]=False
-                            result[measurements.index('ovary_taken')]=False
-                            result[measurements.index('liver_weight')]=False
+                            result[measurements.index('gonad_weight')]=[False]
+                            result[measurements.index('ovary_taken')]=[False]
+                            result[measurements.index('liver_weight')]=[False]
                         except:
                             pass
 

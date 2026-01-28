@@ -42,7 +42,7 @@ class BodyCount10(QObject):
         
         if self.cnt > 10:
             try:
-                result[measurements.index('whole_fish')] = False
+                result[measurements.index('whole_fish')] = [False]
             except:
                 pass
                 

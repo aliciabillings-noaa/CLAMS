@@ -14,10 +14,10 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-    :module:: LargeOtolith
+    :module:: SmallOtolithMax5
 
-    :synopsis: LargeOtolith is a conditional that checks if a fish is larger than a threshold 
-    to save its otolith outside of standard protocol
+    :synopsis: SmallOtolithMax5 is a conditional that checks if a fish is smaller than 
+    a threshold then counts the number of otoliths taken, after 5, otolith protocol stops
 
 | Developed by:  Kelsey James <kelsey.james@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
@@ -32,11 +32,12 @@
         Melina Shak <melina.shak@noaa.gov>
 """
 import unittest
+import json
 
 from PyQt6.QtCore import *
 
 
-class LargeOtolith(QObject):
+class SmallOtolithMax5(QObject):
 
     def __init__(self, db, schema, speciesCode):
         '''
@@ -58,12 +59,21 @@ class LargeOtolith(QObject):
 
         #  Get the large length for this species from the species_data table
         sql = ("SELECT parameter_value FROM " + schema + ".species_data WHERE species_code=" + speciesCode +
-               " AND species_parameter='Large_Length'")
+               " AND lower(species_parameter)='small_length'")
         query = db.dbQuery(sql)
-        largeLength, = query.first()
+        smallLength, = query.first()
+
+        # TODO define sample id dynamically
+        sql = ("SELECT count(*) FROM " + schema + ".measurements WHERE measurement_type='alpha_barcode' " +
+            "AND specimen_id in (SELECT specimen_id FROM " + schema + ".measurements WHERE " +
+            "measurement_type='standard_length_mm' AND cast(measurement_value as float) < " + 
+            smallLength + " AND sample_id=2425)")
+        query = db.dbQuery(sql)
+        smallOtoCount, = query.first()
         
         #  extract returned results
-        self.largeLength=float(largeLength)
+        self.smallLength=float(smallLength)
+        self.smallOtoCount=int(smallOtoCount)
 
 
     def evaluate(self,   measurements,  values,  result):
@@ -81,25 +91,21 @@ class LargeOtolith(QObject):
                     In order of the measurements.
                 result -
 
-            For example, this validation checks if the measured length is a large length
-            for this species+subcategory and then lets you know an otolith is needed.
-
-            This is a fairly simple example, but the validation can be
-            more complex (but usually don't need to be.) Also, remember that
-            these run each time a measurement configured for the validation
-            runs so you don't want them to take too long to execute as it
-            will slow data collection.
-
         '''
+        standardLen = values[measurements.index('standard_length_mm')]
 
-        length = values[measurements.index('standard_length_mm')]
         # check if the length is larger than the species 'largeLength', if yes, Otolith barcode is mandatory
-        if length is not None:
-            length=float(length)
-            if length > self.largeLength:# this is a large fish, take its otolith
+        if standardLen and float(standardLen) < self.smallLength:
+            if self.smallOtoCount >= 5:
+                try:
+                    result[measurements.index('alpha_barcode')]=[False, False]
+                except:
+                    pass
+            else:
                 try:
                     result[measurements.index('alpha_barcode')]=[True, True]
                 except:
                     pass
+
         return result
        

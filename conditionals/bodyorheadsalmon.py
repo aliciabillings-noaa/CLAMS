@@ -91,18 +91,18 @@ class BodyOrHeadSalmon(QObject):
 		
         if self.cnt < 21:
             try:
-                result[measurements.index('fish_head')] = False
+                result[measurements.index('fish_head')] = [False]
             except:
                 pass
         elif self.cnt > 20 & self.cnt < 51:
             try:
-                result[measurements.index('whole_fish')] = False
+                result[measurements.index('whole_fish')] = [False]
             except:
                 pass
         elif self.cnt > 51:
             try:
-                result[measurements.index('whole_fish')] = False
-                result[measurements.index('fish_head')] = False
+                result[measurements.index('whole_fish')] = [False]
+                result[measurements.index('fish_head')] = [False]
             except:
                 pass
                 

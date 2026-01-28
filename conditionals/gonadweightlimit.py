@@ -96,17 +96,17 @@ class GonadWeightLimit(QObject):
             if str(sex).lower()=='male':
 
                 if 'ovary_taken' in measurements:
-                    result[measurements.index('ovary_taken')]=False
+                    result[measurements.index('ovary_taken')]=[False]
                 if 'liver_weight' in measurements:
-                    result[measurements.index('liver_weight')]=False
+                    result[measurements.index('liver_weight')]=[False]
                 if 'gonad_weight' in measurements:
-                    result[measurements.index('gonad_weight')]=False
+                    result[measurements.index('gonad_weight')]=[False]
 
             else: # sex is female
                 if maturity:
                     if not maturity in self.stages:
                         if 'gonad_weight' in measurements:
-                            result[measurements.index('gonad_weight')]=False
+                            result[measurements.index('gonad_weight')]=[False]
 
 
         return result

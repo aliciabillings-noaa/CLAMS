@@ -98,9 +98,9 @@ class LengthSexMaturity(QObject):
             length=float(values[measurements.index('length')])
             if length<=self.age1Length:# this is an age 1 fish
                 try:
-                    result[measurements.index('sex')]=False
-                    result[measurements.index('maturity')]=False
-                    result[measurements.index('gonad_weight')]=False
+                    result[measurements.index('sex')]=[False]
+                    result[measurements.index('maturity')]=[False]
+                    result[measurements.index('gonad_weight')]=[False]
                 except:
                     pass
 

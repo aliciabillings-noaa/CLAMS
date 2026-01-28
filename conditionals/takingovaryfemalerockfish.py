@@ -90,7 +90,7 @@ class TakingOvaryFemaleRockfish(QObject):
             if str(values[measurements.index('sex')]).lower()=='male':
                 #  for males we don't take ovaries, their weights, or livers
                 if 'ovary_taken' in measurements:
-                    result[measurements.index('ovary_taken')]=False
+                    result[measurements.index('ovary_taken')]=[False]
             
             
             #  DISABLE THIS CODE FOR WINTER 2013 - We want the option to weigh ovaries even

@@ -49,6 +49,6 @@ class DietCheck(QObject):
         called_query.first()
         self.called = int(called_query.value(0).toString())
         if self.collected >= self.tot_collect and self.called >= self.tot_called:
-            result[measurements.index('diet_collection')] = False
+            result[measurements.index('diet_collection')] = [False]
 
         return result

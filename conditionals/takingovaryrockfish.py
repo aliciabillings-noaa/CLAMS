@@ -89,8 +89,8 @@ class TakingOvaryRockfish(QObject):
             sex=str(values[measurements.index('sex')])
             if (sex.lower() == 'male'):
                 try:
-                    result[measurements.index('ovary_taken')]=False
-                    result[measurements.index('barcode')]=False
+                    result[measurements.index('ovary_taken')]=[False]
+                    result[measurements.index('barcode')]=[False]
                 except:
                     pass
 
