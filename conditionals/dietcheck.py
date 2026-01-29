@@ -11,7 +11,7 @@ from PyQt6.QtCore import *
 
 class DietCheck(QObject):
 
-    def __init__(self, db, schema, speciesCode):
+    def __init__(self, db, schema, speciesCode, parent=None):
         #  call the superclass init
         QObject.__init__(self, None)
         self.db = db

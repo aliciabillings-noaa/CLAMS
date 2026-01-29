@@ -16,7 +16,7 @@
 """
     :module:: SmallOtolithMax5
 
-    :synopsis: SmallOtolithMax5 is a conditional that checks if a fish is smaller than 
+    :synopsis: SmallOtolithMax5 a conditional that checks if a fish is smaller than 
     a threshold then counts the number of otoliths taken, after 5, otolith protocol stops
 
 | Developed by:  Kelsey James <kelsey.james@noaa.gov>
@@ -39,7 +39,7 @@ from PyQt6.QtCore import *
 
 class SmallOtolithMax5(QObject):
 
-    def __init__(self, db, schema, speciesCode):
+    def __init__(self, db, schema, speciesCode, parent=None):
         '''
             The init methods of CLAMS validations are run whenever a new protocol
             or species is selected in the specimen module. Any setup that the
@@ -67,7 +67,7 @@ class SmallOtolithMax5(QObject):
         sql = ("SELECT count(*) FROM " + schema + ".measurements WHERE measurement_type='alpha_barcode' " +
             "AND specimen_id in (SELECT specimen_id FROM " + schema + ".measurements WHERE " +
             "measurement_type='standard_length_mm' AND cast(measurement_value as float) < " + 
-            smallLength + " AND sample_id=2425)")
+            smallLength + " AND sample_id=" + parent.activeSample + ")")
         query = db.dbQuery(sql)
         smallOtoCount, = query.first()
         
