@@ -1038,8 +1038,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 btn.setEnabled(self.buttonEnable[i][0])
                 if not self.buttonEnable[i][0]:
                     btn.setStyleSheet("background-color: gray")
-                
-                if self.buttonEnable[i][1]:
+                if len(self.buttonEnable[i]) > 1 and self.buttonEnable[i][1]:
                     self.forcing[i] = '1'
 
 

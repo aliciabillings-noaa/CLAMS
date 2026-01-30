@@ -32,7 +32,6 @@
         Melina Shak <melina.shak@noaa.gov>
 """
 import unittest
-import json
 
 from PyQt6.QtCore import *
 
@@ -56,24 +55,17 @@ class SmallOtolithMax5(QObject):
 
         #  call the superclass init
         QObject.__init__(self, None)
+        self.activeSample = parent.activeSample
+        self.schema = schema
+        self.db = db
 
         #  Get the large length for this species from the species_data table
         sql = ("SELECT parameter_value FROM " + schema + ".species_data WHERE species_code=" + speciesCode +
                " AND lower(species_parameter)='small_length'")
         query = db.dbQuery(sql)
         smallLength, = query.first()
-
-        # TODO define sample id dynamically
-        sql = ("SELECT count(*) FROM " + schema + ".measurements WHERE measurement_type='alpha_barcode' " +
-            "AND specimen_id in (SELECT specimen_id FROM " + schema + ".measurements WHERE " +
-            "measurement_type='standard_length_mm' AND cast(measurement_value as float) < " + 
-            smallLength + " AND sample_id=" + parent.activeSample + ")")
-        query = db.dbQuery(sql)
-        smallOtoCount, = query.first()
-        
         #  extract returned results
-        self.smallLength=float(smallLength)
-        self.smallOtoCount=int(smallOtoCount)
+        self.smallLength=smallLength
 
 
     def evaluate(self,   measurements,  values,  result):
@@ -92,11 +84,26 @@ class SmallOtolithMax5(QObject):
                 result -
 
         '''
-        standardLen = values[measurements.index('standard_length_mm')]
+        indices = [i for i, s in enumerate(measurements) if "length" in s]
+        lengthFieldName = measurements[indices[0]]
+        length = values[indices[0]]
 
-        # check if the length is larger than the species 'largeLength', if yes, Otolith barcode is mandatory
-        if standardLen and float(standardLen) < self.smallLength:
-            if self.smallOtoCount >= 5:
+        # Counts the number of otoliths taken from a small specimen
+        smallOtoCount = None
+        if self.activeSample and self.smallLength:
+            sql = ("SELECT count(*) FROM " + self.schema + ".measurements WHERE measurement_type='alpha_barcode' " +
+                "AND specimen_id in (SELECT specimen_id FROM " + self.schema + ".measurements WHERE " +
+                "measurement_type='" + lengthFieldName + "' AND cast(measurement_value as float) < " + 
+                self.smallLength + " AND sample_id=" + self.activeSample + ")")
+            query = self.db.dbQuery(sql)
+            smallOtoCount, = query.first()
+
+        if self.smallLength and smallOtoCount:
+            self.smallLength = float(self.smallLength)
+            smallOtoCount = int(smallOtoCount)
+
+            # check if the length is larger than the species 'largeLength', if yes, Otolith barcode is mandatory
+            if length and float(length) < self.smallLength and smallOtoCount >= 5:
                 try:
                     result[measurements.index('alpha_barcode')]=[False, False]
                 except:
