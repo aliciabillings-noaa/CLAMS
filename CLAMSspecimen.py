@@ -989,8 +989,6 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             # check conditionals
             self.checkConditionals()
 
-            self.resetColors()
-
             if keepGoing:
                 self.moveOn(i)
 
@@ -1040,6 +1038,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     btn.setStyleSheet("background-color: gray")
                 if len(self.buttonEnable[i]) > 1 and self.buttonEnable[i][1]:
                     self.forcing[i] = '1'
+                    btn.setStyleSheet("background-color: red")
 
 
     def getNext(self, skipChecks=False):
