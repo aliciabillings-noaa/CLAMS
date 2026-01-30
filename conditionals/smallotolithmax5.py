@@ -84,9 +84,9 @@ class SmallOtolithMax5(QObject):
                 result -
 
         '''
-        indices = [i for i, s in enumerate(measurements) if "length" in s]
-        lengthFieldName = measurements[indices[0]]
-        length = values[indices[0]]
+        lengthIndex = [i for i, s in enumerate(measurements) if "length" in s]
+        lengthFieldName = measurements[lengthIndex[0]]
+        length = values[lengthIndex[0]]
 
         # Counts the number of otoliths taken from a small specimen
         smallOtoCount = None
@@ -98,19 +98,15 @@ class SmallOtolithMax5(QObject):
             query = self.db.dbQuery(sql)
             smallOtoCount, = query.first()
 
-        if self.smallLength and smallOtoCount:
+        if self.smallLength and smallOtoCount and length:
             self.smallLength = float(self.smallLength)
             smallOtoCount = int(smallOtoCount)
+            length = float(length)
 
             # check if the length is larger than the species 'largeLength', if yes, Otolith barcode is mandatory
-            if length and float(length) < self.smallLength and smallOtoCount >= 5:
+            if length < self.smallLength and smallOtoCount >= 5:
                 try:
                     result[measurements.index('alpha_barcode')]=[False, False]
-                except:
-                    pass
-            else:
-                try:
-                    result[measurements.index('alpha_barcode')]=[True, True]
                 except:
                     pass
 
