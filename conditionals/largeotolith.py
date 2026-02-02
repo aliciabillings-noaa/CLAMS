@@ -19,20 +19,20 @@
     :synopsis: LargeOtolith is a conditional that checks if a fish is larger than a threshold 
     to save its otolith outside of standard protocol
 
-| Developed by:  Kelsey James <kelsey.james@noaa.gov>
+| Developed by:  Melina Shak <melina.shak@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
 | National Marine Fisheries Service (NMFS)
 | Southwest Fisheries Science Center (SWFSC)
 | Fisheries Resources Division (FRD)
 |
 | Author:
-|       Kelsey James <kelsey.james@noaa.gov>
+        Melina Shak <melina.shak@noaa.gov>
 | Maintained by:
 |       Kelsey James <kelsey.james@noaa.gov>
         Melina Shak <melina.shak@noaa.gov>
 """
 import unittest
-
+from unittest.mock import Mock
 from PyQt6.QtCore import *
 
 
@@ -102,3 +102,77 @@ class LargeOtolith(QObject):
                 pass
         return result
        
+'''
+The conditionalTest class enables testing of conditionals by creating a database
+connection, creating an instance of the conditional object, and then executing its
+evaluate method.
+
+This class will need to be customized a bit for each individual validation.
+'''
+
+class conditionalTest(unittest.TestCase):
+    schema = 'clams2swfsc'
+    speciesCode = 'anch'
+
+    anchovyMeasurements = ['standard_length_mm', 'weight_g', 'dna_barcode', 'alpha_barcode']
+    mackerelMeasurements = ['fork_length_mm', 'weight_g', 'alpha_barcode']
+
+    def testLargeAnchovy(self):
+        query = Mock()
+        query.first.return_value = ['149']
+        db = Mock()
+        db.dbQuery.return_value = query
+
+        largeOtolith = LargeOtolith(db, self.schema, self.speciesCode)
+
+        values = ['150', '14', 'asdf', 'asdf']
+        results = [[True, False], [True, False], [True, False], [True, False]]
+
+        ok = largeOtolith.evaluate(self.anchovyMeasurements, values, results)
+        self.assertEqual([[True, False], [True, False], [True, False], [True, True]], ok)
+    
+    def testLargeMackerel(self):
+        query = Mock()
+        query.first.return_value = ['300']
+        db = Mock()
+        db.dbQuery.return_value = query
+
+        largeOtolith = LargeOtolith(db, self.schema, self.speciesCode)
+
+        values = ['400', '14', 'asdf', 'asdf']
+        results = [[True, False], [True, False], [True, False]]
+
+        ok = largeOtolith.evaluate(self.mackerelMeasurements, values, results)
+        self.assertEqual([[True, False], [True, False], [True, True]], ok)
+    
+    def testSmallAnchovy(self):
+        query = Mock()
+        query.first.return_value = ['149']
+        db = Mock()
+        db.dbQuery.return_value = query
+
+        largeOtolith = LargeOtolith(db, self.schema, self.speciesCode)
+
+        values = ['10', '14', 'asdf', 'asdf']
+        results = [[True, False], [True, False], [True, False], [True, False]]
+
+        ok = largeOtolith.evaluate(self.anchovyMeasurements, values, results)
+        self.assertEqual([[True, False], [True, False], [True, False], [True, False]], ok)
+
+    def testSmallMackerel(self):
+        query = Mock()
+        query.first.return_value = ['300']
+        db = Mock()
+        db.dbQuery.return_value = query
+
+        largeOtolith = LargeOtolith(db, self.schema, self.speciesCode)
+
+        values = ['200', '14', 'asdf', 'asdf']
+        results = [[True, False], [True, False], [True, False]]
+
+        ok = largeOtolith.evaluate(self.mackerelMeasurements, values, results)
+        self.assertEqual([[True, False], [True, False], [True, False]], ok)
+
+if __name__ == '__main__':
+    unittest.main()
+

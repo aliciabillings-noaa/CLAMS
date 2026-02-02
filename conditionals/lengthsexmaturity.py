@@ -80,7 +80,9 @@ class LengthSexMaturity(QObject):
                     protocol, in order.
                 values - a list of the stored values of those measurements.
                     In order of the measurements.
-                result -
+                result - a 2-d array (e.g. [[True, False], [False, True], ...]), the
+                    first item represents whether a measurement is enabled (True) or disabled (False) and
+                    the second item represents whether a measurement is mandatory (True) or optional (False)
 
             For example, this conditional is for the body count measurement and when
             a count value is logged, it will check to see if that value is greater than 50.
@@ -121,18 +123,21 @@ class conditionalTest(unittest.TestCase):
     db = Mock()
     db.dbQuery.return_value = query
 
+    schema = None
+    speciesCode = None
+
     measurements = ['length', 'sex', 'maturity', 'gonad_weight']
     results = [1, 2, 3, 4]
 
     def testLenLessThan20(self):
-        lengthSexMaturity = LengthSexMaturity(self.db)
+        lengthSexMaturity = LengthSexMaturity(self.db, self.schema, self.speciesCode)
         values = [10]
 
         ok = lengthSexMaturity.evaluate(self.measurements, values, self.results)
-        self.assertEqual([1, False, False, False], ok)
+        self.assertEqual([1, [False], [False], [False]], ok)
 
     def testLenGreaterThan20(self):
-        lengthSexMaturity = LengthSexMaturity(self.db)
+        lengthSexMaturity = LengthSexMaturity(self.db, self.schema, self.speciesCode)
         values = [21]
 
         ok = lengthSexMaturity.evaluate(self.measurements, values, self.results)

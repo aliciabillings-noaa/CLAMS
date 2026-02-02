@@ -71,7 +71,9 @@ class BodyOrHeadSalmon(QObject):
                     protocol, in order.
                 values - a list of the stored values of those measurements.
                     In order of the measurements.
-                result -
+                result - a 2-d array (e.g. [[True, False], [False, True], ...]), the
+                    first item represents whether a measurement is enabled (True) or disabled (False) and
+                    the second item represents whether a measurement is mandatory (True) or optional (False)
 
             For example, this conditional is for the body count measurement and when
             a count value is logged, it will check to see if that value is greater than 50.

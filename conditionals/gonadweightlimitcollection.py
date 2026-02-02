@@ -74,7 +74,9 @@ class GonadWeightLimitCollection(QObject):
                     protocol, in order.
                 values - a list of the stored values of those measurements.
                     In order of the measurements.
-                result -
+                result - a 2-d array (e.g. [[True, False], [False, True], ...]), the
+                    first item represents whether a measurement is enabled (True) or disabled (False) and
+                    the second item represents whether a measurement is mandatory (True) or optional (False)
 
             For example, this conditional is for the body count measurement and when
             a count value is logged, it will check to see if that value is greater than 50.
@@ -129,7 +131,7 @@ class conditionalTest(unittest.TestCase):
         values = ['Male', 'Immature']
 
         ok = self.gonadWeightLimitCol.evaluate(self.measurements, values, results)
-        self.assertEqual([1, 2, False, False, False], ok)
+        self.assertEqual([1, 2, [False], [False], [False]], ok)
 
     def testFemaleImmature(self):
         results = [1, 2, 3, 4, 5]
@@ -143,7 +145,7 @@ class conditionalTest(unittest.TestCase):
         values = ['female', 'asdf']
 
         ok = self.gonadWeightLimitCol.evaluate(self.measurements, values, results)
-        self.assertEqual([1, 2, False, False, False], ok)
+        self.assertEqual([1, 2, [False], [False], [False]], ok)
 
 if __name__ == '__main__':
     unittest.main()

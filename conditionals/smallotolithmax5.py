@@ -17,22 +17,22 @@
     :module:: SmallOtolithMax5
 
     :synopsis: SmallOtolithMax5 a conditional that checks if a fish is smaller than 
-    a threshold then counts the number of otoliths taken, after 5, otolith protocol stops
+    a threshold then counts the number of small otoliths taken, after 5, otolith protocol stops
 
-| Developed by:  Kelsey James <kelsey.james@noaa.gov>
+| Developed by:  Melina Shak <melina.shak@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
 | National Marine Fisheries Service (NMFS)
 | Southwest Fisheries Science Center (SWFSC)
 | Fisheries Resources Division (FRD)
 |
 | Author:
-|       Kelsey James <kelsey.james@noaa.gov>
+        Melina Shak <melina.shak@noaa.gov>
 | Maintained by:
 |       Kelsey James <kelsey.james@noaa.gov>
         Melina Shak <melina.shak@noaa.gov>
 """
 import unittest
-
+from unittest.mock import Mock
 from PyQt6.QtCore import *
 
 
@@ -81,7 +81,9 @@ class SmallOtolithMax5(QObject):
                     protocol, in order.
                 values - a list of the stored values of those measurements.
                     In order of the measurements.
-                result -
+                result - a 2-d array (e.g. [[True, False], [False, True], ...]), the
+                    first item represents whether a measurement is enabled (True) or disabled (False) and
+                    the second item represents whether a measurement is mandatory (True) or optional (False)
 
         '''
         lengthIndex = [i for i, s in enumerate(measurements) if "length" in s]
@@ -106,9 +108,103 @@ class SmallOtolithMax5(QObject):
             # check if the length is larger than the species 'largeLength', if yes, Otolith barcode is mandatory
             if length < self.smallLength and smallOtoCount >= 5:
                 try:
+                    print('asdf' )
                     result[measurements.index('alpha_barcode')]=[False, False]
                 except:
                     pass
 
         return result
        
+'''
+The conditionalTest class enables testing of conditionals by creating a database
+connection, creating an instance of the conditional object, and then executing its
+evaluate method.
+
+This class will need to be customized a bit for each individual validation.
+'''
+
+class conditionalTest(unittest.TestCase):
+    schema = 'clams2swfsc'
+    speciesCode = 'anch'
+
+    parent = Mock()
+    parent.activeSample = '1'
+
+    anchovyMeasurements = ['standard_length_mm', 'weight_g', 'dna_barcode', 'alpha_barcode']
+    mackerelMeasurements = ['fork_length_mm', 'weight_g', 'alpha_barcode']
+
+    def testSmallAnchovyGreaterThan5(self):
+        query = Mock()
+        query.first.side_effect = [['60'], ['6']]
+        db = Mock()
+        db.dbQuery.return_value = query
+
+        smallOtolith = SmallOtolithMax5(db, self.schema, self.speciesCode, self.parent)
+
+        values = ['2', '14', 'asdf', 'asdf']
+        results = [[True, False], [True, False], [True, False], [True, False]]
+        ok = smallOtolith.evaluate(self.anchovyMeasurements, values, results)
+        
+        self.assertEqual([[True, False], [True, False], [True, False], [False, False]], ok)
+    
+    def testSmallAnchovyLessThan5(self):
+        query = Mock()
+        query.first.side_effect = [['60'], ['4']]
+        db = Mock()
+        db.dbQuery.return_value = query
+
+        smallOtolith = SmallOtolithMax5(db, self.schema, self.speciesCode, self.parent)
+
+        values = ['2', '14', 'asdf', 'asdf']
+        results = [[True, False], [True, False], [True, False], [True, False]]
+        ok = smallOtolith.evaluate(self.anchovyMeasurements, values, results)
+
+        self.assertEqual([[True, False], [True, False], [True, False], [True, False]], ok)
+    
+    def testSmallMackerelGreaterThan5(self):
+        query = Mock()
+        query.first.side_effect = [['150'], ['5']]
+        db = Mock()
+        db.dbQuery.return_value = query
+
+        smallOtolith = SmallOtolithMax5(db, self.schema, self.speciesCode, self.parent)
+
+        values = ['100', '20', 'asdf']
+        results = [[True, False], [True, False], [True, False]]
+        ok = smallOtolith.evaluate(self.mackerelMeasurements, values, results)
+
+        self.assertEqual([[True, False], [True, False], [False, False]], ok)
+
+    def testLargeMackerelLessThan5(self):
+            query = Mock()
+            query.first.side_effect = [['150'], ['1']]
+
+            db = Mock()
+            db.dbQuery.return_value = query
+
+            smallOtolith = SmallOtolithMax5(db, self.schema, self.speciesCode, self.parent)
+
+            values = ['200', '20', 'asdf']
+            results = [[True, False], [True, False], [True, False]]
+            ok = smallOtolith.evaluate(self.mackerelMeasurements, values, results)
+
+            self.assertEqual([[True, False], [True, False], [True, False]], ok)
+
+    def testSmallMackerelLessThan5(self):
+            query = Mock()
+            query.first.side_effect = [['150'], ['1']]
+
+            db = Mock()
+            db.dbQuery.return_value = query
+
+            smallOtolith = SmallOtolithMax5(db, self.schema, self.speciesCode, self.parent)
+
+            values = ['50', '20', 'asdf']
+            results = [[True, False], [True, False], [True, False]]
+            ok = smallOtolith.evaluate(self.mackerelMeasurements, values, results)
+
+            self.assertEqual([[True, False], [True, False], [True, False]], ok)
+
+if __name__ == '__main__':
+    unittest.main()
+

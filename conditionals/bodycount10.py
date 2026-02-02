@@ -10,9 +10,7 @@
 
 '''
 
-from PyQt4.QtCore import *
-from PyQt4 import QtSql
-from math import ceil
+from PyQt6.QtCore import *
 
 class BodyCount10(QObject):
 
