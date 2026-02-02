@@ -92,7 +92,8 @@ class LargeOtolith(QObject):
 
         '''
 
-        length = values[measurements.index('standard_length_mm')]
+        lengthIndex = [i for i, s in enumerate(measurements) if "length" in s]
+        length = values[lengthIndex[0]]
         # check if the length is larger than the species 'largeLength', if yes, Otolith barcode is mandatory
         if length is not None and float(length) > self.largeLength:
             length=float(length)
