@@ -953,8 +953,6 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  disable the protocol change button - only can change protocols
         #  when you're not in the middle of processing a specimen
         self.protoBtn.setEnabled(False)
-        #  change the button text to green
-        self.buttons[i].setStyleSheet("background-color: green")
         if self.measureType[i] == 'length':
             measure_type = self.lengthTypeBox.currentText()
         else:
@@ -991,6 +989,9 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
             if keepGoing:
                 self.moveOn(i)
+        
+        #  change the button text to green
+        self.buttons[i].setStyleSheet("background-color: green")
 
 
     def moveOn(self, i):
