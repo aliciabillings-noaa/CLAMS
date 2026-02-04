@@ -41,10 +41,10 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from ui import ui_AdminDlg
-#import CLAMSedit
+import CLAMSedit
 import newSurveyDlg
 import selectactivesurveydlg
-
+import setup.personnelDlg as personnelDlg
 
 class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
 
@@ -53,15 +53,28 @@ class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
         self.setupUi(self)
 
         self.db = db
+        self.schema = parent.schema
 
         #  set up signals
         self.createSurveyBtn.clicked.connect(self.createClicked)
         self.selectSurveyBtn.clicked.connect(self.selectClicked)
-        self.setupBtn.clicked.connect(self.setupClicked)
         self.doneBtn.clicked.connect(self.doneClicked)
+        self.editPersonBtn.clicked.connect(self.editPersonClicked)
 
         #self.show()
 
+    def editPersonClicked(self):
+        """
+          open personnel dialog
+        """
+        self.hide()
+        dialog = personnelDlg.personnelDlg(self.db, parent=self)
+        ok = dialog.exec()
+
+        if ok:
+            self.accept()
+        else:
+            self.show()
 
     def createClicked(self):
         """
@@ -95,15 +108,15 @@ class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
           Configure application settings.
         """
         pass
-#        self.hide()
-#        dialog = CLAMSedit.CLAMSEdit(self)
-#        ok = dialog.exec()
-#
-#        # close the admin dialog
-#        if ok:
-#            self.accept()
-#        else:
-#            self.show()
+        self.hide()
+        dialog = CLAMSedit.CLAMSEdit(self)
+        ok = dialog.exec()
+
+        # close the admin dialog
+        if ok:
+            self.accept()
+        else:
+            self.show()
 
 
     def doneClicked(self):

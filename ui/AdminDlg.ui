@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>437</width>
-    <height>330</height>
+    <width>428</width>
+    <height>624</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -63,10 +63,20 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="setupBtn">
-     <property name="enabled">
-      <bool>false</bool>
+    <widget class="QPushButton" name="editPersonBtn">
+     <property name="font">
+      <font>
+       <family>Arial Black</family>
+       <pointsize>20</pointsize>
+      </font>
      </property>
+     <property name="text">
+      <string>Edit Personnel</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="editWorkstationBtn">
      <property name="font">
       <font>
        <family>Arial Black</family>
@@ -76,7 +86,63 @@
       </font>
      </property>
      <property name="text">
-      <string>Edit and Setup</string>
+      <string>Edit Workstation</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="editDevicesBtn">
+     <property name="font">
+      <font>
+       <family>Arial Black</family>
+       <pointsize>20</pointsize>
+       <underline>false</underline>
+      </font>
+     </property>
+     <property name="text">
+      <string>Edit Devices</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="editProtocolsBtn">
+     <property name="font">
+      <font>
+       <family>Arial Black</family>
+       <pointsize>20</pointsize>
+       <underline>false</underline>
+      </font>
+     </property>
+     <property name="text">
+      <string>Edit Protocols</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="editValidationsBtn">
+     <property name="font">
+      <font>
+       <family>Arial Black</family>
+       <pointsize>20</pointsize>
+       <underline>false</underline>
+      </font>
+     </property>
+     <property name="text">
+      <string>Edit Validations</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="editConditionalsBtn">
+     <property name="font">
+      <font>
+       <family>Arial Black</family>
+       <pointsize>20</pointsize>
+       <underline>false</underline>
+      </font>
+     </property>
+     <property name="text">
+      <string>Edit Coditionals</string>
      </property>
     </widget>
    </item>
