@@ -60,6 +60,7 @@ class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
         """
           add a new person.
         """
+        self.dialog.setUp([])
         self.dialog.exec()
         
     def editPersonClicked(self):

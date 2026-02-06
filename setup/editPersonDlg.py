@@ -43,6 +43,7 @@ class editPersonDlg(QDialog, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
     def __init__(self, db, parent=None):
         super(editPersonDlg, self).__init__(parent)
         self.setupUi(self)
+        self.mode = 'Add'
 
         self.db = db
         self.schema = parent.schema
@@ -64,6 +65,13 @@ class editPersonDlg(QDialog, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
             self.affiliationLabel.setText(currPerson[1])
             self.isActive.setChecked(True if currPerson[2] == 'Yes' else False)
             self.editPersonBtn.setText('Update Personnel')
+            self.mode = 'Edit'
+        else:
+            self.scientistLabel.setText('')
+            self.affiliationLabel.setText('')
+            self.isActive.setChecked(False)
+            self.editPersonBtn.setText('Add Personnel')
+            self.mode = 'Add'
     
     def editPersonClicked(self):
         scientist = self.scientistLabel.text()
@@ -72,7 +80,7 @@ class editPersonDlg(QDialog, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
         sql = ''
 
         # If fields are pre-filled, we are updating a record
-        if (self.scientistLabel or self.affiliationLabel):
+        if (self.mode == 'Edit'):
             if (not scientist or scientist == ''):
                 self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
                             "Empty Scientist field! Please complete before updating.", 'info')
@@ -88,7 +96,7 @@ class editPersonDlg(QDialog, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
             sql = ("UPDATE " + self.schema + ".personnel SET active=" + str(isActive) +
                    " WHERE scientist='" + scientist + "' and affiliation='" + affiliation + "'")
         # Otherwise, create new record
-        else:
+        elif (self.mode == 'Add'):
             sql = ("INSERT INTO " + self.schema + ".personnel (scientist, affiliation, active)"
             " VALUES ('"+ scientist + "', '" + affiliation + "', '" + str(isActive) + "')")
 
