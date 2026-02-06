@@ -70,7 +70,7 @@
     <string>Active</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="addPersonBtn">
+  <widget class="QPushButton" name="editPersonBtn">
    <property name="geometry">
     <rect>
      <x>210</x>

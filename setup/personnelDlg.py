@@ -43,11 +43,16 @@ class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
 
         self.db = db
         self.schema = parent.schema
+        self.errorSounds=parent.errorSounds
+        self.errorIcons=parent.errorIcons
+
+        self.dialog = editPersonDlg.editPersonDlg(self.db, parent=self)
 
         #  set up signals
         self.addBtn.clicked.connect(self.addPersonClicked)
         self.editBtn.clicked.connect(self.editPersonClicked)
         self.doneBtn.clicked.connect(self.doneClicked)
+        self.dialog.changed.connect(self.populatePersonnel)
 
         self.populatePersonnel()
     
@@ -55,9 +60,7 @@ class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
         """
           add a new person.
         """
-        self.hide()
-        dialog = editPersonDlg.editPersonDlg(self.db, [], parent=self)
-        dialog.exec()
+        self.dialog.exec()
         
     def editPersonClicked(self):
         currentRow = self.personnelTable.currentRow()
@@ -67,8 +70,8 @@ class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
         record.append(self.personnelTable.item(currentRow, 1).text())
         record.append(self.personnelTable.item(currentRow, 2).text())
         
-        dialog = editPersonDlg.editPersonDlg(self.db, record, self)
-        ok = dialog.exec()
+        self.dialog.setUp(record)
+        self.dialog.exec()
         
     def populatePersonnel(self):
         self.personnelTable.clearContents()

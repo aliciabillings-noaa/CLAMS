@@ -34,37 +34,72 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from ui import ui_EditPersonnelDlg
+import messagedlg
 
 class editPersonDlg(QDialog, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
 
-    def __init__(self, db, currPerson, parent=None):
+    changed = pyqtSignal()
+
+    def __init__(self, db, parent=None):
         super(editPersonDlg, self).__init__(parent)
         self.setupUi(self)
 
-        self.db = parent.db
+        self.db = db
         self.schema = parent.schema
+        self.errorSounds=parent.errorSounds
+        self.errorIcons=parent.errorIcons
+        self.populatePersonnel = parent.populatePersonnel()
 
+        #  set up signals
+        self.editPersonBtn.clicked.connect(self.editPersonClicked)
+        self.cancelBtn.clicked.connect(self.cancelClicked)
+
+        # setup reoccuring dlgs
+        self.message = messagedlg.MessageDlg(self)
+
+    # Update an existing record, populate fields
+    def setUp(self, currPerson):
         if (currPerson and len(currPerson) > 0):
             self.scientistLabel.setText(currPerson[0])
             self.affiliationLabel.setText(currPerson[1])
             self.isActive.setChecked(True if currPerson[2] == 'Yes' else False)
-
-        #  set up signals
-        self.addPersonBtn.clicked.connect(self.addPersonClicked)
-        self.cancelBtn.clicked.connect(self.cancelClicked)
+            self.editPersonBtn.setText('Update Personnel')
     
-    def addPersonClicked(self):
+    def editPersonClicked(self):
         scientist = self.scientistLabel.text()
         affiliation = self.affiliationLabel.text()
         isActive = 1 if self.isActive.isChecked() else 0
+        sql = ''
 
-        sql = ("INSERT INTO " + self.schema + ".personnel (scientist, affiliation, active)"
+        # If fields are pre-filled, we are updating a record
+        if (self.scientistLabel or self.affiliationLabel):
+            if (not scientist or scientist == ''):
+                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                            "Empty Scientist field! Please complete before updating.", 'info')
+                self.message.exec()
+                return
+
+            if (not affiliation or affiliation == ''):
+                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                            "Empty Affiliation field! Please complete before upating.", 'info')
+                self.message.exec()
+                return
+            
+            sql = ("UPDATE " + self.schema + ".personnel SET active=" + str(isActive) +
+                   " WHERE scientist='" + scientist + "' and affiliation='" + affiliation + "'")
+        # Otherwise, create new record
+        else:
+            sql = ("INSERT INTO " + self.schema + ".personnel (scientist, affiliation, active)"
             " VALUES ('"+ scientist + "', '" + affiliation + "', '" + str(isActive) + "')")
+
         self.db.dbExec(sql)
 
-        self.accept()
+        #  emit the changed signal to update parent
+        self.changed.emit()
+
+        self.close()
     
     def cancelClicked(self):
-        self.reject()
+        self.close()
 
 
