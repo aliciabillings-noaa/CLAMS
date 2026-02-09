@@ -41,7 +41,6 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from ui import ui_AdminDlg
-import CLAMSedit
 import newSurveyDlg
 import selectactivesurveydlg
 import setup.personnelDlg as personnelDlg
@@ -54,6 +53,8 @@ class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
 
         self.db = db
         self.schema = parent.schema
+        self.errorSounds=parent.errorSounds
+        self.errorIcons=parent.errorIcons
 
         #  set up signals
         self.createSurveyBtn.clicked.connect(self.createClicked)
@@ -108,15 +109,6 @@ class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
           Configure application settings.
         """
         pass
-        self.hide()
-        dialog = CLAMSedit.CLAMSEdit(self)
-        ok = dialog.exec()
-
-        # close the admin dialog
-        if ok:
-            self.accept()
-        else:
-            self.show()
 
 
     def doneClicked(self):

@@ -58,7 +58,8 @@ class editPersonDlg(QDialog, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
         # setup reoccuring dlgs
         self.message = messagedlg.MessageDlg(self)
 
-    # Update an existing record, populate fields
+    # Populate fields, if creating a new record then fields will be blank
+    # otherwise populate fields with existing user edited
     def setUp(self, currPerson):
         if (currPerson and len(currPerson) > 0):
             self.scientistLabel.setText(currPerson[0])
