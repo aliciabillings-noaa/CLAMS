@@ -43,7 +43,7 @@ from PyQt6.QtWidgets import *
 from ui import ui_AdminDlg
 import newSurveyDlg
 import selectactivesurveydlg
-import setup.personnelDlg as personnelDlg
+import setup.setupDlg as setupDlg
 
 class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
 
@@ -59,23 +59,8 @@ class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
         #  set up signals
         self.createSurveyBtn.clicked.connect(self.createClicked)
         self.selectSurveyBtn.clicked.connect(self.selectClicked)
+        self.setUpBtn.clicked.connect(self.setupClicked)
         self.doneBtn.clicked.connect(self.doneClicked)
-        self.editPersonBtn.clicked.connect(self.editPersonClicked)
-
-        #self.show()
-
-    def editPersonClicked(self):
-        """
-          open personnel dialog
-        """
-        self.hide()
-        dialog = personnelDlg.personnelDlg(self.db, parent=self)
-        ok = dialog.exec()
-
-        if ok:
-            self.accept()
-        else:
-            self.show()
 
     def createClicked(self):
         """
@@ -108,7 +93,13 @@ class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
         """
           Configure application settings.
         """
-        pass
+        dialog = setupDlg.setupDlg(self.db, parent=self)
+        ok = dialog.exec()
+
+        if ok:
+            self.accept()
+        else:
+            self.show()
 
 
     def doneClicked(self):

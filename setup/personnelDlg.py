@@ -34,6 +34,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from ui import ui_PersonnelDlg
 import setup.editPersonDlg as editPersonDlg
+import messagedlg
 
 class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
 
@@ -52,9 +53,16 @@ class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
         self.addBtn.clicked.connect(self.addPersonClicked)
         self.editBtn.clicked.connect(self.editPersonClicked)
         self.doneBtn.clicked.connect(self.doneClicked)
+        self.bulkEnableBtn.clicked.connect(self.bulkEnableClicked)
+        self.bulkDisableBtn.clicked.connect(self.bulkDisableClicked)
         self.dialog.changed.connect(self.populatePersonnel)
+        self.personnelTable.itemSelectionChanged.connect(self.updateButtonStatus)
 
+        # populate personnel table from database
         self.populatePersonnel()
+
+        # setup reoccuring dlgs
+        self.message = messagedlg.MessageDlg(self)
     
     def addPersonClicked(self):
         """
@@ -73,13 +81,61 @@ class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
         
         self.dialog.setUp(record)
         self.dialog.exec()
+
+    def updateButtonStatus(self):
+        range = self.personnelTable.selectedRanges()
+        currStatus = False
+
+        if range:
+            currStatus = True
+
+        self.bulkEnableBtn.setEnabled(currStatus)
+        self.bulkDisableBtn.setEnabled(currStatus)
+    
+    def bulkEnableClicked(self):
+        self.bulkUpdate('1')
+    
+    def bulkDisableClicked(self):
+        self.bulkUpdate('0')
+
+    def bulkUpdate(self, activeStatus):
+        range = self.personnelTable.selectedRanges()
+
+        if not range:
+            self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                        "First select rows to bulk enable/disable.", 'info')
+            self.message.exec()
+            return
+
+        startIdx = range[0].topRow()
+        endIdx = range[0].bottomRow()
+        currIdx = startIdx            
+
+        scientistsList = []
+        while currIdx <= endIdx:
+            currScientist = self.personnelTable.item(currIdx, 0).text()
+            scientistsList.append(currScientist)
+            currIdx += 1
+        
+        # 1. Format each item with quotes
+        scientists = ["'{}'".format(item) for item in scientistsList]
+
+        # 2. Join the quoted items with a comma and a space
+        formattedSci = ", ".join(scientists)
+
+        sql = ("UPDATE " + self.schema + ".personnel SET active=" + activeStatus +
+                   " WHERE scientist in (" + formattedSci + ")")
+        self.db.dbExec(sql)
+
+        # refresh table
+        self.populatePersonnel()
         
     def populatePersonnel(self):
         self.personnelTable.clearContents()
         self.personnelTable.setRowCount(0)
         rowCount = 0
 
-        sql = ("SELECT scientist, affiliation, active from personnel")
+        sql = ("SELECT scientist, affiliation, active from personnel order by scientist")
         query = self.db.dbQuery(sql)
 
         for scientist, affiliation, active in query:
