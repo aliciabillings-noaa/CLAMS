@@ -60,9 +60,6 @@ class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
 
         # populate personnel table from database
         self.populatePersonnel()
-
-        # setup reoccuring dlgs
-        self.message = messagedlg.MessageDlg(self)
     
     def addPersonClicked(self):
         """
@@ -100,12 +97,6 @@ class personnelDlg(QDialog, ui_PersonnelDlg.Ui_PersonnelDlg):
 
     def bulkUpdate(self, activeStatus):
         range = self.personnelTable.selectedRanges()
-
-        if not range:
-            self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                        "First select rows to bulk enable/disable.", 'info')
-            self.message.exec()
-            return
 
         startIdx = range[0].topRow()
         endIdx = range[0].bottomRow()
