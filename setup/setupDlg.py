@@ -33,8 +33,8 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from ui import ui_SetupDlg
-import setup.personnelDlg as personnelDlg
-import setup.workstationDlg as workstationDlg
+import setup.table.personnelDlg as personnelDlg
+import setup.table.workstationDlg as workstationDlg
 
 class setupDlg(QDialog, ui_SetupDlg.Ui_SetupDlg):
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>552</width>
-    <height>640</height>
+    <height>637</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,6 +52,11 @@
         <string>Description</string>
        </property>
       </column>
+      <column>
+       <property name="text">
+        <string>Active</string>
+       </property>
+      </column>
      </widget>
     </item>
     <item>
@@ -71,6 +76,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="editBtn">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="font">
          <font>
           <family>Arial Black</family>
@@ -92,6 +100,26 @@
         </property>
         <property name="text">
          <string>Done</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QPushButton" name="editMeasurements">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="font">
+         <font>
+          <family>Arial Black</family>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Edit Measurements</string>
         </property>
        </widget>
       </item>

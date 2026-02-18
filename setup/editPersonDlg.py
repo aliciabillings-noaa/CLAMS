@@ -49,7 +49,6 @@ class editPersonDlg(QDialog, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
         self.schema = parent.schema
         self.errorSounds=parent.errorSounds
         self.errorIcons=parent.errorIcons
-        self.populatePersonnel = parent.populatePersonnel()
 
         #  set up signals
         self.editPersonBtn.clicked.connect(self.editPersonClicked)
