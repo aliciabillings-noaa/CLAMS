@@ -79,12 +79,12 @@ class BaseTableDlg(QDialog):
         """Open dialog in Edit mode."""
         if self.currentRow < 0:
             return
-            
-        self.edit_dialog.setEditBtnLabel("Update")
+         
         # Get specific data needed for the edit dialog from child
         record_data = self.get_data_for_edit(self.currentRow)
         
         if self.edit_dialog:
+            self.edit_dialog.setEditBtnLabel("Update")
             self.edit_dialog.setUp(record_data)
             self.edit_dialog.exec()
 
