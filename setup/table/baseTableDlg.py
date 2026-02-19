@@ -19,8 +19,8 @@ class BaseTableDlg(QDialog):
         self.edit_dialog = edit_dialog
 
         # Connect Child Dialog signal
-        if self.edit_dialog:
-            self.edit_dialog.changed.connect(self.populate_table)
+       # if self.edit_dialog:
+       #     self.edit_dialog.changed.connect(self.populate_table)
 
         # Connect Standard Buttons (assuming they exist in the UI)
         if hasattr(self, 'addBtn'):

@@ -47,7 +47,7 @@ class Ui_PersonnelDlg(object):
         self.bulkEnableBtn.setObjectName("bulkEnableBtn")
         self.horizontalLayout_2.addWidget(self.bulkEnableBtn)
         self.bulkDisableBtn = QtWidgets.QPushButton(parent=self.verticalLayoutWidget)
-        self.bulkDisableBtn.setEnabled(False)
+        self.bulkDisableBtn.setEnabled(True)
         font = QtGui.QFont()
         font.setFamily("Arial Black")
         font.setPointSize(16)
@@ -65,6 +65,7 @@ class Ui_PersonnelDlg(object):
         self.addBtn.setObjectName("addBtn")
         self.horizontalLayout.addWidget(self.addBtn)
         self.editBtn = QtWidgets.QPushButton(parent=self.verticalLayoutWidget)
+        self.editBtn.setEnabled(False)
         font = QtGui.QFont()
         font.setFamily("Arial Black")
         font.setPointSize(16)
@@ -97,3 +98,13 @@ class Ui_PersonnelDlg(object):
         self.addBtn.setText(_translate("PersonnelDlg", "Add"))
         self.editBtn.setText(_translate("PersonnelDlg", "Edit"))
         self.doneBtn.setText(_translate("PersonnelDlg", "Done"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    PersonnelDlg = QtWidgets.QDialog()
+    ui = Ui_PersonnelDlg()
+    ui.setupUi(PersonnelDlg)
+    PersonnelDlg.show()
+    sys.exit(app.exec())

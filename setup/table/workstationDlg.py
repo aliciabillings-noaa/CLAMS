@@ -1,5 +1,5 @@
 from ui import ui_WorkstationDlg
-import setup.editWorkstationDlg as editWorkstationDlg
+import setup.editDlgs.editWorkstationDlg as editWorkstationDlg
 from PyQt6.QtWidgets import QTableWidgetItem
 # Import the base class created above
 from .baseTableDlg import BaseTableDlg 
@@ -15,6 +15,9 @@ class workstationDlg(BaseTableDlg, ui_WorkstationDlg.Ui_WorkstationDlg):
 
         # Create the specific child dialog
         dialog = editWorkstationDlg.editWorkstationDlg(self.db, parent=self)
+        dialog.changed.connect(self.populate_table)
+
+        # create measurement dialog
         self.measurementDialog = measurementsDlg.measurementsDlg(self.db, parent=self)
 
         # WIRE IT UP: Pass the specific table and dialog to the Base

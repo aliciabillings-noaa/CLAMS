@@ -63,13 +63,13 @@ class Ui_EditPersonnelDlg(object):
         self.cancelBtn.setFont(font)
         self.cancelBtn.setObjectName("cancelBtn")
         self.horizontalLayout_2.addWidget(self.cancelBtn)
-        self.editPersonBtn = QtWidgets.QPushButton(parent=self.horizontalLayoutWidget)
+        self.editBtn = QtWidgets.QPushButton(parent=self.horizontalLayoutWidget)
         font = QtGui.QFont()
         font.setFamily("Arial Black")
         font.setPointSize(16)
-        self.editPersonBtn.setFont(font)
-        self.editPersonBtn.setObjectName("editPersonBtn")
-        self.horizontalLayout_2.addWidget(self.editPersonBtn)
+        self.editBtn.setFont(font)
+        self.editBtn.setObjectName("editBtn")
+        self.horizontalLayout_2.addWidget(self.editBtn)
 
         self.retranslateUi(EditPersonnelDlg)
         QtCore.QMetaObject.connectSlotsByName(EditPersonnelDlg)
@@ -81,4 +81,14 @@ class Ui_EditPersonnelDlg(object):
         self.label_3.setText(_translate("EditPersonnelDlg", "Active"))
         self.label.setText(_translate("EditPersonnelDlg", "Scientist"))
         self.cancelBtn.setText(_translate("EditPersonnelDlg", "Cancel"))
-        self.editPersonBtn.setText(_translate("EditPersonnelDlg", "Add Personnel"))
+        self.editBtn.setText(_translate("EditPersonnelDlg", "Add Personnel"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    EditPersonnelDlg = QtWidgets.QDialog()
+    ui = Ui_EditPersonnelDlg()
+    ui.setupUi(EditPersonnelDlg)
+    EditPersonnelDlg.show()
+    sys.exit(app.exec())

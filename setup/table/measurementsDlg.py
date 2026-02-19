@@ -1,5 +1,5 @@
 from ui import ui_MeasurementsDlg
-import setup.editWorkstationDlg as editWorkstationDlg
+import setup.editDlgs.editMeasurementDlg as editMeasurementDlg
 from PyQt6.QtWidgets import QTableWidgetItem
 # Import the base class created above
 from .baseTableDlg import BaseTableDlg 
@@ -14,14 +14,16 @@ class measurementsDlg(BaseTableDlg, ui_MeasurementsDlg.Ui_MeasurementsDlg):
         self.workstationId = 0
 
         # Create the specific child dialog
-        dialog = editWorkstationDlg.editWorkstationDlg(self.db, parent=self)
+        self.dialog = editMeasurementDlg.editMeasurement(self.db, parent=self)
+        self.dialog.changed.connect(self.populate_table)
 
         # WIRE IT UP: Pass the specific table and dialog to the Base
-        self.setup_base(self.measurementTable, dialog)
+        self.setup_base(self.measurementTable, self.dialog)
 
     # --- Implement the Hooks ---
     def setCurrWorkstation(self, id):
         self.workstationId = id
+        self.dialog.setCurrWorkstation(id)
 
     def get_select_sql(self):
         return "SELECT workstation_id, measurement_type, device_id, gui_module FROM measurement_setup " \
@@ -38,4 +40,9 @@ class measurementsDlg(BaseTableDlg, ui_MeasurementsDlg.Ui_MeasurementsDlg):
 
     def get_data_for_edit(self, row_idx):
         # Workstation dialog only sends the ID (col 0) to the edit window
-        return [self.table.item(row_idx, 0).text()]
+        return [
+            self.table.item(row_idx, 0).text(),
+            self.table.item(row_idx, 1).text(),
+            self.table.item(row_idx, 2).text(),
+            self.table.item(row_idx, 3).text(),
+        ]

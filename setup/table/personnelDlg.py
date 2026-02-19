@@ -1,5 +1,5 @@
 from ui import ui_PersonnelDlg
-import setup.editPersonDlg as editPersonDlg
+import setup.editDlgs.editPersonDlg as editPersonDlg
 from PyQt6.QtWidgets import QTableWidgetItem
 from .baseTableDlg import BaseTableDlg
 
@@ -10,6 +10,7 @@ class personnelDlg(BaseTableDlg, ui_PersonnelDlg.Ui_PersonnelDlg):
         self.setupUi(self)
 
         dialog = editPersonDlg.editPersonDlg(self.db, parent=self)
+        dialog.changed.connect(self.populate_table)
         
         # Wire up Base
         self.setup_base(self.personnelTable, dialog)
@@ -42,31 +43,25 @@ class personnelDlg(BaseTableDlg, ui_PersonnelDlg.Ui_PersonnelDlg):
     def on_selection_change(self, has_selection):
         # This automatically runs when selection changes in the Base class
         self.bulkEnableBtn.setEnabled(has_selection)
-        self.bulkDisableBtn.setEnabled(has_selection)
 
     # --- Specific Logic (Bulk Actions) ---
+    def bulkDisableClicked(self):
+        sql = f"UPDATE {self.schema}.personnel SET active=0"
+        self.db.dbExec(sql)
+        self.populate_table()
 
     def bulkEnableClicked(self):
-        self.bulkUpdate('1')
-    
-    def bulkDisableClicked(self):
-        self.bulkUpdate('0')
-
-    def bulkUpdate(self, activeStatus):
         ranges = self.table.selectedRanges()
-        if not ranges: return
+        if not ranges: 
+            return
 
         # Get list of scientists from selection
         scientists = []
         for i in range(ranges[0].topRow(), ranges[0].bottomRow() + 1):
             scientists.append(f"'{self.table.item(i, 0).text()}'")
-
         formattedSci = ", ".join(scientists)
         
-        # Use schema if available, else default
-        schema_prefix = f"{self.schema}." if hasattr(self, 'schema') and self.schema else ""
-        
-        sql = f"UPDATE {schema_prefix}personnel SET active={activeStatus} WHERE scientist in ({formattedSci})"
+        # Use schema if available, else default        
+        sql = f"UPDATE {self.schema}.personnel SET active=1 WHERE scientist in ({formattedSci})"
         self.db.dbExec(sql)
-
         self.populate_table()

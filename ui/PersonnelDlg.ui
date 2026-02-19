@@ -75,7 +75,7 @@
       <item>
        <widget class="QPushButton" name="bulkDisableBtn">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="font">
          <font>
