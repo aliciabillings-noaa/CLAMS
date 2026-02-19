@@ -71,6 +71,7 @@ class BaseTableDlg(QDialog):
     def add_clicked(self):
         """Open dialog in Add mode (empty list)."""
         if self.edit_dialog:
+            self.edit_dialog.setEditBtnLabel("Add")
             self.edit_dialog.setUp([])
             self.edit_dialog.exec()
 
@@ -79,6 +80,7 @@ class BaseTableDlg(QDialog):
         if self.currentRow < 0:
             return
             
+        self.edit_dialog.setEditBtnLabel("Update")
         # Get specific data needed for the edit dialog from child
         record_data = self.get_data_for_edit(self.currentRow)
         

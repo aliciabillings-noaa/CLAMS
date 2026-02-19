@@ -71,33 +71,34 @@ class editMeasurement(BaseEditDlg, ui_EditMeasurement.Ui_EditMeasurement):
     def setUp(self, measurement):
         if measurement:
             self.workstationId = measurement[0]
-            self.currMeasurement = measurement[1]
-            self.currDevice = measurement[2]
-            self.currModule = measurement[3]
+            self.origMeasurement = measurement[1]
+            self.origDevice = measurement[2]
+            self.origModule = measurement[3]
 
             self.measurementCB.setCurrentIndex(self.measurementTypes.index(measurement[1]))
             self.deviceCB.setCurrentIndex(self.devices.index(measurement[2]))
             self.moduleCB.setCurrentIndex(self.modules.index(measurement[3]))
-            self.editBtn.setText('Update measurement')
         else:
             self.measurementCB.setCurrentIndex(-1)
             self.deviceCB.setCurrentIndex(-1)
             self.moduleCB.setCurrentIndex(-1)
-            self.editBtn.setText('Add measurement')
+
+    def getData(self):
+        self.currMeasurement = self.measurementCB.currentText()
+        currDevice = self.deviceCB.currentText()
+        self.currDevice = int(currDevice.split(' ')[1]) if currDevice else 0
+        self.currModule = self.moduleCB.currentText()
     
     def perform_save(self):
-        measurement = self.measurementCB.currentText()
-        currDevice = self.deviceCB.currentText()
-        deviceId = int(currDevice.split(' ')[1]) if currDevice else 0
-        module = self.moduleCB.currentText()
-        
+        sql = (f"INSERT INTO {self.schema}.measurement_setup (workstation_id, measurement_type, device_id, gui_module) "
+                f"VALUES ({self.workstationId}, '{self.currMeasurement}', '{self.currDevice}', '{self.currModule}')")
+        self.db.dbExec(sql)
+    
+    def update(self):
         if 'Update' in self.editBtn.text():
-            sql = (f"UPDATE {self.schema}.measurement_setup SET measurement_type='{measurement}', "
-                   f"device_id={deviceId}, gui_module='{module}' "
-                   f"WHERE measurement_type='{self.currMeasurement}' AND device_id={self.currDevice} AND "
-                   f"gui_module='{self.currModule}' AND workstation_id={self.workstationId}")
-        else:
-            sql = (f"INSERT INTO {self.schema}.measurement_setup (workstation_id, measurement_type, device_id, gui_module) "
-                   f"VALUES ({self.workstationId}, '{measurement}', '{deviceId}', '{module}')")
+            sql = (f"UPDATE {self.schema}.measurement_setup SET measurement_type='{self.currMeasurement}', "
+                   f"device_id={self.currDevice}, gui_module='{self.currModule}' "
+                   f"WHERE measurement_type='{self.origMeasurement}' AND device_id={self.origDevice} AND "
+                   f"gui_module='{self.origModule}' AND workstation_id={self.workstationId}")
         self.db.dbExec(sql)
 

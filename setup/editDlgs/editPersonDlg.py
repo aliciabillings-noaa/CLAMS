@@ -15,12 +15,10 @@ class editPersonDlg(BaseEditDlg, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
             self.scientistLabel.setText(currPerson[0])
             self.affiliationLabel.setText(currPerson[1])
             self.isActive.setChecked(currPerson[2] == 'Yes')
-            self.editBtn.setText('Update Personnel')
         else:
             self.scientistLabel.setText('')
             self.affiliationLabel.setText('')
             self.isActive.setChecked(False)
-            self.editBtn.setText('Add Personnel')
 
     def validate_fields(self):
         # Use the Base helper to check for empty fields
@@ -29,16 +27,17 @@ class editPersonDlg(BaseEditDlg, ui_EditPersonnelDlg.Ui_EditPersonnelDlg):
             ("Affiliation", self.affiliationLabel.text())
         ])
 
-    def perform_save(self):
-        scientist = self.scientistLabel.text()
-        affiliation = self.affiliationLabel.text()
-        isActive = 1 if self.isActive.isChecked() else 0
-        
-        if 'Update' in self.editBtn.text():
-            sql = (f"UPDATE {self.schema}.personnel SET active={isActive} "
-                   f"WHERE scientist='{scientist}' and affiliation='{affiliation}'")
-        else:
-            sql = (f"INSERT INTO {self.schema}.personnel (scientist, affiliation, active) "
-                   f"VALUES ('{scientist}', '{affiliation}', '{isActive}')")
+    def getData(self):
+        self.currScientist = self.scientistLabel.text()
+        self.currAffiliation = self.affiliationLabel.text()
+        self.currIsActive = 1 if self.isActive.isChecked() else 0
 
+    def perform_save(self):
+        sql = (f"INSERT INTO {self.schema}.personnel (scientist, affiliation, active) "
+                f"VALUES ('{self.currScientist}', '{self.currAffiliation}', '{self.currIsActive}')")
+        self.db.dbExec(sql)
+    
+    def update(self):
+        sql = (f"UPDATE {self.schema}.personnel SET active={self.currIsActive} "
+                f"WHERE scientist='{self.currScientist}' and affiliation='{self.currAffiliation}'")
         self.db.dbExec(sql)

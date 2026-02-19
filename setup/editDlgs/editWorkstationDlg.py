@@ -46,7 +46,6 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
             self.statusCB.setCurrentIndex(0 if status == 'closed' else 1)
             self.descriptionLabel.setText(description)
             self.isActive.setChecked(str(isActive) == '1')
-            self.editBtn.setText('Update Workstation')
 
             # Use Base Class helper methods
             if mainActions: self.sync_checkboxes(mainActions, self.action_map)
@@ -65,7 +64,6 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
             self.statusCB.setCurrentIndex(0)
             self.descriptionLabel.setText('')
             self.isActive.setChecked(False)
-            self.editBtn.setText('Add Workstation')
 
             self.sync_checkboxes("", self.action_map)
             self.sync_checkboxes("", self.module_map)
@@ -76,44 +74,51 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
             ("description", self.descriptionLabel.text())
         ])
 
-    def perform_save(self):
-        status = self.statusCB.currentText()
-        hostName = self.hostnameLabel.text()
-        description = self.descriptionLabel.text()
-        id_val = self.idLabel.text()
-        active = "1" if self.isActive.isChecked() else "0"
+    def getData(self):
+        # This method can be used if you want to gather all data at once before saving
+        self.currHostname = self.hostnameLabel.text()
+        self.currStatus = self.statusCB.currentText()
+        self.currDescription = self.descriptionLabel.text()
+        self.currIsActive = 1 if self.isActive.isChecked() else 0
+        self.id = self.idLabel.text()
 
+    def perform_save(self):
         # Use Base Class helper
         mainActionStr = self.create_csv_from_checkboxes(self.action_map)
         moduleStr = self.create_csv_from_checkboxes(self.module_map)
 
-        if 'Update' in self.editBtn.text():
-            # Update Workstation
-            prep = self.db.prepare(f"UPDATE {self.schema}.WORKSTATIONS SET "
-                "hostname=:hostname, status=:status, description=:description, active=:active "
-                "WHERE workstation_id=:id")
-            
-            data = {':hostname': hostName, ':status': status, ':description': description, 
-                    ':active': active, ':id': id_val}
-            self.db.dbExecPrepared(prep, data)
+        # Insert Workstation
+        prep = self.db.prepare(f"INSERT INTO {self.schema}.WORKSTATIONS "
+            "(workstation_id, hostname, status, description, active) VALUES "
+            "(:id, :hostname, :status, :description, :active)")
+        
+        data = {':id': self.id, ':hostname': self.currHostname, ':status': self.currStatus, 
+                ':description': self.currDescription, ':active': self.currIsActive}
+        self.db.dbExecPrepared(prep, data)
 
-            # Update Configs
-            self.db.dbExec(f"UPDATE {self.schema}.WORKSTATION_CONFIGURATION SET "
-                           f"parameter_value='{mainActionStr}' WHERE workstation_id={id_val} AND parameter='MainActions'")
-            self.db.dbExec(f"UPDATE {self.schema}.WORKSTATION_CONFIGURATION SET "
-                           f"parameter_value='{moduleStr}' WHERE workstation_id={id_val} AND parameter='Modules'")
-        else:
-            # Insert Workstation
-            prep = self.db.prepare(f"INSERT INTO {self.schema}.WORKSTATIONS "
-                "(workstation_id, hostname, status, description, active) VALUES "
-                "(:id, :hostname, :status, :description, :active)")
-            
-            data = {':id': id_val, ':hostname': hostName, ':status': status, 
-                    ':description': description, ':active': active}
-            self.db.dbExecPrepared(prep, data)
+        # Insert Configs
+        sql = (f"INSERT INTO {self.schema}.WORKSTATION_CONFIGURATION (workstation_id, parameter, parameter_value) "
+                f"VALUES ({self.id}, 'MainActions', '{mainActionStr}'), "
+                f"({self.id}, 'Modules', '{moduleStr}')")
+        self.db.dbExec(sql)
+    
+    def update(self):
+        # Use Base Class helper
+        mainActionStr = self.create_csv_from_checkboxes(self.action_map)
+        moduleStr = self.create_csv_from_checkboxes(self.module_map)
 
-            # Insert Configs
-            sql = (f"INSERT INTO {self.schema}.WORKSTATION_CONFIGURATION (workstation_id, parameter, parameter_value) "
-                   f"VALUES ({id_val}, 'MainActions', '{mainActionStr}'), "
-                   f"({id_val}, 'Modules', '{moduleStr}')")
-            self.db.dbExec(sql)
+        # Update Workstation
+        prep = self.db.prepare(f"UPDATE {self.schema}.WORKSTATIONS SET "
+            "hostname=:hostname, status=:status, description=:description, active=:active "
+            "WHERE workstation_id=:id")
+        
+        data = {':hostname': self.currHostname, ':status': self.currStatus, ':description': self.currDescription, 
+                ':active': self.currIsActive, ':id': self.id}
+        self.db.dbExecPrepared(prep, data)
+
+        # Update Configs
+        self.db.dbExec(f"UPDATE {self.schema}.WORKSTATION_CONFIGURATION SET "
+                        f"parameter_value='{mainActionStr}' WHERE workstation_id={self.id} AND parameter='MainActions'")
+        self.db.dbExec(f"UPDATE {self.schema}.WORKSTATION_CONFIGURATION SET "
+                        f"parameter_value='{moduleStr}' WHERE workstation_id={self.id} AND parameter='Modules'")
+      

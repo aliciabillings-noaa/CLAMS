@@ -119,7 +119,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Edit Measurements</string>
+         <string>View Measurements</string>
         </property>
        </widget>
       </item>

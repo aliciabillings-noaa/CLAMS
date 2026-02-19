@@ -25,13 +25,20 @@ class BaseEditDlg(QDialog):
         """
         self.editBtn.clicked.connect(self.on_save_clicked)
         self.cancelBtn.clicked.connect(self.close)
+    
+    def setEditBtnLabel(self, label):
+        self.editBtn.setText(label)
 
     def on_save_clicked(self):
         """
         Orchestrates the save process: Validate -> Save -> Emit -> Close
         """
         if self.validate_fields():
-            self.perform_save()
+            self.getData()  # Gather current data from UI
+            if 'Update' in self.editBtn.text():
+                self.update()
+            else:
+                self.perform_save()
             self.changed.emit()
             self.close()
 
