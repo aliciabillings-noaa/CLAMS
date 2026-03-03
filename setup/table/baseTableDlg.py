@@ -10,6 +10,7 @@ class BaseTableDlg(QDialog):
             self.schema = getattr(parent, 'schema', '')
             self.errorSounds = getattr(parent, 'errorSounds', None)
             self.errorIcons = getattr(parent, 'errorIcons', None)
+            self.settings=parent.settings
 
     def setup_base(self, table_widget, edit_dialog):
         """

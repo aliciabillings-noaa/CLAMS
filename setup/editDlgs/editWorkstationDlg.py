@@ -7,7 +7,6 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
     def __init__(self, db, parent=None):
         super().__init__(db, parent)
         self.setupUi(self)
-        self.settings=parent.settings
 
         # Wire the buttons
         self.setup_base()

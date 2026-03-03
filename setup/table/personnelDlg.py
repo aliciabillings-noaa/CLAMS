@@ -51,14 +51,15 @@ class personnelDlg(BaseTableDlg, ui_PersonnelDlg.Ui_PersonnelDlg):
         self.populate_table()
 
     def bulkEnableClicked(self):
-        ranges = self.table.selectedRanges()
+        ranges = self.table.selectedItems()
         if not ranges: 
             return
 
         # Get list of scientists from selection
         scientists = []
-        for i in range(ranges[0].topRow(), ranges[0].bottomRow() + 1):
-            scientists.append(f"'{self.table.item(i, 0).text()}'")
+        for val in ranges:
+            if (val.column() == 0):
+                scientists.append(f"'{val.text()}'")
         formattedSci = ", ".join(scientists)
         
         # Use schema if available, else default        
