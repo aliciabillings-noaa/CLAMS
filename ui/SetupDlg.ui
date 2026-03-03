@@ -98,34 +98,6 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="editValidationsBtn">
-      <property name="font">
-       <font>
-        <family>Arial Black</family>
-        <pointsize>20</pointsize>
-        <underline>false</underline>
-       </font>
-      </property>
-      <property name="text">
-       <string>Edit Validations</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="editConditionalsBtn">
-      <property name="font">
-       <font>
-        <family>Arial Black</family>
-        <pointsize>20</pointsize>
-        <underline>false</underline>
-       </font>
-      </property>
-      <property name="text">
-       <string>Edit Conditionals</string>
-      </property>
-     </widget>
-    </item>
-    <item>
      <spacer name="verticalSpacer">
       <property name="orientation">
        <enum>Qt::Vertical</enum>

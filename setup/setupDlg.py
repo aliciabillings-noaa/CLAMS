@@ -35,6 +35,7 @@ from PyQt6.QtWidgets import *
 from ui import ui_SetupDlg
 import setup.table.personnelDlg as personnelDlg
 import setup.table.workstationDlg as workstationDlg
+import setup.table.devicesDlg as devicesDlg
 
 class setupDlg(QDialog, ui_SetupDlg.Ui_SetupDlg):
 
@@ -46,10 +47,12 @@ class setupDlg(QDialog, ui_SetupDlg.Ui_SetupDlg):
         self.schema = parent.schema
         self.errorSounds=parent.errorSounds
         self.errorIcons=parent.errorIcons
+        self.settings=parent.settings
 
         #  set up signals
         self.editPersonBtn.clicked.connect(self.editPersonClicked)
         self.editWorkstationBtn.clicked.connect(self.editWorkstationClicked)
+        self.editDevicesBtn.clicked.connect(self.devicesClicked)
         self.doneBtn.clicked.connect(self.doneClicked)
 
     def editPersonClicked(self):
@@ -69,6 +72,18 @@ class setupDlg(QDialog, ui_SetupDlg.Ui_SetupDlg):
           open workstation dialog
         """
         dialog = workstationDlg.workstationDlg(self.db, parent=self)
+        ok = dialog.exec()
+
+        if ok:
+            self.accept()
+        else:
+            self.show()
+    
+    def devicesClicked(self):
+        """
+          open workstation dialog
+        """
+        dialog = devicesDlg.devicesDlg(self.db, parent=self)
         ok = dialog.exec()
 
         if ok:

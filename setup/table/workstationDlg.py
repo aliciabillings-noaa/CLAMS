@@ -10,6 +10,7 @@ class workstationDlg(BaseTableDlg, ui_WorkstationDlg.Ui_WorkstationDlg):
     def __init__(self, db, parent=None):
         # Initialize Base Logic
         super().__init__(db, parent)
+        self.settings=parent.settings
         # Initialize UI (from the generated file)
         self.setupUi(self)
 

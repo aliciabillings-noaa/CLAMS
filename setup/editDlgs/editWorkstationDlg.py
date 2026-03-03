@@ -1,11 +1,13 @@
 from ui import ui_EditWorkstationDlg
 from .baseEditDlg import BaseEditDlg
+from PyQt6.QtWidgets import QCheckBox
 
 class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDlg):
 
     def __init__(self, db, parent=None):
         super().__init__(db, parent)
         self.setupUi(self)
+        self.settings=parent.settings
 
         # Wire the buttons
         self.setup_base()
@@ -17,13 +19,15 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
             'Utilities': self.utilitiesAction
         }
 
-        self.module_map = {
-            'Haul': self.haulModule,
-            'Specimen': self.specimenModule,
-            'CatchSWFSC': self.catchSWFSCModule
-        }
-
     def setUp(self, workstation):
+        maxCols = 2
+
+        modules = ['Haul', 'Catch', 'Length', 'Specimen']
+        if self.settings['OrganizationName'] == 'SWFSC':
+            modules = ['Haul', 'Specimen', 'CatchSWFSC']
+        
+        self.module_map = self.populateCheckBoxes(self.modulesGrid, modules, maxCols)
+
         # If we have an ID (workstation list has data), it's an Edit
         if workstation and len(workstation) > 0:
             # (Keeping your original complex query logic)

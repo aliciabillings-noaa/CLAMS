@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QDialog
+from PyQt6.QtWidgets import QDialog, QCheckBox
 from PyQt6.QtCore import pyqtSignal
 import messagedlg
 
@@ -62,6 +62,24 @@ class BaseEditDlg(QDialog):
         active_items = {x.strip() for x in (csv_string or "").split(',')}
         for key, widget in widget_map.items():
             widget.setChecked(key in active_items)
+    
+    # fill QGridLayout with check boxes 
+    def populateCheckBoxes(self, layout, modules, maxCols):
+        module_map = {}
+
+        # 1. Loop through config with 'enumerate' to get an index counter (0, 1, 2...)
+        for index, (setting_name) in enumerate(modules):
+            checkbox = QCheckBox(setting_name)
+            module_map[setting_name] = checkbox
+            
+            # Calculate the current row and column based on the index
+            row = index // maxCols
+            col = index % maxCols
+            
+            # 3. Add to layout at the calculated row and column
+            layout.addWidget(checkbox, row, col)
+
+        return module_map
 
     def create_csv_from_checkboxes(self, widget_map):
         vals = [key for key, widget in widget_map.items() if widget.isChecked()]

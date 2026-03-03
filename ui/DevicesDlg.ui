@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>PersonnelDlg</class>
- <widget class="QDialog" name="PersonnelDlg">
+ <class>DevicesDlg</class>
+ <widget class="QDialog" name="DevicesDlg">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>552</width>
-    <height>640</height>
+    <height>637</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,7 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTableWidget" name="personnelTable">
+     <widget class="QTableWidget" name="devicesTable">
       <property name="font">
        <font>
         <family>Arial Black</family>
@@ -34,20 +34,22 @@
       <property name="editTriggers">
        <set>QAbstractItemView::NoEditTriggers</set>
       </property>
-      <property name="selectionMode">
-       <enum>QAbstractItemView::MultiSelection</enum>
-      </property>
       <property name="selectionBehavior">
        <enum>QAbstractItemView::SelectRows</enum>
       </property>
       <column>
        <property name="text">
-        <string>Scientist</string>
+        <string>Id</string>
        </property>
       </column>
       <column>
        <property name="text">
-        <string>Affiliation</string>
+        <string>Name</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Model</string>
        </property>
       </column>
       <column>
@@ -55,43 +57,27 @@
         <string>Active</string>
        </property>
       </column>
+      <column>
+       <property name="text">
+        <string>Description</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>New Column</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>New Column</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Interface</string>
+       </property>
+      </column>
      </widget>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QPushButton" name="bulkEnableBtn">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="font">
-         <font>
-          <family>Arial Black</family>
-          <pointsize>16</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Bulk Enable</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="bulkDisableBtn">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="font">
-         <font>
-          <family>Arial Black</family>
-          <pointsize>16</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Bulk Disable</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">

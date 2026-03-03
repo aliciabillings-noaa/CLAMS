@@ -55,6 +55,7 @@ class AdminDlg(QDialog, ui_AdminDlg.Ui_admindlg):
         self.schema = parent.schema
         self.errorSounds=parent.errorSounds
         self.errorIcons=parent.errorIcons
+        self.settings = parent.settings
 
         #  set up signals
         self.createSurveyBtn.clicked.connect(self.createClicked)
