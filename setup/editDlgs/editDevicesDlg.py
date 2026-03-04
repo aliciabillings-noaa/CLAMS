@@ -26,7 +26,7 @@ class editDevicesDlg(BaseEditDlg, ui_EditDevicesDlg.Ui_EditDevicesDlg):
             self.modelLabel.setText(device[2])
             self.serialNumLabel.setText(device[3])
             self.description.setText(device[4])
-            self.isActive.setChecked(device[5] == '1')
+            self.isActive.setChecked(device[5] == 'Yes')
             self.deviceInterfaceCB.setCurrentIndex(self.deviceInterfaces.index(device[6]))
         else:
             # Get new ID logic

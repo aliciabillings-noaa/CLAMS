@@ -32,13 +32,13 @@ class devicesDlg(BaseTableDlg, ui_DevicesDlg.Ui_DevicesDlg):
     def fill_row(self, row_idx, row_data):
         # Unpack the data returned by the query
         id, name, model, serialNum, description, active, interface = row_data
-                
+        
         self.table.setItem(row_idx, 0, QTableWidgetItem(str(id)))
         self.table.setItem(row_idx, 1, QTableWidgetItem(name))
         self.table.setItem(row_idx, 2, QTableWidgetItem(model))
         self.table.setItem(row_idx, 3, QTableWidgetItem(serialNum))
         self.table.setItem(row_idx, 4, QTableWidgetItem(description))
-        self.table.setItem(row_idx, 5, QTableWidgetItem(str(active)))
+        self.table.setItem(row_idx, 5, QTableWidgetItem('Yes' if str(active) == '1' else 'No'))
         self.table.setItem(row_idx, 6, QTableWidgetItem(interface))
 
     def get_data_for_edit(self, row_idx):
