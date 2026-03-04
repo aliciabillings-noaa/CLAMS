@@ -12,9 +12,9 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_DevicesDlg(object):
     def setupUi(self, DevicesDlg):
         DevicesDlg.setObjectName("DevicesDlg")
-        DevicesDlg.resize(975, 637)
+        DevicesDlg.resize(954, 637)
         self.verticalLayoutWidget = QtWidgets.QWidget(parent=DevicesDlg)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 20, 951, 591))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 20, 921, 591))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
