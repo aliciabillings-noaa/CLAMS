@@ -42,8 +42,6 @@ class editMeasurement(BaseEditDlg, ui_EditMeasurement.Ui_EditMeasurement):
         super().__init__(db, parent)
         self.setupUi(self)
 
-        self.schema = parent.schema
-
         self.measurementTypes = []
         self.devices = []
         self.modules = ['Catch', 'Specimen', 'TrawlEvent']
