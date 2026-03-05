@@ -32,10 +32,12 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
             # (Keeping your original complex query logic)
             sql = ("SELECT w.workstation_id, w.hostname, w.status, w.description, w.active, "
                    "wc_main.parameter_value, wc_mod.parameter_value "
-                   "FROM workstations w "
-                   "LEFT JOIN workstation_configuration wc_main ON w.workstation_id=wc_main.workstation_id "
+                   "FROM " + self.schema + ".workstations w "
+                   "LEFT JOIN " + self.schema + ".workstation_configuration wc_main "
+                                                "ON w.workstation_id=wc_main.workstation_id "
                    "AND wc_main.parameter = 'MainActions' "
-                   "LEFT JOIN workstation_configuration wc_mod ON w.workstation_id=wc_mod.workstation_id "
+                   "LEFT JOIN " + self.schema + ".workstation_configuration wc_mod "
+                                                "ON w.workstation_id=wc_mod.workstation_id "
                    "AND wc_mod.parameter = 'Modules' "
                    f"WHERE w.workstation_id = {workstation[0]}")
             

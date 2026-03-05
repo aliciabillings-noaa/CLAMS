@@ -42,17 +42,19 @@ class editMeasurement(BaseEditDlg, ui_EditMeasurement.Ui_EditMeasurement):
         super().__init__(db, parent)
         self.setupUi(self)
 
+        self.schema = parent.schema
+
         self.measurementTypes = []
         self.devices = []
         self.modules = ['Catch', 'Specimen', 'TrawlEvent']
 
-        sql = "SELECT measurement_type from measurement_types order by measurement_types"
+        sql = "SELECT measurement_type from " + self.schema + ".measurement_types order by measurement_types"
         query = self.db.dbQuery(sql)
         for measurement, in query:
             self.measurementTypes.append(measurement)
         self.measurementCB.addItems(self.measurementTypes)
         
-        sql = "SELECT device_id, device_name from devices order by device_id"
+        sql = "SELECT device_id, device_name from " + self.schema + ".devices order by device_id"
         query = self.db.dbQuery(sql)
         for deviceId, device_name, in query:
             self.devices.append(deviceId)

@@ -8,6 +8,7 @@ class personnelDlg(BaseTableDlg, ui_PersonnelDlg.Ui_PersonnelDlg):
     def __init__(self, db, parent=None):
         super().__init__(db, parent)
         self.setupUi(self)
+        self.schema = parent.schema
 
         dialog = editPersonDlg.editPersonDlg(self.db, parent=self)
         dialog.changed.connect(self.populate_table)
@@ -22,7 +23,8 @@ class personnelDlg(BaseTableDlg, ui_PersonnelDlg.Ui_PersonnelDlg):
     # --- Implement Hooks ---
 
     def get_select_sql(self):
-        return "SELECT scientist, affiliation, active FROM personnel ORDER BY scientist"
+        return "SELECT scientist, affiliation, active " \
+               "FROM " + self.schema + ".personnel ORDER BY scientist"
 
     def fill_row(self, row_idx, row_data):
         scientist, affiliation, active = row_data
