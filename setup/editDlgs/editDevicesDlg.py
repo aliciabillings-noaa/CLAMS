@@ -13,7 +13,7 @@ class editDevicesDlg(BaseEditDlg, ui_EditDevicesDlg.Ui_EditDevicesDlg):
         # Populate dropdowns
         self.deviceInterfaces = []
 
-        sql = "SELECT device_interface from device_interfaces"
+        sql = f"SELECT device_interface from {self.schema}.device_interfaces"
         query = self.db.dbQuery(sql)
         for interfaces, in query:
             self.deviceInterfaces.append(interfaces)
@@ -30,7 +30,7 @@ class editDevicesDlg(BaseEditDlg, ui_EditDevicesDlg.Ui_EditDevicesDlg):
             self.deviceInterfaceCB.setCurrentIndex(self.deviceInterfaces.index(device[6]))
         else:
             # Get new ID logic
-            sql = 'SELECT MAX(device_id) from devices'
+            sql = f'SELECT MAX(device_id) from {self.schema}.devices'
             query = self.db.dbQuery(sql)
             max_id = query.first()[0]
             # Handle case where table is empty
