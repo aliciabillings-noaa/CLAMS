@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>WorkstationDlg</class>
- <widget class="QDialog" name="WorkstationDlg">
+ <class>DevicesConfigDlg</class>
+ <widget class="QDialog" name="DevicesConfigDlg">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -24,7 +24,7 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTableWidget" name="workstationTable">
+     <widget class="QTableWidget" name="deviceConfigTable">
       <property name="font">
        <font>
         <family>Arial Black</family>
@@ -37,6 +37,9 @@
       <property name="selectionBehavior">
        <enum>QAbstractItemView::SelectRows</enum>
       </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
       <column>
        <property name="text">
         <string>Id</string>
@@ -44,35 +47,14 @@
       </column>
       <column>
        <property name="text">
-        <string>Hostname</string>
+        <string>Parameter</string>
        </property>
       </column>
       <column>
        <property name="text">
-        <string>Description</string>
+        <string>Value</string>
        </property>
       </column>
-      <column>
-       <property name="text">
-        <string>Active</string>
-       </property>
-      </column>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="editMeasurements">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="font">
-       <font>
-        <family>Arial Black</family>
-        <pointsize>16</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>View Measurements</string>
-      </property>
      </widget>
     </item>
     <item>
@@ -120,9 +102,6 @@
        </widget>
       </item>
      </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3"/>
     </item>
    </layout>
   </widget>

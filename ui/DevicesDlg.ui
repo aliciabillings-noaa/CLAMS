@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>954</width>
-    <height>637</height>
+    <width>950</width>
+    <height>628</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -72,6 +72,22 @@
         <string>Interface</string>
        </property>
       </column>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="deviceConfigBtn">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="font">
+       <font>
+        <family>Arial Black</family>
+        <pointsize>16</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>View Device Configuration</string>
+      </property>
      </widget>
     </item>
     <item>

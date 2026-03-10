@@ -46,13 +46,13 @@ class editMeasurement(BaseEditDlg, ui_EditMeasurement.Ui_EditMeasurement):
         self.devices = []
         self.modules = ['Catch', 'Specimen', 'TrawlEvent']
 
-        sql = "SELECT measurement_type from " + self.schema + ".measurement_types order by measurement_types"
+        sql = f"SELECT measurement_type from {self.schema}.measurement_types order by measurement_types"
         query = self.db.dbQuery(sql)
         for measurement, in query:
             self.measurementTypes.append(measurement)
         self.measurementCB.addItems(self.measurementTypes)
         
-        sql = "SELECT device_id, device_name from " + self.schema + ".devices order by device_id"
+        sql = f"SELECT device_id, device_name from {self.schema}.devices order by device_id"
         query = self.db.dbQuery(sql)
         for deviceId, device_name, in query:
             self.devices.append(deviceId)

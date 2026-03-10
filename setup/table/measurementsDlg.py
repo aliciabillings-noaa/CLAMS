@@ -26,9 +26,9 @@ class measurementsDlg(BaseTableDlg, ui_MeasurementsDlg.Ui_MeasurementsDlg):
         self.dialog.setCurrWorkstation(id)
 
     def get_select_sql(self):
-        return "SELECT workstation_id, measurement_type, device_id, gui_module " \
-               "FROM " + self.schema + ".measurement_setup " \
-            f"WHERE workstation_id={self.workstationId} ORDER BY gui_module"
+        return (f"SELECT workstation_id, measurement_type, device_id, gui_module "
+                f"FROM {self.schema}.measurement_setup "
+                f"WHERE workstation_id={self.workstationId} ORDER BY gui_module")
 
     def fill_row(self, row_idx, row_data):
         # Unpack the data returned by the query

@@ -27,8 +27,8 @@ class workstationDlg(BaseTableDlg, ui_WorkstationDlg.Ui_WorkstationDlg):
     # --- Implement the Hooks ---
 
     def get_select_sql(self):
-        return "SELECT workstation_id, hostname, description, active " \
-               "FROM " + self.schema + ".workstations ORDER BY workstation_id"
+        return (f"SELECT workstation_id, hostname, description, active "
+                f"FROM {self.schema}.workstations ORDER BY workstation_id")
 
     def fill_row(self, row_idx, row_data):
         # Unpack the data returned by the query
