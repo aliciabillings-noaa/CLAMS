@@ -41,8 +41,6 @@ class editDeviceConfig(BaseEditDlg, ui_EditDeviceConfig.Ui_EditDeviceConfig):
     def __init__(self, db, parent=None):
         super().__init__(db, parent)
         self.setupUi(self)
-        print('init ')
-        print(parent.deviceId)
 
         self.deviceParams = []
 
@@ -58,7 +56,6 @@ class editDeviceConfig(BaseEditDlg, ui_EditDeviceConfig.Ui_EditDeviceConfig):
     # Populate fields, if creating a new record then fields will be blank
     # otherwise populate fields with existing user edited
     def setUp(self, device):
-        print(device)
         if device:
             self.deviceIdLabel.setText(str(device[0]))
             self.deviceParamsCB.setCurrentIndex(self.deviceParams.index(device[1]))
@@ -69,26 +66,29 @@ class editDeviceConfig(BaseEditDlg, ui_EditDeviceConfig.Ui_EditDeviceConfig):
             self.paramValLabel.setText('')
     
     def validate_fields(self):
-        existingParams = []
-        currParam = self.deviceParamsCB.currentText()
+        if 'Add' in self.editBtn.text():
+            existingParams = []
+            currParam = self.deviceParamsCB.currentText()
 
-        if currParam == '':
-            self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                                f"Device parameter empty, please select parameter before saving. ", 'info')
-            self.message.exec()
-            return False
+            if currParam == '':
+                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                                    f"Device parameter empty, please select parameter before saving. ", 'info')
+                self.message.exec()
+                return False
 
-        sql = f"SELECT device_parameter from {self.schema}.device_configuration where device_id={self.deviceId}"
-        query = self.db.dbQuery(sql)
-        for param, in query:
-            existingParams.append(param)
-        
-        if currParam in existingParams:
-            self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                                f"Device parameter {currParam} already exists for deviceId: {self.deviceId}. "
-                                f"Please select a different device parameter before updating.", 'info')
-            self.message.exec()
-            return False
+            sql = f"SELECT device_parameter from {self.schema}.device_configuration where device_id={self.deviceId}"
+            query = self.db.dbQuery(sql)
+            for param, in query:
+                existingParams.append(param)
+            
+            if currParam in existingParams:
+                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                                    f"Device parameter {currParam} already exists for deviceId: {self.deviceId}. "
+                                    f"Please select a different device parameter before updating.", 'info')
+                self.message.exec()
+                return False
+            else:
+                return True
         else:
             return True
 
@@ -108,7 +108,7 @@ class editDeviceConfig(BaseEditDlg, ui_EditDeviceConfig.Ui_EditDeviceConfig):
     
     def update(self):
         if 'Update' in self.editBtn.text():
-            sql = (f"UPDATE {self.schema}.device_configuration SET device_id={self.deviceIdVal}, "
+            sql = (f"UPDATE {self.schema}.device_configuration SET "
                    f"device_parameter='{self.deviceParam}', parameter_value='{self.currParamVal}' "
                    f"WHERE device_id={self.deviceIdVal} AND device_parameter='{self.deviceParam}' ")
         self.db.dbExec(sql)
