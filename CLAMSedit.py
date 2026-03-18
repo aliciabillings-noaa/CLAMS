@@ -18,6 +18,7 @@ class CLAMSEdit(QDialog, ui_CLAMSEdit.Ui_clamsEdit):
         super(CLAMSEdit, self).__init__(parent)
         self.setupUi(self)
         self.db=parent.db
+        self.schema = parent.schema
         self.dataModel=QtSql.QSqlRelationalTableModel(self.dataView)
         #self.dataModel.setEditStrategy(QtSql.QSqlTableModel.OnManualSubmit)
         #self.dataView.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -186,7 +187,7 @@ class CLAMSEdit(QDialog, ui_CLAMSEdit.Ui_clamsEdit):
 
 
     def clearHaul(self):
-        query=QtSql.QSqlQuery("SELECT EVENT_ID, PARAMETER_VALUE FROM EVENT_DATA  WHERE ship = "+self.ship+ " AND survey="+self.survey+" AND EVENT_PARAMETER = 'EQ' "  )
+        query=QtSql.QSqlQuery("SELECT EVENT_ID, PARAMETER_VALUE FROM " + self.schema + ".EVENT_DATA  WHERE ship = "+self.ship+ " AND survey="+self.survey+" AND EVENT_PARAMETER = 'EQ' "  )
         Hauls=[]
         EQTimes=[]
         while query.next():
@@ -206,15 +207,15 @@ class CLAMSEdit(QDialog, ui_CLAMSEdit.Ui_clamsEdit):
             return
 
 
-        QtSql.QSqlQuery("DELETE FROM measurements WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
-        QtSql.QSqlQuery("DELETE FROM specimen WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
-        QtSql.QSqlQuery("DELETE FROM basket WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
-        QtSql.QSqlQuery("DELETE FROM sample_data WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
-        QtSql.QSqlQuery("DELETE FROM sample WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
-        QtSql.QSqlQuery("DELETE FROM event_data WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
-        QtSql.QSqlQuery("DELETE FROM event_stream_data WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
-        QtSql.QSqlQuery("DELETE FROM gear_accessory WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
-        QtSql.QSqlQuery("DELETE FROM events WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".measurements WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".specimen WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".basket WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".sample_data WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".sample WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".event_data WHERE ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".event_stream_data WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".gear_accessory WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
+        QtSql.QSqlQuery("DELETE FROM " + self.schema + ".events WHERE  ship="+self.ship+" AND survey="+self.survey+" AND event_id ="+self.activeHaul)
 
 
 

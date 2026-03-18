@@ -275,7 +275,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
             self.codendstate.exec()
             codendstatus = self.codendstate.state_value
             #  and insert the status into event_data
-            sql = ("INSERT INTO event_data (ship, survey, event_id, partition, " +
+            sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, event_id, partition, " +
                     "event_parameter, parameter_value) VALUES(" + self.ship +
                     "," + self.survey + "," + self.activeHaul + ",'" +
                     self.activePartition + "' ,'CodendStatus','" +
@@ -716,7 +716,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
             self.db.startTransaction()
 
             #  delete existing data for this event
-            sql = ("DELETE FROM catch_summary WHERE ship=" + self.ship + " AND survey=" + self.survey +
+            sql = ("DELETE FROM " + self.schema + ".catch_summary WHERE ship=" + self.ship + " AND survey=" + self.survey +
                     " AND event_id=" + event_id)
             self.db.dbExec(sql)
 
@@ -745,7 +745,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
                     sci_name, common_name = sppQuery.first()
 
                     #  then insert results into catch summary table
-                    sql = ("INSERT INTO catch_summary (ship,survey,event_id,partition,sample_id,parent_sample," +
+                    sql = ("INSERT INTO " + self.schema + ".catch_summary (ship,survey,event_id,partition,sample_id,parent_sample," +
                             "scientific_name,species_code,common_name,subcategory,weight_in_haul,sampled_weight," +
                             "number_in_haul,sampled_number,frequency_expansion,in_mix,whole_hauled) VALUES(" +
                             self.ship + "," + self.survey + "," + event_id + ",'" + partition + "'," + sample_id + "," +
@@ -928,7 +928,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
                                     overrideDesc = ("'Bad subsample weight. Total sampled weight=" +
                                             str(round(basketWeight,2)) + " Theoretical weight=" +
                                             str(round(calcWeight,2)) + "'")
-                                    sql = ("INSERT INTO overrides (ship,survey,event_id,record_id,table_name," +
+                                    sql = ("INSERT INTO " + self.schema + ".overrides (ship,survey,event_id,record_id,table_name," +
                                             "scientist,description) VALUES (" + self.ship + ", " + self.survey +
                                             "," + self.activeHaul + "," + key + ",'baskets','" +
                                             self.scientist + "'," + overrideDesc + ")")

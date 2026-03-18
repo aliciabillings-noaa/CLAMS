@@ -319,7 +319,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         if status:
             self.isSubMix = True
             # Check if submix already exists
-            sql = ("select sample_id from samples where survey=" + self.survey + 
+            sql = ("select sample_id from " + self.schema + ".samples where survey=" + self.survey +
                 " AND event_id=" + self.activeHaul + 
                 " AND parent_sample=" + self.parentSamples + 
                 " AND sample_type='SubMix'")

@@ -58,7 +58,7 @@ class LengthSexMaturity(QObject):
         QObject.__init__(self, None)
 
         #  Get the valid weight range for this species from the species table
-        sql = ("SELECT parameter_value FROM application_configuration WHERE "
+        sql = ("SELECT parameter_value FROM " + self.schema + ".application_configuration WHERE "
                "parameter='Age1Definition'")
 
         query = db.dbQuery(sql)

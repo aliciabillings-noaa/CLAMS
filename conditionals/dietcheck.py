@@ -30,20 +30,20 @@ class DietCheck(QObject):
         :return: return the result list with any changes
         """
         # get current tow
-        tow_query = QtSql.QSqlQuery("SELECT parameter_value FROM Application_Configuration "
+        tow_query = QtSql.QSqlQuery("SELECT parameter_value FROM " + self.schema + ".Application_Configuration "
                                     "WHERE parameter = 'ActiveEvent'")
         tow_query.first()
         self.cur_tow = tow_query.value(0).toString()
 
         # get total already collected and called
-        collection_query = QtSql.QSqlQuery("SELECT COUNT(*) FROM Measurements WHERE event_id = " + self.cur_tow +
+        collection_query = QtSql.QSqlQuery("SELECT COUNT(*) FROM " + self.schema + ".Measurements WHERE event_id = " + self.cur_tow +
                                            " AND measurement_type = 'stomach_collect'"
                                            " AND measurement_value NOT IN ('Blown', 'Nicked', 'Regurg', 'Unknown')")
         collection_query.first()
         self.collected = int(collection_query.value(0).toString())
 
         # get total already collected and called
-        called_query = QtSql.QSqlQuery("SELECT COUNT(*) FROM Measurements WHERE event_id = " + self.cur_tow +
+        called_query = QtSql.QSqlQuery("SELECT COUNT(*) FROM " + self.schema + ".Measurements WHERE event_id = " + self.cur_tow +
                                        " AND measurement_type = 'stom_cont_1'"
                                        " AND measurement_value NOT IN ('Blown', 'Nicked', 'Regurg', 'Unknown')")
         called_query.first()

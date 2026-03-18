@@ -149,7 +149,7 @@ class FEATProjectDlg(QDialog):
         self.project_label = self.sender().text()
 
         # get the protocol name
-        proto_sql = "SELECT protocol_name FROM Protocol_Definitions WHERE label = '" + self.project_label + "'"
+        proto_sql = "SELECT protocol_name FROM " + self.schema + ".Protocol_Definitions WHERE label = '" + self.project_label + "'"
         proto_query = self.db.dbQuery(proto_sql)
         self.project_name, = proto_query.first()
 

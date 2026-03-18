@@ -58,7 +58,7 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
 
         else:
             # Get new ID logic
-            sql = 'SELECT MAX(workstation_id) from workstations'
+            sql = "SELECT MAX(workstation_id) from " + self.schema + ".workstations"
             query = self.db.dbQuery(sql)
             max_id = query.first()[0]
             # Handle case where table is empty

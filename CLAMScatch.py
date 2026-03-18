@@ -1295,7 +1295,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             count=str(-transDlg.transCount)
         else:
             count='NULL'
-        sql = ("INSERT INTO baskets (ship, survey, event_id, sample_id, basket_type, count," +
+        sql = ("INSERT INTO " + self.schema + ".baskets (ship, survey, event_id, sample_id, basket_type, count," +
                 "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul+
                 ","+transDlg.fromSampleKey+",'"+transDlg.fromType+"',"+count+","+
                 str(-transDlg.transWeight)+"," + transDlg.transDevice+")")
@@ -1307,7 +1307,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         else:
             count='NULL'
 
-        sql = ("INSERT INTO baskets (ship, survey, event_id, sample_id, basket_type, count," +
+        sql = ("INSERT INTO " + self.schema + ".baskets (ship, survey, event_id, sample_id, basket_type, count," +
                 "weight, device_id) VALUES ("+ self.ship+", "+self.survey+","+self.activeHaul+
                 ","+transDlg.toSampleKey+",'"+transDlg.toType+"',"+count+","+
                 str(transDlg.transWeight)+","+ transDlg.transDevice+")")
@@ -1370,7 +1370,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             editDlg.count = 'NULL'
 
         # update basket table
-        sql = ("UPDATE baskets SET basket_type='"+editDlg.basketType+"', count = "+
+        sql = ("UPDATE " + self.schema + ".baskets SET basket_type='"+editDlg.basketType+"', count = "+
                 editDlg.count+", weight = "+editDlg.weight+"  WHERE ship="+self.ship+
                 " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                 " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
@@ -1424,7 +1424,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 else:
                     if speciesCode in self.parentSamples:
                         #  user doesn't care, make note of this and move on
-                        sql = ("INSERT INTO overrides (scientist, record_id, " +
+                        sql = ("INSERT INTO " + self.schema + ".overrides (scientist, record_id, " +
                                 "table_name,description) VALUES ('" + self.scientist + "'," +
                                 self.parentSamples[speciesCode] + ",'sample', 'mix components are "+str(dev)+
                                 " % less than the mix subsample weight')")
