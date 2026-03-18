@@ -22,8 +22,8 @@ class personnelDlg(BaseTableDlg, ui_PersonnelDlg.Ui_PersonnelDlg):
     # --- Implement Hooks ---
 
     def get_select_sql(self):
-        return "SELECT scientist, affiliation, active " \
-               "FROM " + self.schema + ".personnel ORDER BY scientist"
+        return (f"SELECT scientist, affiliation, active "
+               f"FROM {self.schema}.personnel ORDER BY scientist")
 
     def fill_row(self, row_idx, row_data):
         scientist, affiliation, active = row_data

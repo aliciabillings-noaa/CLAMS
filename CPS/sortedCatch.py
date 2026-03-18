@@ -152,7 +152,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  connect signals and slots
         self.addspcBtn.clicked.connect(self.getSpecies)
         self.manualBtn.clicked.connect(self.getManual)
-        self.doneBtn.clicked.connect(self.close)
+        self.doneBtn.clicked.connect(self.closeWindow)
         self.delBtn.clicked.connect(self.goDelete)
         self.printBtn.clicked.connect(self.printLabel)
         self.editBtn.clicked.connect(self.editTable)
@@ -272,8 +272,13 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
 
         #self.updateParentKeys()
+    
+    def closeWindow(self):
+        self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
+        self.close()
 
     def showUnsorted(self):
+        self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
         self.close()
         unsorted = unsortedCatch.unsortedCatch(self)
         unsorted.exec()

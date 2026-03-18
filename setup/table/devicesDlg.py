@@ -3,6 +3,7 @@ import setup.editDlgs.editDevicesDlg as editDevicesDlg
 from PyQt6.QtWidgets import QTableWidgetItem
 # Import the base class created above
 from .baseTableDlg import BaseTableDlg 
+import setup.table.devicesConfigDlg as devicesConfigDlg
 
 class devicesDlg(BaseTableDlg, ui_DevicesDlg.Ui_DevicesDlg):
 
@@ -17,8 +18,12 @@ class devicesDlg(BaseTableDlg, ui_DevicesDlg.Ui_DevicesDlg):
         self.dialog = editDevicesDlg.editDevicesDlg(self.db, parent=self)
         self.dialog.changed.connect(self.populate_table)
 
+        # create device config dialog
+        self.devicesConfigDlg = devicesConfigDlg.devicesDlg(self.db, parent=self)
+
         # WIRE IT UP: Pass the specific table and dialog to the Base
         self.setup_base(self.devicesTable, self.dialog)
+        self.deviceConfigBtn.clicked.connect(self.openDeviceConfig)
 
     # --- Implement the Hooks ---
     def setCurrWorkstation(self, id):
@@ -26,8 +31,8 @@ class devicesDlg(BaseTableDlg, ui_DevicesDlg.Ui_DevicesDlg):
         self.dialog.setCurrWorkstation(id)
 
     def get_select_sql(self):
-        return "SELECT device_id, device_name, model, serial_number, description, active, device_interface FROM " \
-            + self.schema + ".devices ORDER BY device_id"
+        return (f"SELECT device_id, device_name, model, serial_number, description, active, device_interface FROM " 
+            f"{self.schema}.devices ORDER BY device_id")
 
     def fill_row(self, row_idx, row_data):
         # Unpack the data returned by the query
@@ -52,3 +57,13 @@ class devicesDlg(BaseTableDlg, ui_DevicesDlg.Ui_DevicesDlg):
             self.table.item(row_idx, 5).text(),
             self.table.item(row_idx, 6).text()
         ]
+
+    def on_selection_change(self, has_selection):
+        # This automatically runs when selection changes in the Base class
+        device_id = self.table.item(self.currentRow, 0).text()
+        self.devicesConfigDlg.setDeviceId(device_id)
+        self.deviceConfigBtn.setEnabled(has_selection)
+    
+    def openDeviceConfig(self):
+        self.devicesConfigDlg.populate_table()
+        self.devicesConfigDlg.exec()

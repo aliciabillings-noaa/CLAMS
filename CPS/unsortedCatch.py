@@ -141,7 +141,7 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         #  connect signals and slots
         self.manualBtn.clicked.connect(self.getManual)
         self.sortedBtn.clicked.connect(self.showCatch)
-        self.doneBtn.clicked.connect(self.close)
+        self.doneBtn.clicked.connect(self.closeWindow)
         self.delBtn.clicked.connect(self.goDelete)
         self.editBtn.clicked.connect(self.editTable)
         self.basketTable.itemSelectionChanged.connect(self.getBasketRow)
@@ -277,18 +277,6 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         #  then make sure this is a basket_weight measurement which is the only
         #  measurement that Catch cares about
         if 'basket_weight' not in self.deviceData[device_name]['measurements']['catch']:
-            return
-
-        # check if a species is selected
-        if self.activeSpcName == None:
-            self.message.setMessage(self.errorIcons[2],self.errorSounds[2], self.firstName +
-                    ", please select a species.",'info')
-            self.message.exec()
-            return
-
-        #  check if the current sample type is "Present" and ignore input if so.
-        #  we don't allow baskets to be assigned to Present samples.
-        if self.activeSampleType in ['Present', None]:
             return
 
         #  ensure that the value is numeric - noise on the data lines, poor connections,
@@ -791,8 +779,13 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
  
         return [newPosition, newSize]
     
+    def closeWindow(self):
+        self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
+        self.close()
+    
     def showCatch(self):
         #  show the catch form
+        self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
         self.close()
         catchWindow = sortedCatch.sortedCatch(self)
         catchWindow.exec()

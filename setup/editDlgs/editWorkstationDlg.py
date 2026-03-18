@@ -32,13 +32,13 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
             # (Keeping your original complex query logic)
             sql = ("SELECT w.workstation_id, w.hostname, w.status, w.description, w.active, "
                    "wc_main.parameter_value, wc_mod.parameter_value "
-                   "FROM " + self.schema + ".workstations w "
-                   "LEFT JOIN " + self.schema + ".workstation_configuration wc_main "
-                                                "ON w.workstation_id=wc_main.workstation_id "
-                   "AND wc_main.parameter = 'MainActions' "
-                   "LEFT JOIN " + self.schema + ".workstation_configuration wc_mod "
+                   f"FROM {self.schema}.workstations w "
+                   f"LEFT JOIN {self.schema}.workstation_configuration wc_main "
+                    f"ON w.workstation_id=wc_main.workstation_id "
+                   f"AND wc_main.parameter = 'MainActions' "
+                   f"LEFT JOIN {self.schema}.workstation_configuration wc_mod "
                                                 "ON w.workstation_id=wc_mod.workstation_id "
-                   "AND wc_mod.parameter = 'Modules' "
+                   f"AND wc_mod.parameter = 'Modules' "
                    f"WHERE w.workstation_id = {workstation[0]}")
             
             query = self.db.dbQuery(sql)
@@ -58,7 +58,8 @@ class editWorkstationDlg(BaseEditDlg, ui_EditWorkstationDlg.Ui_EditWorkstationDl
 
         else:
             # Get new ID logic
-            sql = "SELECT MAX(workstation_id) from " + self.schema + ".workstations"
+            sql = f'SELECT MAX(workstation_id) from {self.schema}.workstations'
+
             query = self.db.dbQuery(sql)
             max_id = query.first()[0]
             # Handle case where table is empty
