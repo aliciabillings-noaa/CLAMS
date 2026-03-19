@@ -74,6 +74,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.schema = parent.schema
 
         # initialize variables
+        self.printer = None
         self.addspec_flag = True
         self.planktonFlag = False
         self.activeSampleKey = None
@@ -217,6 +218,56 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     "VALUES (" + self.ship + "," + self.survey + "," + self.activeHaul + ",'Codend',"
                     "'PartitionWeight','TBD')")
                 self.db.dbExec(sql)
+
+            #  Check if we have a label printer attached at this workstation. If so,
+            #  create the printer object and if not, disable the print button
+            sql = ("SELECT MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME " +
+                   "FROM " + self.schema + ".MEASUREMENT_SETUP INNER JOIN  " + self.schema + ".DEVICES ON " +
+                   "MEASUREMENT_SETUP.DEVICE_ID = DEVICES.DEVICE_ID WHERE " +
+                   "MEASUREMENT_SETUP.WORKSTATION_ID = " + self.workStation +
+                   " AND DEVICES.DEVICE_NAME = 'Label_Printer'" +
+                   " GROUP BY MEASUREMENT_SETUP.DEVICE_ID, DEVICES.DEVICE_NAME")
+            query = self.db.dbQuery(sql)
+            printerId, printerName = query.first()
+            if printerId:
+                #  initialize the Label Printer
+                if 'nwfsc' in self.settings['OrganizationName'].lower() or \
+                        'swfsc' in self.settings['OrganizationName'].lower():
+                    # get the ip and port
+                    printer_sql = ("SELECT device_parameter, parameter_value "
+                                   "FROM " + self.schema + ".device_configuration WHERE device_id = " + printerId)
+                    print_query = self.db.dbQuery(printer_sql)
+                    ip = None
+                    port = None
+                    for param, val in print_query:
+                        if param.lower() == 'networkaddress':
+                            ip = val
+                        elif param.lower() == 'networkport':
+                            port = val
+                    self.printer = FEATZebraPrinter.PrintLabel(self.ship, self.survey, ip, port)
+                else:
+                    self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor, printerName)
+            else:
+                #  no printer configured
+                self.printer = None
+                self.printBtn.setEnabled(False)
+            #  set up the printer sound.
+            sql = ("select a.parameter_value from " + self.schema + ".device_configuration a," +
+                   self.schema + ".devices b where a.device_id=b.device_id " +
+                   "and b.device_name='Label_Printer' and a.device_parameter='SoundFile'")
+            query = self.db.dbQuery(sql)
+            soundFile, = query.first()
+            if soundFile:
+                hasExt = soundFile.split('.')
+                if len(hasExt) > 1:
+                    soundFile = self.settings['SoundsDir'] + soundFile
+                else:
+                    soundFile = self.settings['SoundsDir'] + soundFile + '.wav'
+                soundEffect = QSoundEffect()
+                soundEffect.setSource(QUrl.fromLocalFile(soundFile))
+                self.printSound = soundEffect
+            else:
+                self.printSound = None
 
         #  setup parent sample. if not present, create whole catch sample which is
         #  the top level sample (no parent)
