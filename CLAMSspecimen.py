@@ -159,8 +159,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 #  initialize the Label Printer
                 self.printer = ZebraLabelPrinter.ZebraLabelPrinter(self.sensorMonitor,
                         self.deviceData['Label_Printer']['id'])
-
-            sound_file = self.deviceData['Label_Printer']['soundeffect']
+            try:
+                sound_file = self.deviceData['Label_Printer']['soundeffect']
+            except KeyError:
+                sound_file = None
             if sound_file:
                 hasExt = sound_file.split('.')
                 if len(hasExt) > 1:
