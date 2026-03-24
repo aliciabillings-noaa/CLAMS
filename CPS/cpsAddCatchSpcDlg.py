@@ -210,17 +210,18 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
 
         # image code
         self.listOrigin = self.sender()
+        name = self.listOrigin.currentItem().text().split(' - ')[0]
         self.activeSpcName = self.listOrigin.currentItem().text()
         if self.nameTab.currentIndex() == 0:
             self.nameType='common'
             sql = ("SELECT species.species_code  "+
                     "FROM " + self.schema + ".species WHERE species.common_name='"+
-                    self.listOrigin.currentItem().text()+"'")
+                    name+"'")
         else:
             self.nameType='scientific'
             sql = ("SELECT species.species_code  "+
                     "FROM " + self.schema + ".species WHERE species.scientific_name='"+
-                    self.listOrigin.currentItem().text()+"'")
+                    name+"'")
 
         query = self.db.dbQuery(sql)
         spCode, = query.first()
@@ -425,7 +426,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         #  loop through the events
 
         for commonName, spCode in spQuery:
-            spcList.append(commonName)
+            spcList.append(commonName + ' - ' + str(spCode))
             sql = ("SELECT SUM(BASKETS.WEIGHT) FROM " + self.schema + ".BASKETS, " + self.schema + ".SAMPLES WHERE " +
                     "((SAMPLES.SAMPLE_ID=BASKETS.SAMPLE_ID) AND (SAMPLES.SPECIES_CODE="+
                     spCode + ") AND (SAMPLES.SURVEY="+self.survey+ ") AND " +

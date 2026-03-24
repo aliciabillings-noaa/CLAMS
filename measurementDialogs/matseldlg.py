@@ -82,7 +82,7 @@ class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
         mat_desc_sql = "SELECT md.button_text, md.description_text_male " \
                        "FROM  " + self.schema + ".maturity_description md JOIN  " + self.schema + ".maturity_tables mt " \
                        "ON (mt.maturity_table = md.maturity_table) WHERE " \
-                       "(mt.maturity_table = " + mat_stage_query + ")"
+                       "(mt.maturity_table = " + mat_stage_query + ") ORDER BY md.maturity_key"
         query = self.db.dbQuery(mat_desc_sql)
         maturityBtnText = []
         maleApplicable = []
@@ -93,9 +93,8 @@ class MatSelDlg(QDialog, ui_MatSelDlg.Ui_matselDlg):
 
         # signal/slot connections
         self.guideBtn.clicked.connect(self.getGuide)
-        for btn in self.buttons:
+        for idx, btn in enumerate(self.buttons):
             btn.clicked.connect(self.getMat)
-            idx = self.buttons.index(btn)
             try:
                 btn.setText(maturityBtnText[idx])
                 # disable maturity stages that have no male description when sex is male
