@@ -179,22 +179,24 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.fullspcSList.clear()
 
         if self.chars == '':
-            commonQuery = "SELECT species.common_name FROM " + self.schema + ".species ORDER BY species.common_name"
-            sciQuery = "SELECT species.scientific_name FROM " + self.schema + ".species WHERE species_code<999900 ORDER BY species.scientific_name"
+            commonQuery = "SELECT species.common_name, species.species_code FROM " + self.schema + ".species ORDER BY species.common_name"
+            sciQuery = "SELECT species.scientific_name, species.species_code FROM " + self.schema + ".species WHERE species_code<999900 ORDER BY species.scientific_name"
         else:
             like_exp = "'%"+self.chars+"%'"
-            commonQuery = ("SELECT species.common_name FROM " + self.schema + ".species WHERE upper(species.common_name)" +
-                " LIKE upper(" + like_exp + ") AND species_code<999900 ORDER BY species.common_name")
-            sciQuery = ("SELECT species.scientific_name FROM " + self.schema + ".species WHERE upper(species.scientific_name) "+
-                " LIKE upper(" + like_exp + ") AND species_code<999900 ORDER BY species.scientific_name")
+            commonQuery = ("SELECT species.common_name, species.species_code FROM " + self.schema + ".species WHERE (upper(species.common_name)" +
+                " LIKE upper(" + like_exp + ") OR CAST(species.species_code AS VARCHAR(50)) LIKE " + like_exp + 
+                ") AND species_code<999900 ORDER BY species.common_name")
+            sciQuery = ("SELECT species.scientific_name, species.species_code FROM " + self.schema + ".species WHERE (upper(species.scientific_name) "+
+                " LIKE upper(" + like_exp + ") OR CAST(species.species_code as VARCHAR(50)) LIKE " + like_exp + 
+                ") AND species_code<999900 ORDER BY species.scientific_name")
 
         query = self.db.dbQuery(commonQuery)
-        for commonName, in query:
-            self.fullspcCList.addItem(commonName)
+        for commonName, code, in query:
+            self.fullspcCList.addItem(commonName + ' - ' + str(code))
 
         query = self.db.dbQuery(sciQuery)
-        for sciName, in query:
-            self.fullspcSList.addItem(sciName)
+        for sciName, code in query:
+            self.fullspcSList.addItem(sciName + ' - ' + str(code))
 
         if self.fullspcCList.count() < 2 and self.nameTab.currentIndex==0:
             self.fullspcCList.setCurrentRow(1)
@@ -423,7 +425,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         #  loop through the events
 
         for commonName, spCode in spQuery:
-            spcList.append(commonName)
+            spcList.append(commonName + ' - ' + str(spCode))
             sql = ("SELECT SUM(BASKETS.WEIGHT) FROM " + self.schema + ".BASKETS, " + self.schema + ".SAMPLES WHERE " +
                     "((SAMPLES.SAMPLE_ID=BASKETS.SAMPLE_ID) AND (SAMPLES.SPECIES_CODE="+
                     spCode + ") AND (SAMPLES.SURVEY="+self.survey+ ") AND " +
