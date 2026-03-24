@@ -425,7 +425,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         #  loop through the events
 
         for commonName, spCode in spQuery:
-            spcList.append(commonName + ' - ' + str(spCode))
+            spcList.append(commonName)
             sql = ("SELECT SUM(BASKETS.WEIGHT) FROM " + self.schema + ".BASKETS, " + self.schema + ".SAMPLES WHERE " +
                     "((SAMPLES.SAMPLE_ID=BASKETS.SAMPLE_ID) AND (SAMPLES.SPECIES_CODE="+
                     spCode + ") AND (SAMPLES.SURVEY="+self.survey+ ") AND " +
