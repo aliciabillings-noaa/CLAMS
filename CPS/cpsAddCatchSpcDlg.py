@@ -210,18 +210,17 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
 
         # image code
         self.listOrigin = self.sender()
-        name = self.listOrigin.currentItem().text().split(' - ')[0]
-        self.activeSpcName = self.listOrigin.currentItem().text()
+        self.activeSpcName = self.listOrigin.currentItem().text().rsplit(' - ', 1)[0]
         if self.nameTab.currentIndex() == 0:
             self.nameType='common'
             sql = ("SELECT species.species_code  "+
                     "FROM " + self.schema + ".species WHERE species.common_name='"+
-                    name+"'")
+                    self.activeSpcName+"'")
         else:
             self.nameType='scientific'
             sql = ("SELECT species.species_code  "+
                     "FROM " + self.schema + ".species WHERE species.scientific_name='"+
-                    name+"'")
+                    self.activeSpcName+"'")
 
         query = self.db.dbQuery(sql)
         spCode, = query.first()
@@ -345,7 +344,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
             if self.previous <= 0:
                 #  ask if we want to add this exotic species we've never encountered
                 self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "We've never seen a "+
-                        self.listOrigin.currentItem().text() + ". Are you sure that's right? ", 'choice')
+                        self.activeSpcName + ". Are you sure that's right? ", 'choice')
                 if not self.message.exec():
                     return
 
