@@ -779,13 +779,29 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
  
         return [newPosition, newSize]
     
+    # Verify unsorted catch has at least 5 sorts baskets before proceeding
+    def hasSortedBaskets(self):
+        sql = ("SELECT count(*) FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
+                self.survey+" AND event_id="+self.activeHaul + " AND basket_type='Sort'")
+        query = self.db.dbQuery(sql)
+        numSortBaskets, = query.first()
+        if (int(numSortBaskets) < 5):
+            self.message.setMessage(self.errorIcons[1], self.errorSounds[1], 
+                                    f"{self.scientist}, fewer than 5 sort baskets were found, continue anyway?",
+                                    'choice')
+            return self.message.exec()
+        else:
+            return True
+    
     def closeWindow(self):
-        self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
-        self.close()
+        if self.hasSortedBaskets():
+            self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
+            self.close()
     
     def showCatch(self):
         #  show the catch form
-        self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
-        self.close()
-        catchWindow = sortedCatch.sortedCatch(self)
-        catchWindow.exec()
+        if self.hasSortedBaskets():
+            self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
+            self.close()
+            catchWindow = sortedCatch.sortedCatch(self)
+            catchWindow.exec()
