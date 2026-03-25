@@ -787,7 +787,7 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         numSortBaskets, = query.first()
         if (int(numSortBaskets) < 5):
             self.message.setMessage(self.errorIcons[1], self.errorSounds[1], 
-                                    f"{self.scientist}, fewer than 5 sort baskets were found, continue anyway?",
+                                    f"{self.firstName}, fewer than 5 sort baskets were found, continue anyway?",
                                     'choice')
             return self.message.exec()
         else:
