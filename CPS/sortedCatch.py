@@ -1696,14 +1696,14 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #self.refreshTimer.stop()
 
-        #if self.returnFlag:
+        if self.returnFlag:
             #  There was a validation error the user chose to address.
             #  ignore this close event.
-        #    event.ignore()
-        #else:
+            event.ignore()
+        else:
             #  No validation issues or the user doesn't care - accept
             #  the event to close the dialog.
-        #    event.accept()
+            event.accept()
 
         #  store the window size and position
         self.appSettings.setValue('winposition', self.pos())
