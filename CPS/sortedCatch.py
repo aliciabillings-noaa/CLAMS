@@ -1692,7 +1692,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         '''
 
         #  run our catch validations
-        #self.exitValidation()
+        self.exitValidation()
 
         #self.refreshTimer.stop()
 
