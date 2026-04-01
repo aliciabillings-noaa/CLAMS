@@ -27,14 +27,14 @@
     with 'Boundary_' are read from species_data, sorted by value, and used to
     derive the zone that contains the haul latitude.
 
-| Developed by:  Kelsey James <kelsey.james@noaa.gov>
+| Developed by:  Melina Shak <melina.shak@noaa.gov>
 | National Oceanic and Atmospheric Administration (NOAA)
 | National Marine Fisheries Service (NMFS)
 | Southwest Fisheries Science Center (SWFSC)
 | Fisheries Resources Division (FRD)
 |
 | Author:
-|       Kelsey James <kelsey.james@noaa.gov>
+|       Melina Shak <melina.shak@noaa.gov>
 """
 import unittest
 from unittest.mock import Mock
