@@ -490,8 +490,9 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.display_time('overall', True)
         elif Events.NetInWater.name in self.button_order:
             self.event_time = self.event_time.addSecs(overall_elapsed)
-            self.event_timer.timeout.connect(lambda: self.display_time('overall'))
-            self.event_timer.start(1000)
+            if not self.event_timer.isActive():
+                self.event_timer.timeout.connect(lambda: self.display_time('overall'))
+                self.event_timer.start(1000)
         # if HB is pressed, get elapsed time
         if td_elapsed > 0 and Events.Haulback.name in self.button_order:
             at_depth_time = self.td_time.secsTo(self.hb_time)
@@ -499,8 +500,9 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.display_time(Events.EQ.name, True)
         elif Events.EQ.name in self.button_order:
             self.tow_time = self.tow_time.addSecs(td_elapsed)
-            self.td_timer.timeout.connect(lambda: self.display_time('td'))
-            self.td_timer.start(1000)
+            if not self.td_timer.isActive():
+                self.td_timer.timeout.connect(lambda: self.display_time('td'))
+                self.td_timer.start(1000)
 
         self.dataTable.resizeColumnsToContents()
 
@@ -692,8 +694,9 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
 
         # deal with the timers and buttons
         if Events.EQ.name == paramName:
-            self.td_timer.timeout.connect(lambda: self.display_time('td'))
-            self.td_timer.start(1000)
+            if not self.td_timer.isActive():
+                self.td_timer.timeout.connect(lambda: self.display_time('td'))
+                self.td_timer.start(1000)
             # if TD is pressed, send up net dimensions
             self.net_btn = Events.EQ.name
             self.get_net_dims()
@@ -712,8 +715,9 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
             self.recording = True
             self.disable_enable_buttons('enable', self.pb_abort)
             # set the timer
-            self.event_timer.timeout.connect(lambda: self.display_time('overall'))
-            self.event_timer.start(1000)
+            if not self.event_timer.isActive():
+                self.event_timer.timeout.connect(lambda: self.display_time('overall'))
+                self.event_timer.start(1000)
         elif Events.NetOnDeck.name in paramName:
             # if NOD is pressed, enable the done button, turn off the recording of SCS data, and stop overall timer
             self.disable_enable_buttons('enable', self.doneBtn)
@@ -1044,4 +1048,28 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                 else:
                     msg = "Missing EQ or HB for this tow, no averages can be calculated"
                     self.message.setMessage(self.errorIcons[0], self.errorSounds[0], msg, 'warning')
+
+        # add latitude and longitude closest in time to EQ and HB events
+        for time_val, suffix in [(td_time, 'EQ'), (hb_time, 'HB')]:
+            if time_val is not None:
+                for param_prefix in ['Latitude', 'Longitude']:
+                    event_param = param_prefix + suffix
+                    # check if the parameter already exists
+                    exists_sql = ("SELECT event_parameter FROM " + self.schema +
+                                  ".event_data WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                                  " AND event_id = " + self.activeEvent + " AND partition = 'MainTrawl' "
+                                  "AND event_parameter = '" + event_param + "'")
+                    exists_query = self.db.dbQuery(exists_sql)
+                    param, = exists_query.first()
+
+                    if not param:
+                        # get the value closest in time from event_stream_data
+                        stream_vals = self.get_event_stream_vals(time_val, [param_prefix])
+                        if stream_vals[0]:
+                            insert_sql = ("INSERT INTO " + self.schema +
+                                          ".event_data (ship, survey, event_id, partition, event_parameter, "
+                                          "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
+                                          + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
+                                          + str(stream_vals[0]) + "')")
+                            self.db.dbQuery(insert_sql)
 
