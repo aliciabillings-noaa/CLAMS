@@ -1276,16 +1276,35 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.sounds = []
 
         # get the measurements for this species
-        sql = ("SELECT PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE, MEASUREMENT_SETUP.DEVICE_ID," +
-                "DEVICES.DEVICE_INTERFACE,PROTOCOL_DEFINITIONS.FORCE_MEASUREMENT," +
-                "PROTOCOL_DEFINITIONS.FORCE_ORDER,PROTOCOL_DEFINITIONS.LABEL " +
-                "FROM " + self.schema + ".MEASUREMENT_SETUP JOIN " + self.schema + ".PROTOCOL_DEFINITIONS " +
-                "ON PROTOCOL_DEFINITIONS.MEASUREMENT_TYPE=MEASUREMENT_SETUP.MEASUREMENT_TYPE " +
-                "JOIN " + self.schema + ".DEVICES ON DEVICES.DEVICE_ID=MEASUREMENT_SETUP.DEVICE_ID " +
-                "WHERE PROTOCOL_DEFINITIONS.PROTOCOL_NAME='"+self.protocol+"' AND " +
-                "MEASUREMENT_SETUP.WORKSTATION_ID="+self.workStation+" AND  " +
-                "MEASUREMENT_SETUP.GUI_MODULE='Specimen' " +
-                "ORDER BY PROTOCOL_DEFINITIONS.MEASUREMENT_ORDER ASC")
+        where_clauses = [
+            f"p.protocol_name = '{self.protocol}'",
+            f"m.workstation_id = {self.workStation}",
+            "m.gui_module = 'Specimen'"
+        ]
+        # check if the active column is in the database
+        # updated for NWC and SWC to allow for an active column in measurement_setup
+        try:
+            self.db.dbQuery(f"SELECT active FROM {self.schema}.MEASUREMENT_SETUP WHERE 1=0")
+            where_clauses.append("m.active = 1")
+        except:
+            pass
+        final_where = " AND ".join(where_clauses)
+
+        sql = f"""
+            SELECT 
+               p.measurement_type,
+               m.device_id,
+               d.device_interface,
+               p.force_measurement,
+               p.force_order,
+               p.label
+            FROM {self.schema}.MEASUREMENT_SETUP m
+            JOIN {self.schema}.PROTOCOL_DEFINITIONS p
+                ON p.measurement_type = m.measurement_type
+            JOIN {self.schema}.devices d
+                ON d.device_id = m.device_id
+            WHERE {final_where}
+            ORDER BY p.measurement_order ASC"""
         query = self.db.dbQuery(sql)
 
         #  Initialize length type combo box to disabled until you encounter a 'length' in the protocol
