@@ -833,17 +833,16 @@ class CLAMSLength(QDialog, ui_CLAMSLength.Ui_clamsLength):
         '''
         # if this is admin (an administrative workstation), query ALL lengths
         if self.admin:
-            sql = ("SELECT count(specimen_id), SEX "+
-                " FROM V_SPECIMEN_MEASUREMENTS  WHERE ship="+self.ship+
-                " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND SAMPLE_ID = "+self.sampleKey+
-                "AND PROTOCOL_NAME='Length_Sex' GROUP BY SEX ")
+            sql = ("SELECT count(specimen_id), sex FROM " + self.schema + ".v_specimen_measurements WHERE ship = "
+                   + self.ship + " AND survey = " + self.survey + " AND event_id = " + self.activeHaul +
+                   " AND sample_id = " + self.sampleKey + " AND protocol_name = 'Length_Sex' GROUP BY sex")
             query = self.db.dbQuery(sql)
         # otherwise, if not admin, query the lengths from just the current workstation
         else:
-            sql=("SELECT count(specimen_id), SEX "+
-                " FROM V_SPECIMEN_MEASUREMENTS  WHERE ship="+self.ship+
-                " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND SAMPLE_ID = "+self.sampleKey+"  AND "+
-                " WORKSTATION_ID = "+self.workStation+" AND PROTOCOL_NAME='Length_Sex'  GROUP BY SEX ")
+            sql=("SELECT count(specimen_id), sex FROM " + self.schema + ".v_specimen_measurements  WHERE ship = "
+                 + self.ship + " AND survey = " + self.survey + " AND event_id = " + self.activeHaul +
+                 " AND sample_id = " + self.sampleKey + " AND workstation_id = " + self.workStation
+                 + " AND protocol_name = 'Length_Sex' GROUP BY sex")
             query = self.db.dbQuery(sql)
         counts = []
         # Initialize the table to 0

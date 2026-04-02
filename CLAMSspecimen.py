@@ -1175,13 +1175,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         if (self.sqlLengthIndex != None):
             #  create the SQL string based on the current length type
             length_type = str(self.lengthTypeBox.currentText())
-            sqlStringEnd=' AND '+length_type+' IS NOT NULL '
+            sqlStringEnd = ' AND ' + length_type + ' IS NOT NULL '
             #  insert the current length type
             self.sqlString[self.sqlLengthIndex] = length_type
         else:
             # For this case, the sqlString will already be formatted correctly because the length types were established in the protocol
             # And we want all of the specimens for that sample and protocol, so no ending sql string is needed- set it to one space string
-            sqlStringEnd=' '
+            sqlStringEnd = ' '
 
         #  create the string
         sqlString = ','.join(self.sqlString)
@@ -1189,23 +1189,20 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  set the model view SQL
         if self.admin:
             #  admin mode shows all measurements
-            sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM " + self.schema + 
-                   ".V_SPECIMEN_MEASUREMENTS WHERE " +
-                    "ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                    " AND sample_id="+self.activeSample+"  AND " +
-                    "PROTOCOL_NAME = '" + self.protocol +"'" + sqlStringEnd +
-                    "ORDER BY SPECIMEN_ID")
+            sql = ("SELECT specimen_id, " + sqlString + ", sampling_method FROM " + self.schema +
+                   ".v_specimen_measurements WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                   " AND event_id = " + self.activeHaul + " AND sample_id = " + self.activeSample +
+                   " AND protocol_name = '" + self.protocol +"'" + sqlStringEnd +
+                    "ORDER BY specimen_id")
             self.measureModel.setQuery(sql, self.db.db)
         else:
             #  regular mode shows only measurements at that station
-            sql = ("SELECT SPECIMEN_ID, "+ sqlString + ",SAMPLING_METHOD" + " FROM " + self.schema + 
-                   ".V_SPECIMEN_MEASUREMENTS WHERE " +
-                  "ship="+self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                  " AND sample_id="+self.activeSample+
-                  " AND PROTOCOL_NAME = '" + self.protocol + "' AND WORKSTATION_ID = " +
-                  self.workStation + sqlStringEnd + "ORDER BY SPECIMEN_ID")
+            sql = ("SELECT specimen_id, " + sqlString + ", sampling_method FROM " + self.schema +
+                   ".v_specimen_measurements WHERE ship = " + self.ship + " AND survey = " + self.survey +
+                   " AND event_id = " + self.activeHaul + " AND sample_id = " + self.activeSample +
+                   " AND protocol_name = '" + self.protocol + "' AND workstation_id = " +
+                  self.workStation + sqlStringEnd + "ORDER BY specimen_id")
             self.measureModel.setQuery(sql, self.db.db)
-
 
         self.measureView.scrollToBottom()
 
@@ -1775,8 +1772,9 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         else:
             #  get data from db - query everything *BUT* length
             sql = ("SELECT ship, survey, event_id, specimen_id, species_code, common_name, "+
-                    "organism_weight, sex, maturity, scientist, barcode FROM " + self.schema + ".v_specimen_measurements WHERE "+
-                    "survey=" + self.survey +" AND ship="+self.ship+" AND specimen_id="+self.specimenKey)
+                    "organism_weight, sex, maturity, scientist, barcode FROM " + self.schema +
+                   ".v_specimen_measurements WHERE survey = " + self.survey + " AND ship = " + self.ship +
+                   " AND specimen_id = " + self.specimenKey)
             query = self.db.dbQuery(sql)
             data = query.first()
             vessel = data[0]
