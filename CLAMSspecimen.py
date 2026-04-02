@@ -1282,10 +1282,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             "m.gui_module = 'Specimen'"
         ]
         # check if the active column is in the database
-        # updated for NWC and SWC to allow for an active column in measurement_setup
+        # updated for NWC and SWC to allow for an active column in protocol_definitions
         try:
-            self.db.dbQuery(f"SELECT active FROM {self.schema}.MEASUREMENT_SETUP WHERE 1=0")
-            where_clauses.append("m.active = 1")
+            self.db.dbQuery(f"SELECT active FROM {self.schema}.PROTOCOL_DEFINITIONS WHERE 1=0")
+            where_clauses.append("p.active = 1")
         except:
             pass
         final_where = " AND ".join(where_clauses)
