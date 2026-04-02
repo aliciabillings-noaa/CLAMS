@@ -48,7 +48,7 @@ import ZebraLabelPrinter
 import addspecdlg
 import FEATZebraPrinter
 import measurementDialogs.FEATProjectDlg as project
-import CPS.unsortedCatch as unsortedCatch
+
 
 class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
@@ -167,6 +167,15 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #  connect the SensorMonitor SerialDataReceived signal to the
         #  getAuto method which processes input from devices.
         self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
+
+        # Querying application_configuration table to set MaxMinDev from 
+        # sampleThreshold value for sub-sample check
+        sql = "SELECT parameter_value from application_configuration " \
+              "where parameter='SubSampleCheckThreshold'"
+        query = self.db.dbQuery(sql)
+        threshold, = query.first()
+        threshold = float(threshold) if threshold else 0.0
+        self.settings['MaxMixDev'] = threshold
 
         #  restore the application state
         self.appSettings = QSettings('CLAMS', 'CatchForm')
@@ -1357,13 +1366,6 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
             #  mix validation
             (mixSubWeight, mixSpeciesWeight) = self.mixValidation(sampleId, self.activeSpcCode)
-            if mixSubWeight == 0:
-                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
-                        self.firstName+ ", there's no mix basket subsample weight for "+
-                        sampleType + " in the system. This must be corrected.", 'info')
-                self.message.exec()
-                self.returnFlag = True
-                return
 
             #  check the mix parts more or less make up the weight of the total
             dev = (mixSubWeight - mixSpeciesWeight) / mixSubWeight * 100.
@@ -1430,41 +1432,40 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
 
     def mixValidation(self, sampleId, speciesCode):
-        '''mixValidation queries out the mix subsample weight and the
-        species weight for the specified mix sample ID and species.
+        #  get the SubMix sample id for this partition
+        subMixCode = '3'
+        animaliaCode = "202423"
 
-        '''
-        #  get the mix subsample weight
-        mixSubWeight = 0
-        sql = ("SELECT SUM(weight) FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
-                self.survey+" AND event_id = "+self.activeHaul+" AND sample_id="+sampleId+
-                " AND basket_type = 'Measure'")
+        sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
+                " AND survey=" + self.survey + " AND event_id=" + self.activeHaul +
+                " AND species_code=" + subMixCode)
         query = self.db.dbQuery(sql)
-        subWeight, = query.first()
-        if subWeight:
-            try:
-                mixSubWeight = (float(subWeight))
-            except:
-                pass
+        submix1Id, = query.first()
 
-        #  get the mix species weight
-        mixSpeciesWeight = 0
-        sql = ("SELECT SUM(baskets.weight) FROM " + self.schema + ".samples, baskets WHERE samples.sample_id = "+
-                "baskets.sample_id AND samples.ship=baskets.ship AND " +
-                "samples.survey=baskets.survey AND samples.event_id=baskets.event_id " +
-                "AND samples.ship="+self.ship+" AND samples.survey="+
-                self.survey+" AND samples.event_id="+self.activeHaul+" AND samples.partition='"+
-                self.activePartition+"' AND samples.parent_sample="+sampleId)
-        query = self.db.dbQuery(sql)
-        mixWeight, = query.first()
-        if mixWeight:
-            try:
-                mixSpeciesWeight = (float(mixWeight))
-            except:
-                pass
+        if submix1Id is not None:
+            #  get the sum of Measure basket weights for Animalia species with SubMix1 as parent
+            sql = ("SELECT SUM(b.weight) FROM " + self.schema + ".baskets b, " +
+                    self.schema + ".samples s WHERE b.sample_id=s.sample_id AND " +
+                    "b.ship=s.ship AND b.survey=s.survey AND b.event_id=s.event_id AND " +
+                    "s.ship=" + self.ship + " AND s.survey=" + self.survey +
+                    " AND s.event_id=" + self.activeHaul + " AND b.basket_type='Measure' AND " +
+                    "s.species_code=" + animaliaCode)
+            query = self.db.dbQuery(sql)
+            mixSubWeight, = query.first()
+            mixSubWeight = float(mixSubWeight) if mixSubWeight else 0.0
 
-        return mixSubWeight, mixSpeciesWeight
-
+            #  get the sum of Count basket weights for species samples with SubMix1 as parent
+            sql = ("SELECT SUM(b.weight) FROM " + self.schema + ".baskets b, " +
+                    self.schema + ".samples s WHERE b.sample_id=s.sample_id AND " +
+                    "b.ship=s.ship AND b.survey=s.survey AND b.event_id=s.event_id " +
+                    "AND s.ship=" + self.ship + " AND s.survey=" + self.survey +
+                    " AND s.event_id=" + self.activeHaul + " AND s.parent_sample=" +
+                    submix1Id + " AND b.basket_type='Count'")
+            query = self.db.dbQuery(sql)
+            countBasketWeight, = query.first()
+            mixSpeciesWeight = float(countBasketWeight) if countBasketWeight else 0.0
+        
+            return mixSubWeight, mixSpeciesWeight
 
     def reloadSamplesList(self):
         '''reloadSamplesList updates the Samples table
