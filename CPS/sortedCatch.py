@@ -94,7 +94,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.manualDevice ='0'
         self.parentSamples = {}
         self.mixtureNames = {'100000':'WholeHaul', '100001':'SortingTable',
-                '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2'}
+                '100002':'Mix1', '100003':'SubMix1', '100004':'Mix2','3':"SubMix"}
         self.wholeHaulKey = None
         self.headerFont = QFont("Arial Black", 11, -1, False)
         self.activeSampleType = None
@@ -1433,7 +1433,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
     def mixValidation(self, sampleId, speciesCode):
         #  get the SubMix sample id for this partition
-        subMixCode = '3'
+        subMixCode = "3"
         animaliaCode = "202423"
 
         sql = ("SELECT sample_id FROM " + self.schema + ".samples WHERE ship=" + self.ship +
