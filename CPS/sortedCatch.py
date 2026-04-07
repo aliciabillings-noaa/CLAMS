@@ -1226,6 +1226,13 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 self.db.dbExec(sql)
                 self.activeSpcName = None
 
+                sql = ("DELETE FROM " + self.schema + ".samples WHERE ship="+self.ship+" AND survey="+
+                        self.survey+" AND event_id="+self.activeHaul+" AND sample_type='SubMix' AND 0=" +
+                        "(SELECT COUNT(*) FROM " + self.schema + ".samples WHERE parent_sample=(SELECT sample_id from "+
+                        self.schema+ ".samples WHERE ship="+self.ship+" AND survey="+self.survey+" AND "+
+                        "event_id="+self.activeHaul+" AND sample_type='SubMix'))")
+                self.db.dbExec(sql)
+
             #  refresh the species list
             self.reloadSamplesList()
 
@@ -1356,6 +1363,36 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         self.returnFlag=False
 
+        #  check if all of the samples have at least one basket. First get the samples
+        sql = ("SELECT species.common_name, samples.sample_id, samples.species_code, " +
+                "samples.subcategory FROM " + self.schema + ".samples, " + self.schema + ".species WHERE " +
+                "species.species_code=samples.species_code AND LOWER(samples.sample_type)" +
+                "='species' AND samples.ship=" + self.ship + " AND samples.survey=" +
+                self.survey + " AND samples.event_id=" + self.activeHaul +
+                " AND samples.partition='" + self.activePartition + "'")
+        sampleQuery = self.db.dbQuery(sql)
+
+        #  loop thru each sample and check if it has at least one basket
+        for commonName, sampleId, spCode, subcat in sampleQuery:
+            sql = ("SELECT COUNT(basket_id) FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
+                    self.survey+" AND event_id = "+self.activeHaul+" AND sample_id = "+
+                    sampleId)
+            basketQuery = self.db.dbQuery(sql)
+            numBaskets, = basketQuery.first()
+
+            if int(numBaskets) == 0:
+                # no baskets for this species
+                if subcat.lower() != 'none':
+                    spcName = commonName + " " + subcat
+                else:
+                    spcName = commonName
+                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
+                        self.firstName + ", There are are no basket weights for " +
+                        spcName + ". Does this bother you?", 'choice')
+                if self.message.exec():
+                    self.returnFlag = True
+                    return
+
         #  check for any mixes in this partition
         sql = ("SELECT sample_id, sample_type, species_code from " + self.schema + ".samples WHERE ship=" +
                 self.ship + " AND survey=" + self.survey+" AND event_id = " +
@@ -1381,55 +1418,15 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     #  user is bothered by this - set the failed validation flag
                     self.returnFlag = True
                 else:
-                    if speciesCode in self.parentSamples:
-                        #  user doesn't care, make note of this and move on
-                        sql = ("INSERT INTO " + self.schema + ".overrides (scientist, record_id, " +
-                                "table_name,description) VALUES ('" + self.scientist + "'," +
-                                self.parentSamples[speciesCode] + ",'sample', 'mix components are "+str(dev)+
-                                " % less than the mix subsample weight')")
-                        self.db.dbExec(sql)
-
-        #  check if all of the samples have at least one basket. First get the samples
-        sql = ("SELECT species.common_name, samples.sample_id, samples.species_code, " +
-                "samples.subcategory FROM " + self.schema + ".samples, " + self.schema + ".species WHERE " +
-                "species.species_code=samples.species_code AND (LOWER(samples.sample_type)" +
-                "='species' OR LOWER(samples.sample_type) LIKE LOWER('%mix%')) " +
-                "AND samples.ship=" + self.ship + " AND samples.survey=" +
-                self.survey + " AND samples.event_id=" + self.activeHaul +
-                " AND samples.partition='" + self.activePartition + "'")
-        sampleQuery = self.db.dbQuery(sql)
-
-        #  loop thru each sample and check if it has at least one basket
-        for commonName, sampleId, spCode, subcat in sampleQuery:
-            sql = ("SELECT COUNT(basket_id) FROM " + self.schema + ".baskets WHERE ship="+self.ship+" AND survey="+
-                    self.survey+" AND event_id = "+self.activeHaul+" AND sample_id = "+
-                    sampleId)
-            basketQuery = self.db.dbQuery(sql)
-            numBaskets, = basketQuery.first()
-
-            if numBaskets == 0:
-                # no baskets for this species
-                if subcat.lower() != 'none':
-                    spcName = commonName + " " + subcat
-                else:
-                    spcName = commonName
-                self.message.setMessage(self.errorIcons[1],self.errorSounds[1],
-                        self.firstName + ", There are are no basket weights for " +
-                        spcName + ". Does this bother you?", 'choice')
-                if self.message.exec():
-                    self.returnFlag = True
-                    return
-
-            # As part of the last open station check, process should
-            # check for empty baskets and allow for deletion.
-
-                # we're commenting this out because its caousing problems with multi catch input
-#                    else:
-#                        # remove stray sample record
-#                        query =QtSql.QSqlQuery("DELETE FROM samples WHERE ship="+self.ship+" AND survey="+
-#                                        self.survey+" AND event_id = "+self.activeHaul+" AND sample_id = "+query.value(1).toString(),  self.db)
-#                        self.backLogger.info(QDateTime.currentDateTime().toString('MMddyyyy hh:mm:ss')+","+query.lastQuery())
-
+                    #  user doesn't care, make note of this and move on
+                    sql = ("INSERT INTO " + self.schema + ".overrides (scientist, record_id, " +
+                            "table_name, description, ship, survey, event_id) SELECT '" + 
+                            self.scientist + "'," + sampleId + ",'sample', 'mix components are "+str(dev)+
+                            " % less than the mix subsample weight', "+self.ship+","+self.survey+","+
+                            self.activeHaul+" WHERE NOT EXISTS (SELECT 1 FROM " + self.schema + 
+                            ".overrides WHERE record_id=" + sampleId + " AND table_name='sample' AND ship="+
+                            self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+")")
+                    self.db.dbExec(sql)
 
     def mixValidation(self, sampleId, speciesCode):
         #  get the SubMix sample id for this partition
