@@ -1419,17 +1419,33 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 self.dialogs.append(thisDialog)
 
             # get validations
-            sql1 = ("SELECT VALIDATION FROM " + self.schema + ".VALIDATIONS WHERE ( "+
-                    "PROTOCOL_NAME = '"+self.protocol+"' ) AND ( "+
-                    "MEASUREMENT_TYPE = '"+type+"') "+
-                    "ORDER BY VALIDATION_ORDER ASC ")
+            where_val_clauses = [
+                f"protocol_name = '{self.protocol}'",
+                f"measurement_type = '{type}'",
+            ]
+            # check if the active column is in the database
+            # updated for NWC and SWC to allow for an active column in validations
+            try:
+                self.db.dbQuery(f"SELECT active FROM {self.schema}.VALIDATIONS WHERE 1=0")
+                where_val_clauses.append("active = 1")
+            except:
+                pass
+            final_val_where = " AND ".join(where_val_clauses)
+
+            sql1 = f"""
+                     SELECT 
+                        validation
+                     FROM {self.schema}.VALIDATIONS m
+                     WHERE {final_val_where}
+                     ORDER BY validation_order ASC"""
             query1 = self.db.dbQuery(sql1)
+
             vals = []
             valNames = []
 
             #  create an instance of the validation object and add to our list of validations
             for validations,  in query1:
-                valModule = ('validations.'+validations)
+                valModule = ('validations.' + validations)
                 valObj = importlib.import_module(valModule)
                 valObj = getattr(valObj, validations)
                 valNames.append(validations)
