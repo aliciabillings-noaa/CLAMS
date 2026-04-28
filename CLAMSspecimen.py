@@ -87,6 +87,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.sqlLengthIndex = None
         self.freeze=False
         self.schema = parent.schema
+        self.length_types = parent.length_types
 
         if not self.db.db.isOpen():
             self.db.dbOpen()
@@ -955,7 +956,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  disable the protocol change button - only can change protocols
         #  when you're not in the middle of processing a specimen
         self.protoBtn.setEnabled(False)
-        if self.measureType[i] == 'length':
+        if self.measureType[i] in self.length_types:
             measure_type = self.lengthTypeBox.currentText()
         else:
             measure_type = self.measureType[i]
@@ -1467,7 +1468,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             #  change was implemented years after CLAMS was initially written and it is
             #  too late at this point to change everything.
             #  Enable lengthType combo box if there is 'length' type- otherwise it will be disabled
-            if (type == 'length'):
+            if type in self.length_types:
                 #  store the index of "length" in the SQL string so we can swap it out
                 #  when the user changes the length_type
                 self.sqlLengthIndex = nMeasurements

@@ -126,6 +126,13 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         #  set the event number
         self.haulLabel.setText(self.activeHaul)
 
+        # added by AB to account for different length types
+        # get all lengths from measurement_types
+        self.length_types = []
+        sql_l = f"SELECT measurement_type from {self.schema}.MEASUREMENT_TYPES WHERE is_length=1"
+        query_l = self.db.dbQuery(sql_l)
+        for lt, in query_l:
+            self.length_types.append(lt)
 
         # get the scientist - first get the list of active scientists
         self.sciList=[]
