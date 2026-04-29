@@ -1584,7 +1584,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     sp_protos = ['BagNTag']
                     for protocol, sp_code in proto_list:
                         # for protocols in group collection, highlight them in yellow
-                        if (protocol in ['Gleiber_02', 'Field_01'] and len(proto_list) > 1):
+                        if (protocol in ['Gleiber_02', 'Field_01'] and len(proto_list) == 1):
                             self.speciesList.item(nSamples, 0).setBackground(QColor(255, 222, 128))
                         else:
                             sp_protos.append(protocol)
