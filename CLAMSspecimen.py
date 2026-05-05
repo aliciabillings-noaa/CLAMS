@@ -1502,12 +1502,28 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.samplingMethodBox.setCurrentIndex(self.samplingMethodBox.findText('random'))
 
         # get conditionals
-        sql = ("SELECT CONDITIONALS.CONDITIONAL FROM " + self.schema + ".CONDITIONALS WHERE ( "+
-                "CONDITIONALS.PROTOCOL_NAME = '"+self.protocol+"')")
-        query = self.db.dbQuery(sql)
+        where_con_clauses = [
+            f"protocol_name = '{self.protocol}'",
+        ]
+        # check if the active column is in the database
+        # updated for NWC and SWC to allow for an active column in validations
+        try:
+            self.db.dbQuery(f"SELECT active FROM {self.schema}.CONDITIONALS WHERE 1=0")
+            where_con_clauses.append("active = 1")
+        except:
+            pass
+        final_val_where = " AND ".join(where_con_clauses)
+
+        sql2 = f"""
+                 SELECT 
+                    conditional
+                 FROM {self.schema}.CONDITIONALS m
+                 WHERE {final_val_where}"""
+        query2 = self.db.dbQuery(sql2)
+
         self.conditionals = []
 
-        for conditional, in query:
+        for conditional, in query2:
             upcond = conditional
             condModule = ('conditionals.'+conditional.lower())
             condObj = importlib.import_module(condModule)
