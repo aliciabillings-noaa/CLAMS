@@ -37,7 +37,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from ui import  ui_CPSAddCatchSpcDlg
 import listseldialog
-import sampletypeseldlg
+import CPSsampletypeseldlg
 
 
 class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
@@ -85,7 +85,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.resize(size)
 
         #  create the sample type selection dialog
-        self.SampTypeDlg = sampletypeseldlg.sampletypeseldlg(self)
+        self.SampTypeDlg = CPSsampletypeseldlg.CPSsampletypeseldlg(self)
 
         #  put the keyboard buttons into a list to easily reference them
         self.digitBtns=[self.A_Btn,self.B_Btn,self.C_Btn,self.D_Btn,self.E_Btn,self.F_Btn,
