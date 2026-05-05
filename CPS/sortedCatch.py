@@ -1330,7 +1330,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             selRecord.append(item.text())
 
         #  present the edit dialog
-        header = ['Basket ID', 'Weight', 'Count', 'Sample Type' ]
+        header = ['Basket ID', 'Weight', 'Count', 'Basket Type' ]
         editDlg = basketeditdlg.BasketEditDlg(header, selRecord, self)
         editDlg.exec()
         if not editDlg.okFlag:
