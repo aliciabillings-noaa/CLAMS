@@ -1330,7 +1330,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             selRecord.append(item.text())
 
         #  present the edit dialog
-        header = ['Basket ID', 'Weight', 'Count', 'Sample Type' ]
+        header = ['Basket ID', 'Weight', 'Count', 'Basket Type' ]
         editDlg = basketeditdlg.BasketEditDlg(header, selRecord, self)
         editDlg.exec()
         if not editDlg.okFlag:
@@ -1580,10 +1580,15 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     proto_sql = ("SELECT protocol_name, species_code FROM " +
                                  self.schema + ".protocol_map WHERE species_code=" + spCode)
                     proto_query = self.db.dbQuery(proto_sql)
+                    proto_list = list(proto_query)
                     sp_protos = ['BagNTag']
-                    for protocol, sp_code in proto_query:
-                        sp_protos.append(protocol)
-                        self.speciesList.item(nSamples, 0).setBackground(QColor(127, 255, 212))
+                    for protocol, sp_code in proto_list:
+                        # for protocols in group collection, highlight them in yellow
+                        if (protocol in ['Gleiber_02', 'Field_01'] and len(proto_list) == 1):
+                            self.speciesList.item(nSamples, 0).setBackground(QColor(255, 222, 128))
+                        else:
+                            sp_protos.append(protocol)
+                            self.speciesList.item(nSamples, 0).setBackground(QColor(127, 255, 212))
                     self.speciesProtos[spCode] = sp_protos
 
             nSamples += 1
