@@ -42,54 +42,56 @@
 from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
-from ui import ui_BasketEditDlg
-import numpad
+import sampletypeseldlg
+from ui import ui_SpeciesEditDlg
+import CPS.cpsEditSpeciesDlg as cpsEditSpeciesDlg
 
 
-class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
+class SpeciesEditDlg(QDialog, ui_SpeciesEditDlg.Ui_speciesEditDlg):
+
     def __init__(self, header,  items,  parent=None):
-        super(BasketEditDlg, self).__init__(parent)
+        super(SpeciesEditDlg, self).__init__(parent)
         self.setupUi(self)
 
-        self.keep = None
-        self.transDevice = None
+        #self.keep = None
+        #self.transDevice = None
         self.okFlag = False
+        self.db = parent.db
 
-        self.validList = parent.validList
-        self.typeDlg = parent.typeDlg
-        self.sensorMonitor = parent.sensorMonitor
         self.devices = parent.devices
         self.sounds = parent.sounds
-        self.errorIcons = parent.errorIcons
-        self.errorSounds = parent.errorSounds
         self.deviceData = parent.deviceData
         self.headerFont = QFont("Arial Black", 14, -1, False)
 
         # set up edit basket table
-        self.editBasket.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
-        self.editBasket.setColumnCount(len(header))
-        self.editBasket.setRowCount(1)
-        self.editBasket.verticalHeader().setVisible(False)
-        self.editBasket.horizontalHeader().setStretchLastSection(True)
+        self.editSpecies.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.editSpecies.setColumnCount(len(header))
+        self.editSpecies.setRowCount(1)
+        self.editSpecies.verticalHeader().setVisible(False)
+        self.editSpecies.horizontalHeader().setStretchLastSection(True)
+
+        del items[2]
+
         for i in range(len(header)):
             headerItem = QTableWidgetItem(header[i])
             headerItem.setFont(self.headerFont)
-            self.editBasket.setHorizontalHeaderItem(i, headerItem)
+            self.editSpecies.setHorizontalHeaderItem(i, headerItem)
 
             #  set up the values cells
             self.setColumnValue(i, items[i])
-        self.editBasket.resizeColumnsToContents()
+        self.editSpecies.resizeColumnsToContents()
 
-        self.weight = items[1]
-        self.count = items[2]
-        self.basketType = items[3]
-        self.numpad = numpad.NumPad(self)
+        self.activeSpeciesName = items[1]
+        self.type = items[2]
+
+        self.activeSpcCode = ''
 
         # signal/slot connections
-        self.editBasket.itemSelectionChanged.connect(self.getEdit)
+        self.editSpecies.itemSelectionChanged.connect(self.getEdit)
         self.okBtn.clicked.connect(self.getOK)
         self.cancelBtn.clicked.connect(self.getCancel)
-        self.sensorMonitor.SensorDataReceived.connect(self.getAuto)
+
+        self.spcDlg = cpsEditSpeciesDlg.cpsEditSpeciesDlg(parent)
 
 
     def setColumnValue(self, col, value):
@@ -103,8 +105,11 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         else:
             #  the other cells are selectable
             tableItem.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
-        self.editBasket.setItem(0, col, tableItem)
+        self.editSpecies.setItem(0, col, tableItem)
 
+    def updateSpecies(self):
+        spcName = self.spcDlg.activeSpcName
+        self.setColumnValue(1, spcName)
 
     def getEdit(self):
         """
@@ -112,89 +117,35 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
         changes the text in the table to be saved
         :return: none
         """
-        col = self.editBasket.currentColumn()
+        col = self.editSpecies.currentColumn()
 
-        #  column 0 is the basket ID which is uneditable
+        #  column 0 is the species ID which is uneditable
 
         if col == 1:
-            # selected weight - show the numpad to get the new weight
+            #  show the add species dialog
+            self.spcDlg.exec()
 
-            self.numpad.msgLabel.setText("Enter the New Weight (kg)")
-            if not self.numpad.exec():
-                #  user hit cancel
+            if self.spcDlg and not self.spcDlg.okFlag:
+            #  user cancelled action
                 return
-
-            #  numpad forces the user to enter a valid number, but
-            #  they can enter nothing so we need to make sure a number
-            #  was entered.
-            if self.numpad.value != '':
-                #  number entered, update thtable
-                self.weight = self.numpad.value
-                self.setColumnValue(col, self.weight)
+            
+            if (self.spcDlg and self.spcDlg.activeSpcCode and self.spcDlg.activeSpcName):
+                self.activeSpcCode = self.spcDlg.activeSpcCode
+                self.activeSpeciesName = self.spcDlg.activeSpcName
+                self.setColumnValue(1, self.activeSpeciesName)
 
         elif col == 2:
             # selected count
-            currentCount = self.editBasket.currentItem().text()
+            currentCount = self.editSpecies.currentItem().text()
+            self.SampTypeDlg = sampletypeseldlg.sampletypeseldlg(self)
+            self.SampTypeDlg.exec()
 
-            #  present the numpad to get the new count
-            self.numpad.msgLabel.setText("Enter the New Count")
-            if not self.numpad.exec():
-                #  user hit cancel
-                return
+            if self.SampTypeDlg.result[1]:
+                self.type = self.SampTypeDlg.result[1]
+                print('type ' + self.type)
+                self.setColumnValue(2, self.type)
 
-            #  check if the user entered a number
-            if self.numpad.value == '':
-                return
-
-            #  user entered a count and the current type may not be "Count"
-            #  so update the type
-            if currentCount == '-':
-                self.basketType = "Count"
-                self.setColumnValue(3, self.basketType)
-
-            #  now update the count
-            self.count = self.numpad.value
-            self.setColumnValue(col, self.count)
-
-        elif col == 3:
-            # selected basket type
-
-            #  store the old type and count
-            oldType = self.basketType
-            oldCount = self.count
-
-            #  show the sample type selection dialog
-            self.typeDlg.exec()
-            self.basketType = self.typeDlg.basketType
-
-            #  check if it has changed
-            if (self.basketType):
-                if oldType.lower() == self.basketType.lower():
-                    #  same type selected, do nothing more
-                    return
-            
-
-            #  if they selected the count type, display the numpad to get the count
-            if self.basketType.lower() == 'count':
-
-                self.numpad.msgLabel.setText("Enter the Count")
-                if self.numpad.exec() and self.numpad.value != '':
-                    #  user entered a count - update type and count in table
-                    self.basketType = self.typeDlg.basketType
-                    self.count = self.numpad.value
-                else:
-                    #  user bailed on a count so we revert to the old values
-                    self.basketType = oldType
-                    self.count = oldCount
-
-            else:
-                self.count = '-'
-                self.basketType
-
-            self.setColumnValue(col, self.basketType)
-            self.setColumnValue(2, self.count)
-
-        self.editBasket.resizeColumnsToContents()
+        self.editSpecies.resizeColumnsToContents()
 
 
     def getAuto(self, device, val):
@@ -218,7 +169,7 @@ class BasketEditDlg(QDialog, ui_BasketEditDlg.Ui_basketeditDlg):
 
         self.weight = val
         self.setColumnValue(1, self.weight)
-        self.editBasket.resizeColumnsToContents()
+        self.editSpecies.resizeColumnsToContents()
 
         #  play the device sound
         self.sounds[self.devices.index(device)].play()

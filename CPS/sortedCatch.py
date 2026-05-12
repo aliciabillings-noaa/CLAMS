@@ -48,6 +48,7 @@ import ZebraLabelPrinter
 import addspecdlg
 import FEATZebraPrinter
 import measurementDialogs.FEATProjectDlg as project
+import speciesEditDlg
 
 
 class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
@@ -99,6 +100,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.headerFont = QFont("Arial Black", 11, -1, False)
         self.activeSampleType = None
         self.isCurrSubMix = False
+        self.currSelection = ''
 
         #  set the basket precision - basket weights will be rounded to this many
         #  digits after the decimal. Note that currently the database supports
@@ -606,6 +608,8 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.setEnabled(True)
         self.sumTable.setEnabled(True)
         self.commentBtn.setEnabled(True)
+        self.editBtn.setText('Edit Sample')
+        self.currSelection = 'sample'
 
         # default setting for a species is no whole haul
 
@@ -1013,6 +1017,8 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         selectedRow = self.basketTable.currentRow()
         if selectedRow >= 0:
+            self.editBtn.setText('Edit Basket')
+            self.currSelection = 'basket'
             self.selRecord.append(self.basketTable.verticalHeaderItem(selectedRow).text())
             self.selRecord.append(self.basketTable.item(selectedRow,0).text())
             self.selRecord.append(self.basketTable.item(selectedRow,1).text())
@@ -1298,6 +1304,14 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         '''
         self.freeze=True
 
+        #  present the edit dialog
+        if self.currSelection == 'basket':
+            header = ['Basket ID', 'Weight', 'Count', 'Basket Type' ]
+            self.currTable = self.basketTable
+        else:
+            header=['SampleId', 'Species', 'Type']
+            self.currTable = self.speciesList
+
         # turn off count sample type for mixes
         if self.activeSampleType and 'mix' in self.activeSampleType.lower():
             self.validList[self.basketTypes.index('Count')] = 0
@@ -1311,7 +1325,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 getCount=False)
 
         #  get the current basket selection
-        currentRow = self.basketTable.currentRow()
+        currentRow = self.currTable.currentRow()
 
         #  check if something is selected
         if currentRow < 0:
@@ -1323,32 +1337,53 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  build a list with the nasket id, weight, count, and type
         #  first get the ID
-        selRecord = [self.basketTable.verticalHeaderItem(currentRow).text()]
+        selRecord = [self.currTable.verticalHeaderItem(currentRow).text()]
 
         #  then append the weight, count, and type to our list
-        for item in self.basketTable.selectedItems():
-            selRecord.append(item.text())
+        for item in self.currTable.selectedItems():
+            selRecord.append(item.text())  
+        
+        if self.currSelection == 'basket':
+            editDlg = basketeditdlg.BasketEditDlg(header, selRecord, self)
+            editDlg.exec()
 
-        #  present the edit dialog
-        header = ['Basket ID', 'Weight', 'Count', 'Basket Type' ]
-        editDlg = basketeditdlg.BasketEditDlg(header, selRecord, self)
-        editDlg.exec()
-        if not editDlg.okFlag:
+            if editDlg and not editDlg.okFlag:
             #  user cancelled action
-            return
+                return
 
-        # update database - first check if this is a non-count basket type
-        if editDlg.count in ['-', '', 'NULL', 'null']:
-            #  this is not a count basket - set count to NULL
-            editDlg.count = 'NULL'
+            # update database - first check if this is a non-count basket type
+            if editDlg and editDlg.count in ['-', '', 'NULL', 'null']:
+                #  this is not a count basket - set count to NULL
+                editDlg.count = 'NULL'
 
-        # update basket table
-        sql = ("UPDATE baskets SET basket_type='"+editDlg.basketType+"', count = "+
-                editDlg.count+", weight = "+editDlg.weight+"  WHERE ship="+self.ship+
-                " AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
-                self.selRecord[0])
-        self.db.dbExec(sql)
+            # update basket table
+            sql = ("UPDATE baskets SET basket_type='"+editDlg.basketType+"', count = "+
+                    editDlg.count+", weight = "+editDlg.weight+"  WHERE ship="+self.ship+
+                    " AND survey="+self.survey+" AND event_id="+self.activeHaul+
+                    " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
+                    self.selRecord[0])
+            self.db.dbExec(sql)
+        else:
+            editDlg = speciesEditDlg.SpeciesEditDlg(header, selRecord, self)
+            editDlg.exec()
+
+            if editDlg and not editDlg.okFlag:
+            #  user cancelled action
+                return
+
+            if editDlg.activeSpcCode and editDlg.activeSpeciesName:
+                sql = ("update " + self.schema + ".samples set species_code=" +  editDlg.activeSpcCode + " where sample_id=" + selRecord[0])
+                self.db.dbExec(sql)
+
+                rowIdx = self.speciesList.currentRow()
+                self.speciesList.setItem(rowIdx, 0, QTableWidgetItem(editDlg.activeSpeciesName))
+            
+            if editDlg.type:
+                sql = ("update " + self.schema + ".samples set sample_type='" + editDlg.type +  "' where sample_id=" + selRecord[0])
+                self.db.dbExec(sql)
+
+                rowIdx = self.speciesList.currentRow()
+                self.speciesList.setItem(rowIdx, 2, QTableWidgetItem(editDlg.type))
 
         self.freeze=False
 

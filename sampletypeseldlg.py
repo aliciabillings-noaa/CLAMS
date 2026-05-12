@@ -37,6 +37,7 @@
 """
 
 from PyQt6.QtWidgets import *
+from PyQt6.QtCore import *
 from ui import ui_SampleTypeSelDlg
 
 
@@ -50,7 +51,13 @@ class sampletypeseldlg(QDialog, ui_SampleTypeSelDlg.Ui_SampleTypeSelDlg):
 
         self.speciesBtn.clicked.connect(self.getType)
         self.presentBtn.clicked.connect(self.getType)
+        self.noExtrapBtn.clicked.connect(self.getType)
 
+        #  create an instance of QSettings to load fundamental CLAMS settings
+        initSettings = QSettings('clams.ini', QSettings.Format.IniFormat)
+
+        if (initSettings.value('Schema', '') != 'clams2swfsc'):
+            self.noExtrapBtn.hide()
 
     def getType(self):
         """
