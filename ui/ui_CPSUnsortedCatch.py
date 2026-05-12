@@ -241,7 +241,7 @@ class Ui_CPSUnsortedCatch(object):
         CPSUnsortedCatch.setWindowTitle(_translate("CPSUnsortedCatch", "CLAMS Catch"))
         self.haulLabel.setText(_translate("CPSUnsortedCatch", "Event"))
         self.label_10.setText(_translate("CPSUnsortedCatch", "Scientist"))
-        self.label_7.setText(_translate("CPSUnsortedCatch", "Baskets"))
+        self.label_7.setText(_translate("CPSUnsortedCatch", "Unsorted Baskets"))
         item = self.basketTable.horizontalHeaderItem(0)
         item.setText(_translate("CPSUnsortedCatch", "Weight (kg)"))
         item = self.basketTable.horizontalHeaderItem(1)
