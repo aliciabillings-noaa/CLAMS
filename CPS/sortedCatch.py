@@ -161,7 +161,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.editBtn.clicked.connect(self.editTable)
         self.speciesList.itemSelectionChanged.connect(self.getActiveSpc)
         self.speciesList.itemActivated.connect(self.getSpeciesFocus)
-        self.basketTable.itemSelectionChanged.connect(self.getBasketRow)
+        self.basketTable.itemClicked.connect(self.getBasketRow)
         self.commentBtn.setDisabled(True)  # initially disabled
         self.commentBtn.clicked.connect(self.getComment)
         self.unsortedBtn.clicked.connect(self.showUnsorted)

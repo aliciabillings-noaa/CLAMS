@@ -87,7 +87,7 @@ class SpeciesEditDlg(QDialog, ui_SpeciesEditDlg.Ui_speciesEditDlg):
         self.activeSpcCode = ''
 
         # signal/slot connections
-        self.editSpecies.itemSelectionChanged.connect(self.getEdit)
+        self.editSpecies.clicked.connect(self.getEdit)
         self.okBtn.clicked.connect(self.getOK)
         self.cancelBtn.clicked.connect(self.getCancel)
 
