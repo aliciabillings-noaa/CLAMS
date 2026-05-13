@@ -553,7 +553,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         self.basketTable.setEnabled(enabled)
         self.sumTable.setEnabled(enabled)
         self.manualBtn.setEnabled(enabled)
-        self.editBtn.setEnabled(enabled)
+        self.editBtn.setEnabled(True)
 
 
     def checkSampleExists(self, sampID):
@@ -1357,7 +1357,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 editDlg.count = 'NULL'
 
             # update basket table
-            sql = ("UPDATE baskets SET basket_type='"+editDlg.basketType+"', count = "+
+            sql = ("UPDATE " + self.schema + " baskets SET basket_type='"+editDlg.basketType+"', count = "+
                     editDlg.count+", weight = "+editDlg.weight+"  WHERE ship="+self.ship+
                     " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
@@ -1372,7 +1372,12 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 return
 
             if editDlg.activeSpcCode and editDlg.activeSpeciesName:
-                sql = ("update " + self.schema + ".samples set species_code=" +  editDlg.activeSpcCode + " where sample_id=" + selRecord[0])
+                sql = ("update " + self.schema + ".samples set species_code=" +  
+                       editDlg.activeSpcCode + " where sample_id=" + selRecord[0])
+                self.db.dbExec(sql)
+
+                sql = ("update " + self.schema + ".sample_data set parameter_value='" +  
+                       editDlg.nameType + "' where sample_id=" + selRecord[0])
                 self.db.dbExec(sql)
 
                 rowIdx = self.speciesList.currentRow()
@@ -1384,6 +1389,8 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
                 rowIdx = self.speciesList.currentRow()
                 self.speciesList.setItem(rowIdx, 2, QTableWidgetItem(editDlg.type))
+            
+            self.reloadSamplesList()
 
         self.freeze=False
 
@@ -1744,7 +1751,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             commentText = ' '.join(newComment)
 
             #  update the comment in samples
-            sql = ("UPDATE samples SET comments='" + commentText + "' WHERE ship="+self.ship +
+            sql = ("UPDATE " + self.schema + " samples SET comments='" + commentText + "' WHERE ship="+self.ship +
                     " AND survey=" + self.survey + " AND event_id = " + self.activeHaul +
                     " AND sample_id = "+self.activeSampleKey)
             self.db.dbExec(sql)

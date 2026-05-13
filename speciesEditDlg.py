@@ -132,6 +132,7 @@ class SpeciesEditDlg(QDialog, ui_SpeciesEditDlg.Ui_speciesEditDlg):
             if (self.spcDlg and self.spcDlg.activeSpcCode and self.spcDlg.activeSpcName):
                 self.activeSpcCode = self.spcDlg.activeSpcCode
                 self.activeSpeciesName = self.spcDlg.activeSpcName
+                self.nameType = self.spcDlg.nameType
                 self.setColumnValue(1, self.activeSpeciesName)
 
         elif col == 2:
