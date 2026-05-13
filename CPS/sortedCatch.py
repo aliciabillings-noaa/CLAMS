@@ -316,7 +316,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             query = self.db.dbQuery(sql)
             self.parentSamples, = query.first()
 
-        self.spcDlg = cpsAddCatchSpcDlg.cpsAddCatchSpcDlg(self)
+        self.spcDlg = cpsAddCatchSpcDlg.cpsAddCatchSpcDlg('Add', self)
         self.spcDlg.changed.connect(self.addSpecies)
         self.sortingTableKey = self.parentSamples
 

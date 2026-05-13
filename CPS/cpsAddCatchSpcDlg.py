@@ -44,7 +44,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
 
     changed = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, mode, parent=None):
         super(cpsAddCatchSpcDlg, self).__init__(parent)
 
         self.setupUi(self)
@@ -71,6 +71,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.parentSamples = parent.parentSamples
         self.scientist = parent.scientist
         self.isSubMix = False
+        self.mode = mode
 
         #  restore the application state
         self.appSettings = QSettings('CLAMS', 'AddCatchSppDialog')
@@ -104,10 +105,10 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.space.clicked.connect(self.addSpace)
         self.backBtn.clicked.connect(self.clearOneChar)
         self.clearBtn.clicked.connect(self.clearAllChar)
-        self.doneBtn.clicked.connect(self.close)
+        self.doneBtn.clicked.connect(self.cancel)
         self.addBtn.clicked.connect(self.sendSel)
-        self.radio10.toggled[bool].connect(self.getSpcHistory)
-        self.radioFull.toggled[bool].connect(self.clearAllChar)
+        self.radio10.toggled.connect(lambda checked: self.getSpcHistory() if checked else None)
+        self.radioFull.toggled.connect(lambda checked: self.clearAllChar() if checked else None)
         self.inStateWatersBtn.clicked.connect(self.toggleStateWaters)
         self.subMixBtn.setEnabled(False)
 
@@ -132,11 +133,13 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
         self.getSpcHistory()
         self.radio10.setChecked(True)
 
-    def getDigit(self):
+        if self.mode == 'Edit':
+            self.addBtn.setText('Update')
+            self.doneBtn.setText('Cancel')
 
+    def getDigit(self):
         self.chars = self.chars + self.sender().text()
         self.lineEdit.setText(self.chars)
-        self.radioFull.setChecked(True)
 
         self.getList()
 
@@ -164,7 +167,7 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
     @pyqtSlot(str)
     def searchEdited(self, newChars):
         self.chars = newChars
-        self.getList(newChars)
+        self.getList()
 
     def toggleStateWaters(self):
         if (self.inStateWatersBtn.isChecked()):
@@ -314,85 +317,96 @@ class cpsAddCatchSpcDlg(QDialog, ui_CPSAddCatchSpcDlg.Ui_CPSAddCatchSpcDlg):
                         "There's no Mix1 sample for this partition. " +
                         "You need to create it before using the SubMix1", 'info')
                 self.message.exec()
-
+    
+    def cancel(self):
+        """
+        sets the okFlag to false and closes the dialog
+        :return: none
+        """
+        self.okFlag = False
+        self.close()
 
     def sendSel(self):
-        status = self.subMixBtn.isChecked()
-        if status:
-            self.isSubMix = True
-            # Check if submix already exists
-            sql = ("select sample_id from " + self.schema + ".samples where survey=" + self.survey +
-                " AND event_id=" + self.activeHaul + 
-                " AND parent_sample=" + self.parentSamples + 
-                " AND sample_type='SubMix'")
-            query = self.db.dbQuery(sql)
-            hasSubMix, = query.first()
+        if self.mode == 'Edit':
+            self.okFlag = True
+            self.close()
+        else:
+            status = self.subMixBtn.isChecked()
+            if status:
+                self.isSubMix = True
+                # Check if submix already exists
+                sql = ("select sample_id from " + self.schema + ".samples where survey=" + self.survey +
+                    " AND event_id=" + self.activeHaul + 
+                    " AND parent_sample=" + self.parentSamples + 
+                    " AND sample_type='SubMix'")
+                query = self.db.dbQuery(sql)
+                hasSubMix, = query.first()
 
-            # Insert submix if it doesn't already exist
-            if not hasSubMix:
-                sql = ("INSERT INTO " + self.schema + ".samples (ship,survey,event_id,partition,sample_type," +
-                    "species_code,subcategory,parent_sample,scientist) VALUES("+
-                    self.ship +"," + self.survey+"," + self.activeHaul+",'" + self.activePartition+
-                    "','SubMix',3 ,'None', " + self.parentSamples+",'" + self.scientist+"')")
-                self.db.dbExec(sql)
+                # Insert submix if it doesn't already exist
+                if not hasSubMix:
+                    sql = ("INSERT INTO " + self.schema + ".samples (ship,survey,event_id,partition,sample_type," +
+                        "species_code,subcategory,parent_sample,scientist) VALUES("+
+                        self.ship +"," + self.survey+"," + self.activeHaul+",'" + self.activePartition+
+                        "','SubMix',3 ,'None', " + self.parentSamples+",'" + self.scientist+"')")
+                    self.db.dbExec(sql)
 
-        if self.listOrigin == None:
-            return
-
-        # Only need to update the species data table with previous occurrence if it is not a mix
-        if int(self.activeSpcCode) < 99999:
-            if self.previous <= 0:
-                #  ask if we want to add this exotic species we've never encountered
-                self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "We've never seen a "+
-                        self.activeSpcName + ". Are you sure that's right? ", 'choice')
-                if not self.message.exec():
-                    return
-
-                #  we do, update the Previous_Occurrence parameter in the species_data table for this species
-                if self.previous < 0:
-                    #  no Previous_Occurrence parameter in the database for this species, add it
-                    sql = ("INSERT INTO " + self.schema + ".species_data (species_code,subcategory,species_parameter," +
-                            "parameter_value) VALUES (" + self.activeSpcCode + ",'" + self.activeSpcSubcat +
-                            "','Previous_Occurrence','1')")
-                else:
-                    #  Previous_Occurrence parameter is in the database. Update it.
-                    sql = ("UPDATE " + self.schema + ".species_data SET parameter_value='1' WHERE " +
-                            "species_code=" + self.activeSpcCode + " AND subcategory='" +
-                            self.activeSpcSubcat+"' AND species_parameter='Previous_Occurrence'")
-                self.db.dbExec(sql)
-
-        #  set the sample type - first, check if we're adding a mix
-        if self.activeSpcCode in ('100002', '100003', '100004'):
-            #  this is a mix type
-            self.activeSampleType = self.mixtureNames[self.activeSpcCode]
-
-        #  if not, next check if we're enabling the 'Present' sample type
-        elif self.settings['EnablePresentSampleType'] in ['1', 'true', 'True']:
-            #  we are - present the sample type selection dialog
-            self.SampTypeDlg.exec()
-
-            #  check to make sure the user selected something
-            if not self.SampTypeDlg.result[0]:
-                self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
-                    "You must select a sample type when adding a sample to your catch.", 'info')
-                self.message.exec()
+            if self.listOrigin == None:
                 return
 
-            #  set the sample type
-            self.activeSampleType = self.SampTypeDlg.result[1]
-        else:
-            #  if not a mix and Present type is not enabled - the sample type is Species
-            self.activeSampleType = 'Species'
+            # Only need to update the species data table with previous occurrence if it is not a mix
+            if int(self.activeSpcCode) < 99999:
+                if self.previous <= 0:
+                    #  ask if we want to add this exotic species we've never encountered
+                    self.message.setMessage(self.errorIcons[0],self.errorSounds[0], "We've never seen a "+
+                            self.activeSpcName + ". Are you sure that's right? ", 'choice')
+                    if not self.message.exec():
+                        return
 
-        #  emit the changed signal to update parent
-        self.changed.emit()
+                    #  we do, update the Previous_Occurrence parameter in the species_data table for this species
+                    if self.previous < 0:
+                        #  no Previous_Occurrence parameter in the database for this species, add it
+                        sql = ("INSERT INTO " + self.schema + ".species_data (species_code,subcategory,species_parameter," +
+                                "parameter_value) VALUES (" + self.activeSpcCode + ",'" + self.activeSpcSubcat +
+                                "','Previous_Occurrence','1')")
+                    else:
+                        #  Previous_Occurrence parameter is in the database. Update it.
+                        sql = ("UPDATE " + self.schema + ".species_data SET parameter_value='1' WHERE " +
+                                "species_code=" + self.activeSpcCode + " AND subcategory='" +
+                                self.activeSpcSubcat+"' AND species_parameter='Previous_Occurrence'")
+                    self.db.dbExec(sql)
 
-        #  only clear the text box and list if this isn't a history pick
-        if not self.radio10.isChecked():
-            self.clearAllChar()
-        
-        # Reset submix back to false, will be set to true if submix button selected
-        self.isSubMix = False
+            #  set the sample type - first, check if we're adding a mix
+            if self.activeSpcCode in ('100002', '100003', '100004'):
+                #  this is a mix type
+                self.activeSampleType = self.mixtureNames[self.activeSpcCode]
+
+            #  if not, next check if we're enabling the 'Present' sample type
+            elif self.settings['EnablePresentSampleType'] in ['1', 'true', 'True']:
+                #  we are - present the sample type selection dialog
+                self.SampTypeDlg.exec()
+
+                #  check to make sure the user selected something
+                if not self.SampTypeDlg.result[0]:
+                    self.message.setMessage(self.errorIcons[0],self.errorSounds[0],
+                        "You must select a sample type when adding a sample to your catch.", 'info')
+                    self.message.exec()
+                    return
+
+                #  set the sample type
+                self.activeSampleType = self.SampTypeDlg.result[1]
+            else:
+                #  if not a mix and Present type is not enabled - the sample type is Species
+                self.activeSampleType = 'Species'
+
+            #  emit the changed signal to update parent
+            self.changed.emit()
+
+            #  only clear the text box and list if this isn't a history pick
+            if not self.radio10.isChecked():
+                self.clearAllChar()
+            
+            # Reset submix back to false, will be set to true if submix button selected
+            self.isSubMix = False
 
 
     def getSpcHistory(self):

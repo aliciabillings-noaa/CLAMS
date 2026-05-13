@@ -44,7 +44,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 import sampletypeseldlg
 from ui import ui_SpeciesEditDlg
-import CPS.cpsEditSpeciesDlg as cpsEditSpeciesDlg
+import CPS.cpsAddCatchSpcDlg as cpsAddCatchSpcDlg
 
 
 class SpeciesEditDlg(QDialog, ui_SpeciesEditDlg.Ui_speciesEditDlg):
@@ -91,7 +91,7 @@ class SpeciesEditDlg(QDialog, ui_SpeciesEditDlg.Ui_speciesEditDlg):
         self.okBtn.clicked.connect(self.getOK)
         self.cancelBtn.clicked.connect(self.getCancel)
 
-        self.spcDlg = cpsEditSpeciesDlg.cpsEditSpeciesDlg(parent)
+        self.spcDlg = cpsAddCatchSpcDlg.cpsAddCatchSpcDlg('Edit', parent)
 
 
     def setColumnValue(self, col, value):
