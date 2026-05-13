@@ -53,12 +53,6 @@ class sampletypeseldlg(QDialog, ui_SampleTypeSelDlg.Ui_SampleTypeSelDlg):
         self.presentBtn.clicked.connect(self.getType)
         self.noExtrapBtn.clicked.connect(self.getType)
 
-        #  create an instance of QSettings to load fundamental CLAMS settings
-        initSettings = QSettings('clams.ini', QSettings.Format.IniFormat)
-
-        if (initSettings.value('Schema', '') != 'clams2swfsc'):
-            self.noExtrapBtn.hide()
-
     def getType(self):
         """
         sets the result tuple to access from the calling dialog with the variables
