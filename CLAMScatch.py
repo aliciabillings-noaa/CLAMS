@@ -1727,7 +1727,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
             commentText = ' '.join(newComment)
 
             #  update the comment in samples
-            sql = ("UPDATE samples SET comments='" + commentText + "' WHERE ship="+self.ship +
+            sql = ("UPDATE " + self.schema + ".samples SET comments='" + commentText + "' WHERE ship="+self.ship +
                     " AND survey=" + self.survey + " AND event_id = " + self.activeHaul +
                     " AND sample_id = "+self.activeSampleKey)
             self.db.dbExec(sql)

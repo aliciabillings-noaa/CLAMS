@@ -1357,7 +1357,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 editDlg.count = 'NULL'
 
             # update basket table
-            sql = ("UPDATE " + self.schema + " baskets SET basket_type='"+editDlg.basketType+"', count = "+
+            sql = ("UPDATE " + self.schema + ".baskets SET basket_type='"+editDlg.basketType+"', count = "+
                     editDlg.count+", weight = "+editDlg.weight+"  WHERE ship="+self.ship+
                     " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                     " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
