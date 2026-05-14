@@ -172,7 +172,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         # Querying application_configuration table to set MaxMinDev from 
         # sampleThreshold value for sub-sample check
-        sql = "SELECT parameter_value from application_configuration " \
+        sql = "SELECT parameter_value FROM " + self.schema + ".application_configuration " \
               "where parameter='SubSampleCheckThreshold'"
         query = self.db.dbQuery(sql)
         threshold, = query.first()
