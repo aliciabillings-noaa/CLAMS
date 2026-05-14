@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Edit Basket</string>
+   <string>Edit Species</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <item>
