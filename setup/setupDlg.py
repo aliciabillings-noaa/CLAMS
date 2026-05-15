@@ -36,6 +36,7 @@ from ui import ui_SetupDlg
 import setup.table.personnelDlg as personnelDlg
 import setup.table.workstationDlg as workstationDlg
 import setup.table.devicesDlg as devicesDlg
+import setup.table.speciesDlg as speciesDlg
 
 class setupDlg(QDialog, ui_SetupDlg.Ui_SetupDlg):
 
@@ -53,6 +54,7 @@ class setupDlg(QDialog, ui_SetupDlg.Ui_SetupDlg):
         self.editPersonBtn.clicked.connect(self.editPersonClicked)
         self.editWorkstationBtn.clicked.connect(self.editWorkstationClicked)
         self.editDevicesBtn.clicked.connect(self.devicesClicked)
+        self.editSpeciesBtn.clicked.connect(self.editSpeciesClicked)
         self.doneBtn.clicked.connect(self.doneClicked)
 
     def editPersonClicked(self):
@@ -84,6 +86,18 @@ class setupDlg(QDialog, ui_SetupDlg.Ui_SetupDlg):
           open workstation dialog
         """
         dialog = devicesDlg.devicesDlg(self.db, parent=self)
+        ok = dialog.exec()
+
+        if ok:
+            self.accept()
+        else:
+            self.show()
+    
+    def editSpeciesClicked(self):
+        """
+          open species dialog
+        """
+        dialog = speciesDlg.speciesDlg(self.db, parent=self)
         ok = dialog.exec()
 
         if ok:

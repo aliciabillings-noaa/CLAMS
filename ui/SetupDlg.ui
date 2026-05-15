@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>399</width>
-    <height>520</height>
+    <width>395</width>
+    <height>511</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -84,7 +84,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="editProtocolsBtn">
+     <widget class="QPushButton" name="editSpeciesBtn">
       <property name="font">
        <font>
         <family>Arial Black</family>
@@ -93,7 +93,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Edit Protocols</string>
+       <string>Edit Species</string>
       </property>
      </widget>
     </item>

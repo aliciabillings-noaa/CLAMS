@@ -77,7 +77,7 @@ class Ui_speciesEditDlg(object):
 
     def retranslateUi(self, speciesEditDlg):
         _translate = QtCore.QCoreApplication.translate
-        speciesEditDlg.setWindowTitle(_translate("speciesEditDlg", "Edit Basket"))
+        speciesEditDlg.setWindowTitle(_translate("speciesEditDlg", "Edit Species"))
         self.label.setText(_translate("speciesEditDlg", "Select field to edit ..."))
         self.cancelBtn.setText(_translate("speciesEditDlg", "Cancel"))
         self.okBtn.setText(_translate("speciesEditDlg", "OK"))
