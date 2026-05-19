@@ -1646,15 +1646,19 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     proto_sql = ("SELECT protocol_name, species_code FROM " +
                                  self.schema + ".protocol_map WHERE species_code=" + spCode)
                     proto_query = self.db.dbQuery(proto_sql)
-                    proto_list = list(proto_query)
                     sp_protos = ['BagNTag']
-                    for protocol, sp_code in proto_list:
-                        # for protocols in group collection, highlight them in yellow
-                        if (protocol in ['Gleiber_02', 'Field_01'] and len(proto_list) == 1):
-                            self.speciesList.item(nSamples, 0).setBackground(QColor(255, 222, 128))
-                        else:
-                            sp_protos.append(protocol)
+                    # group collections to highlight in green
+                    green_protos = ['Eulachon', 'Salmon','Hake','Pacific Sardine','Mackerels',
+                                 'Northern Anchovy','Small_Pelagics']
+                    for protocol, sp_code in proto_query:
+                        # for protocols in group collection, highlight them in green
+                        if (protocol in green_protos):
+                            # Green
                             self.speciesList.item(nSamples, 0).setBackground(QColor(127, 255, 212))
+                            break
+                        else:
+                            # Yellow
+                            self.speciesList.item(nSamples, 0).setBackground(QColor(255, 222, 128))
                     self.speciesProtos[spCode] = sp_protos
 
             nSamples += 1
