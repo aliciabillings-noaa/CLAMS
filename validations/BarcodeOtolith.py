@@ -14,11 +14,10 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-.. module:: BarcodeDuplicate
+.. module:: BarcodeOtolith
 
-    :synopsis: BarcodeDuplicate is a validation that queries the
-               database for the specified barcode value. If found,
-               it returns False with an informational string.
+    :synopsis: BarcodeOtolith determines whether the otolith barcode starts
+    with a capital A or G, then contains only numbers.
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
@@ -38,10 +37,11 @@
 """
 
 from PyQt6.QtCore import *
+import re
 
-class BarcodeDuplicate(QObject):
+class BarcodeOtolith(QObject):
 
-    def __init__(self, db, schema, speciesCode, subcategory='None'):
+    def __init__(self, db, speciesCode,  subcategory='None'):
         '''
             The init methods of CLAMS validations are run whenever a new protocol
             or species is selected in the specimen module. Any setup that the
@@ -54,27 +54,18 @@ class BarcodeDuplicate(QObject):
             If you need to pass additional data to a validation, you should
             add this data to the species_data table and query it out here in
             the init method (see LengthRange.py for example.)
-
         '''
 
         #  call the superclass init
         QObject.__init__(self, None)
 
-        #  store validation parameters
-        self.db = db
-        self.schema = schema
-        self.speciesCode = speciesCode
-        self.subcategory = subcategory
 
-        #  any additional validation setup goes here
-
-
-    def validate(self, currentValue, measureTypes, values):
+    def validate(self,  currentValue,  measurements,  values):
         '''
             The validate method is called when a measurement is made for a specific
             measurement type. Each measurement can have from 0-N validations. When
-            a specific measurement is made, say "barcode", all validations
-            assigned to the barcode measurement will have their validate methods
+            a specific measurement is made, say "alpha_barcode", all validations
+            assigned to the alpha_barcode measurement will have their validate methods
             called. Each one should verify that the currentValue is valid based
             on the logic of each particular validation.
 
@@ -84,39 +75,28 @@ class BarcodeDuplicate(QObject):
                 values - a list of the stored values of those measurements.
                     In order of the measurements.
 
-            For example, this validation is for the barcode measurement and when
-            a barcode value is measured, it will check to see if that value (as
-            currentValue) is already in the database.
+            This validation tests whether the barcode value starts with a letter
+            character followed by one or more numeric digits.
 
             This is a fairly simple example, but the validation can be much
             more complex (but usually don't need to be.) Also, remember that
             these run each time a measurement configured for the validation
             runs so you don't want them to take too long to execute as it
             will slow data collection.
-
         '''
 
-        #  see if this barcode exists for any survey in the database.
-        sql = ("SELECT device_id FROM "+ self.schema + ".measurements WHERE measurement_type in" +
-                "('dna_barcode', 'barcode', 'alpha_barcode','stomach_barcode') AND measurement_value ='" + currentValue + "'")
-        query = self.db.dbQuery(sql)
-        isbarCode,  = query.first()
-        
-        if isbarCode:
-            #  This barcode exists in the database
-            result = (False, "This barcode number already exists in the database. " +
-                    "Do you want to rescan?")
-        else:
-            # barcode not found so we're good to go
+        if re.search(r'^[AG]\d+$', currentValue):
+            #  barcode is o.k.
             result = (True, '')
+        else:
+            #  barcode failed - not properly formatted
+            result = (False, 'Otolith barcode must start with an A or G character, followed only by numeric digits')
 
         return result
 
-
 '''
-The validationTest class enables testing of validations by creating a database
-connection, creating an instance of the validation object, and then executing its
-validate method.
+The validationTest class enables testing of validations by creating an instance of the
+validation object, and then executing its validate method.
 
 This class will need to be customized a bit for each individual validation.
 '''
@@ -136,17 +116,16 @@ class validationTest(QObject):
 
 
         def runTest(self):
-            '''runTest attempts to create a database connection by presenting a dialog
-            requesting credentials. If successful, it instantiates the validation and
-            runs the validate method of said validation. You should set up any
-            specific parameters required for this validation's test here.
+            '''runTest instantiates the validation and runs the validate
+             method of said validation. You should set up any specific
+             parameters required for this validation's test here.
             '''
 
             #  set up the required parameters for this test
             speciesCode = 21740
             subcategory = 'None'
-            currentValue = '123456'
-            measureTypes = ['barcode']
+            currentValue = 'A123456'
+            measureTypes = []
             values = [None]
 
             #  create a connection dialog to get connection params - by default
@@ -154,23 +133,22 @@ class validationTest(QObject):
             #  attribute.
             conenctionDialog = connectdlg.ConnectDlg(None, None, None)
             ok = conenctionDialog.exec()
+            db = conenctionDialog.db
 
-            #  if we've connected to the database, create and run the validation
-            if ok:
-                db = conenctionDialog.db
+            #  create the validation using the db connection and specified species
+            #  and subcategory.
+            self.validation = BarcodeAlphaNumeric(db, speciesCode, subcategory)
 
-                #  create the validation using the db connection and specified species
-                #  and subcategory.
-                self.validation = BarcodeDuplicate(db, speciesCode, subcategory)
+            #  execute the validation
+            ok = self.validation.validate(currentValue, measureTypes, values)
 
-                #  execute the validation
-                ok = self.validation.validate(currentValue, measureTypes, values)
-
-                #  print the results
-                print(ok)
-
+            #  print the results
+            result = ok[0]
+            message = ok[1]
+            if result:
+                print('successfully converted to an int value')
             else:
-                print("Unable to connect to the database")
+                print(message)
 
             #  exit the application
             QApplication.instance().quit()
@@ -196,5 +174,3 @@ if __name__ == '__main__':
 
     #  and start the application event loop
     app.exec()
-
-

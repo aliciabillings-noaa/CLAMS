@@ -658,7 +658,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
             #  check if this is a manually entered value or from a device
             if (self.manualFlag):
-                if (self.measureType[i] == 'alpha_barcode'):
+                if (self.measureType[i] == 'alpha_barcode' or self.measureType[i] == 'stomach_barcode'):
                     #  this value is entered manually - display the swfsc number pad
                     keyDialog = swfscbarcodenumpad.SWFSCBarcodeNumpad(self.values[i], self)
                     keyDialog.msgLabel.setText("Enter " + self.measureType[i])

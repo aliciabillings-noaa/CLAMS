@@ -14,10 +14,10 @@
 #  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
 
 """
-.. module:: BarcodeAlphaNumeric
+.. module:: BarcodeStomach
 
-    :synopsis: BarcodeAlphaNumeric determines whether barcode starts
-    with a letter, then contains only numbers.
+    :synopsis: BarcodeStomach determines whether barcode starts
+    with a capital S, then contains only numbers.
 
 | Developed by:  Rick Towler   <rick.towler@noaa.gov>
 |                Kresimir Williams   <kresimir.williams@noaa.gov>
@@ -39,7 +39,7 @@
 from PyQt6.QtCore import *
 import re
 
-class BarcodeAlphaNumeric(QObject):
+class BarcodeStomach(QObject):
 
     def __init__(self, db, speciesCode,  subcategory='None'):
         '''
@@ -85,12 +85,12 @@ class BarcodeAlphaNumeric(QObject):
             will slow data collection.
         '''
 
-        if re.search(r'^[a-zA-Z]\d+$', currentValue):
+        if re.search(r'^[S]\d+$', currentValue):
             #  barcode is o.k.
             result = (True, '')
         else:
             #  barcode failed - not properly formatted
-            result = (False, 'Alphanumeric barcode must start with an alpha character, followed only by numeric digits')
+            result = (False, 'Stomach barcode must start with an S character, followed only by numeric digits')
 
         return result
 
