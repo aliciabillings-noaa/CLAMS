@@ -19,7 +19,7 @@ class speciesDlg(BaseTableDlg, ui_SpeciesDlg.Ui_SpeciesDlg):
     # --- Implement Hooks ---
 
     def get_select_sql(self):
-        return (f"SELECT {self.schema}.species_code, parent_taxon, scientific_name, common_name "
+        return (f"SELECT species_code, parent_taxon, scientific_name, common_name "
                f"FROM {self.schema}.species ORDER BY species")
 
     def fill_row(self, row_idx, row_data):
