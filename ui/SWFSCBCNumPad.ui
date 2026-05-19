@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>517</width>
-    <height>508</height>
+    <height>572</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -363,7 +363,7 @@
        </widget>
       </item>
       <item row="0" column="2">
-       <widget class="QPushButton" name="pBtnS">
+       <widget class="QPushButton" name="pBtnU">
         <property name="font">
          <font>
           <family>Arial Black</family>
@@ -373,7 +373,7 @@
          </font>
         </property>
         <property name="text">
-         <string>S</string>
+         <string>U</string>
         </property>
        </widget>
       </item>

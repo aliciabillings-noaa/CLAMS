@@ -85,12 +85,12 @@ class BarcodeStomach(QObject):
             will slow data collection.
         '''
 
-        if re.search(r'^[S]\d+$', currentValue):
+        if re.search(r'^[U]\d+$', currentValue):
             #  barcode is o.k.
             result = (True, '')
         else:
             #  barcode failed - not properly formatted
-            result = (False, 'Stomach barcode must start with an S character, followed only by numeric digits')
+            result = (False, 'Stomach barcode must start with an U character, followed only by numeric digits')
 
         return result
 
