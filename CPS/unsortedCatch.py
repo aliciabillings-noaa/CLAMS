@@ -795,13 +795,11 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
     
     def closeWindow(self):
         if self.hasSortedBaskets():
-            self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
             self.close()
     
     def showCatch(self):
         #  show the catch form
         if self.hasSortedBaskets():
-            self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
             self.close()
             catchWindow = sortedCatch.sortedCatch(self)
             catchWindow.exec()

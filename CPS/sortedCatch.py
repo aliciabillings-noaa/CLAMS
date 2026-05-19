@@ -49,6 +49,7 @@ import addspecdlg
 import FEATZebraPrinter
 import measurementDialogs.FEATProjectDlg as project
 import speciesEditDlg
+import CPS.unsortedCatch as unsortedCatch
 
 
 class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
@@ -336,11 +337,9 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #self.updateParentKeys()
     
     def closeWindow(self):
-        self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
         self.close()
 
     def showUnsorted(self):
-        self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
         self.close()
         unsorted = unsortedCatch.unsortedCatch(self)
         unsorted.exec()
