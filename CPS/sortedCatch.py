@@ -1651,6 +1651,9 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     green_protos = ['Eulachon', 'Salmon','Hake','Pacific Sardine','Mackerels',
                                  'Northern Anchovy','Small_Pelagics']
                     for protocol, sp_code in proto_query:
+                        # Add the protocol to our list for the loop
+                        sp_protos.append(protocol)
+                        
                         # for protocols in group collection, highlight them in green
                         if (protocol in green_protos):
                             # Green

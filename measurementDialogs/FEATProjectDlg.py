@@ -107,6 +107,10 @@ class FEATProjectDlg(QDialog):
         if self.activeSpcCode not in ['100000', '100001', '100002', '100003', '100004', '100005']:
             if self.protos:
                 sp_protos = self.protos[self.activeSpcCode]
+                
+                # --> NEW: Create a set to track labels we have already made buttons for
+                seen_labels = set() 
+                
                 # get the label and check if there is a specimen_collection for each protocol
                 for proto in sp_protos:
                     proto_sql = ("SELECT label FROM "
@@ -114,7 +118,11 @@ class FEATProjectDlg(QDialog):
                                  "' AND measurement_type='group_collection'")
                     proto_query = self.db.dbQuery(proto_sql)
                     label, = proto_query.first()
-                    if label:
+                    
+                    # --> UPDATED: Check if label exists AND hasn't been seen yet
+                    if label and label not in seen_labels:
+                        seen_labels.add(label) # --> NEW: Add the label to our tracking set
+                        
                         btn = QPushButton()
                         btn.setStyleSheet("color: rgb(0, 0, 127); font: 30pt 'Calibri';")
                         btn.setText(label)
@@ -154,7 +162,7 @@ class FEATProjectDlg(QDialog):
         self.project_name, = proto_query.first()
 
         # check if sample already taken
-        dup_sql = ("SELECT parameter_value FROM " + self.schema + " .sample_data WHERE ship=" + self.ship
+        dup_sql = ("SELECT parameter_value FROM " + self.schema + ".sample_data WHERE ship=" + self.ship
                    + " AND survey=" + self.survey + " AND event_id=" + self.activeHaul + " AND sample_id="
                    + self.activeSampleKey + " AND sample_parameter='sample_collection' AND parameter_value LIKE '"
                    + self.project_name + "%'")
