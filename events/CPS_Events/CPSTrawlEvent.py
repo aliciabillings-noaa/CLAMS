@@ -679,9 +679,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                      ".event_data (ship, survey, event_id, partition, event_parameter, parameter_value) "
                      "VALUES (" + self.ship + ", " + self.survey + ", " + self.activeEvent + ", 'MainTrawl', '"
                      + paramName + "', '" + self.cur_time + "')")
-            event_query = self.db.dbQuery(event_sql)
-            if not event_query:
-                return
+            self.db.dbExec(event_sql)
 
         self.buttons[ind].setPalette(self.green)
         self.dataTable.setItem(ind, 0, QTableWidgetItem(paramName))
@@ -849,14 +847,14 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
         if Events.NetOnDeck.name in self.button_order and isValid:
             # stop recording
             self.recording = False
+            self.run_scs_avgs()
             # set up the finish dialog
             done = donedlg.DoneDlg(self)
             # display the dialog
             result = done.exec()
 
             # if not cancelled, operation is complete
-            if result == QDialog.DialogCode.Accepted:
-                self.run_scs_avgs()
+            if result == QDialog.DialogCode.Accepted:  
                 self.accept()
    
     def get_net_dims(self):
@@ -1042,7 +1040,7 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                                               "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
                                               + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
                                               + str(dev_avg) + "')")
-                                self.db.dbQuery(insert_sql)
+                                self.db.dbExec(insert_sql)
                         except:
                             pass
                 else:
@@ -1071,5 +1069,5 @@ class Event(QDialog, ui_CPSTrawlEvent.Ui_CPSTrawlEvent):
                                           "parameter_value) VALUES (" + self.ship + ", " + self.survey + ", "
                                           + self.activeEvent + ", 'MainTrawl', '" + event_param + "', '"
                                           + str(stream_vals[0]) + "')")
-                            self.db.dbQuery(insert_sql)
+                            self.db.dbExec(insert_sql)
 
