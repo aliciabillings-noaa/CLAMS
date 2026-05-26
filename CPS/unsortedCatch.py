@@ -137,6 +137,7 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
         self.message = messagedlg.MessageDlg(self)
         self.numpad = numpad.NumPad(self)
         self.typeDlg = typeseldialog.TypeSelDialog(self)
+        self.typeDlg.buttonSetup(self.validList, self.basketTypes)
 
         #  connect signals and slots
         self.manualBtn.clicked.connect(self.getManual)
@@ -338,7 +339,6 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
 
         '''
         #  display the basket type dialog
-        self.typeDlg.buttonSetup(self.validList, self.basketTypes)
         if self.typeDlg.exec():
             self.basketType = self.typeDlg.basketType
         else:

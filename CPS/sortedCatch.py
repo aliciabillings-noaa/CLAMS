@@ -641,10 +641,14 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         speciesName = self.speciesList.item(self.speciesList.currentRow(), 0).text()
         parentSample = self.speciesList.item(self.speciesList.currentRow(), 1).text()
 
+        # turn off count sample type when sample is a submix
         if parentSample == 'SubMix':
-            self.isCurrSubMix = True
+            self.validList[self.basketTypes.index('Count')] = 1
         else:
-            self.isCurrSubMix = False
+            self.validList[self.basketTypes.index('Count')] = 0
+
+        #  display the basket type dialog
+        self.typeDlg.buttonSetup(self.validList, self.basketTypes)
 
         #  display the dialog for confirming active species - this was introduced
         #  after it was discovered that if you select one item, then roll your
@@ -856,14 +860,6 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         the basket is a measure, count, or toss basket.
 
         '''
-        # turn off count sample type when sample is a submix
-        if self.isCurrSubMix:
-            self.validList[self.basketTypes.index('Count')] = 1
-        else:
-            self.validList[self.basketTypes.index('Count')] = 0
-
-        #  display the basket type dialog
-        self.typeDlg.buttonSetup(self.validList, self.basketTypes)
         if self.typeDlg.exec():
             self.basketType = self.typeDlg.basketType
             self.count = self.typeDlg.count
