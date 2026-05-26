@@ -1655,10 +1655,10 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                         sp_protos.append(protocol)
                         
                         # for protocols in group collection, highlight them in green
-                        if (protocol in green_protos):
+                        if protocol in green_protos:
                             # Green
                             self.speciesList.item(nSamples, 0).setBackground(QColor(127, 255, 212))
-                            break
+                            # break
                         else:
                             # Yellow
                             self.speciesList.item(nSamples, 0).setBackground(QColor(255, 222, 128))
