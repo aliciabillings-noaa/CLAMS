@@ -90,7 +90,7 @@ class BarcodeOtolith(QObject):
             result = (True, '')
         else:
             #  barcode failed - not properly formatted
-            result = (False, 'Otolith barcode must start with an A or G character, followed only by numeric digits')
+            result = (False, 'Otolith barcode must start with an A or G character, followed only by numeric digits. Does this bother you?')
 
         return result
 
@@ -137,7 +137,7 @@ class validationTest(QObject):
 
             #  create the validation using the db connection and specified species
             #  and subcategory.
-            self.validation = BarcodeAlphaNumeric(db, speciesCode, subcategory)
+            self.validation = BarcodeOtolith(db, speciesCode, subcategory)
 
             #  execute the validation
             ok = self.validation.validate(currentValue, measureTypes, values)

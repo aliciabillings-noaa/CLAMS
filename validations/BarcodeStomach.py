@@ -90,7 +90,7 @@ class BarcodeStomach(QObject):
             result = (True, '')
         else:
             #  barcode failed - not properly formatted
-            result = (False, 'Stomach barcode must start with an U character, followed only by numeric digits')
+            result = (False, 'Stomach barcode must start with an U character, followed only by numeric digits. Does this bother you?')
 
         return result
 
@@ -137,7 +137,7 @@ class validationTest(QObject):
 
             #  create the validation using the db connection and specified species
             #  and subcategory.
-            self.validation = BarcodeAlphaNumeric(db, speciesCode, subcategory)
+            self.validation = BarcodeStomach(db, speciesCode, subcategory)
 
             #  execute the validation
             ok = self.validation.validate(currentValue, measureTypes, values)
