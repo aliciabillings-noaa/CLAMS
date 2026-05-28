@@ -153,7 +153,8 @@ class SWFSCBarcodeNumpad(QDialog, ui_SWFSCBCNumPad.Ui_SWFSCBCNumPad):
         #  TO VALIDATE SERIAL/NETWORK INPUT TOO
         #
         #
-        if len(self.dispEdit.toPlainText()) == 12 and re.search(r'^.\d+$', self.dispEdit.toPlainText()):
+        if re.search(r'^.\d+$', self.dispEdit.toPlainText()):
+        #if len(self.dispEdit.toPlainText()) == 12 and re.search(r'^.\d+$', self.dispEdit.toPlainText()):
             self.done(1)
         else:
             self.message.setMessage(self.errorIcons[2],self.errorSounds[2], "Alpha Barcode must start with A, G, or U followed only by numbers, and must be 12 characters long", 'info')
