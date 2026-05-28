@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'SampleTypeSelDlg.ui'
+# Form implementation generated from reading ui file 'C:\CLAMS_WPy64-31260_Deploy\CLAMS\ui\SampleTypeSelDlg.ui'
 #
 # Created by: PyQt6 UI code generator 6.8.0
 #
@@ -54,6 +54,11 @@ class Ui_SampleTypeSelDlg(object):
         self.presentBtn.setObjectName("presentBtn")
         self.verticalLayout.addWidget(self.presentBtn)
         self.noExtrapBtn = QtWidgets.QPushButton(parent=SampleTypeSelDlg)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.noExtrapBtn.sizePolicy().hasHeightForWidth())
+        self.noExtrapBtn.setSizePolicy(sizePolicy)
         self.noExtrapBtn.setMinimumSize(QtCore.QSize(0, 50))
         font = QtGui.QFont()
         font.setFamily("Arial Black")
@@ -74,13 +79,3 @@ class Ui_SampleTypeSelDlg(object):
         self.speciesBtn.setText(_translate("SampleTypeSelDlg", "Species"))
         self.presentBtn.setText(_translate("SampleTypeSelDlg", "Present"))
         self.noExtrapBtn.setText(_translate("SampleTypeSelDlg", "NoExtrapolation"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    SampleTypeSelDlg = QtWidgets.QDialog()
-    ui = Ui_SampleTypeSelDlg()
-    ui.setupUi(SampleTypeSelDlg)
-    SampleTypeSelDlg.show()
-    sys.exit(app.exec())
