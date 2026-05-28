@@ -61,7 +61,8 @@ class FrozenYesNoDlg(QDialog, ui_YesNoDlg.Ui_YesNoDlg):
         self.noBtn.clicked.connect(self.getResponse)
 
         #  set the caption
-        self.setCaption('Are you freezing fish?')
+        self.setCaption('Are you freezing fish?\n' \
+        'For Eulachon, only freeze fish caugh in California or Canada')
 
     def setup(self, parent):
         """
