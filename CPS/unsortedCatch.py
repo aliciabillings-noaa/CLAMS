@@ -794,12 +794,21 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
             return True
     
     def closeWindow(self):
+        """
+        Disconnect signals when the window is closed to prevent ghost 
+        triggers from the shared sensorMonitor.
+        """
+        try:
+            self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
+        except TypeError:
+            # Catch the error just in case the signal was already disconnected
+            pass
         if self.hasSortedBaskets():
             self.close()
     
     def showCatch(self):
         #  show the catch form
         if self.hasSortedBaskets():
-            self.close()
+            self.closeWindow()
             catchWindow = sortedCatch.sortedCatch(self)
             catchWindow.exec()

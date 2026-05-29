@@ -337,10 +337,20 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         #self.updateParentKeys()
     
     def closeWindow(self):
+        """
+        Disconnect signals when the window is closed to prevent ghost 
+        triggers from the shared sensorMonitor.
+        """
+        try:
+            self.sensorMonitor.SensorDataReceived.disconnect(self.getAuto)
+        except TypeError:
+            # Catch the error just in case the signal was already disconnected
+            pass
         self.close()
 
+
     def showUnsorted(self):
-        self.close()
+        self.closeWindow()
         unsorted = unsortedCatch.unsortedCatch(self)
         unsorted.exec()
 
