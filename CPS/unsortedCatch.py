@@ -674,7 +674,7 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
 
 
         # update basket table
-        sql = ("UPDATE baskets SET basket_type='"+editDlg.basketType+"', weight = "+
+        sql = ("UPDATE " + self.schema + ".baskets SET basket_type='"+editDlg.basketType+"', weight = "+
                 editDlg.weight+"  WHERE ship="+self.ship+
                 " AND survey="+self.survey+" AND event_id="+self.activeHaul+
                 " AND sample_id = "+self.activeSampleKey+" AND basket_id = "+
@@ -706,7 +706,7 @@ class unsortedCatch(QDialog, ui_CPSUnsortedCatch.Ui_CPSUnsortedCatch):
             commentText = ' '.join(newComment)
 
             #  update the comment in samples
-            sql = ("UPDATE samples SET comments='" + commentText + "' WHERE ship="+self.ship +
+            sql = ("UPDATE " + self.schema + ".samples SET comments='" + commentText + "' WHERE ship="+self.ship +
                     " AND survey=" + self.survey + " AND event_id = " + self.activeHaul +
                     " AND sample_id = "+self.activeSampleKey)
             self.db.dbExec(sql)
