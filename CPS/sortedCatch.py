@@ -614,6 +614,7 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         '''getActiveSpc is called when the user selects a species from the species list.
 
         '''
+        print('get active species')
         self.basketTable.setEnabled(True)
         self.sumTable.setEnabled(True)
         self.commentBtn.setEnabled(True)

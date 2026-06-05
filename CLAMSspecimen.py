@@ -1851,7 +1851,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             #  to query all of the length measurements regardless of their name. First we build
             #  a list of all length types.
             len_list = []
-            sql = ("SELECT measurement_type FROM measurement_types WHERE " +
+            sql = ("SELECT measurement_type FROM " + self.schema + ".measurement_types WHERE " +
                     "is_length=1")
             query = self.db.dbQuery(sql)
             for type, in query:

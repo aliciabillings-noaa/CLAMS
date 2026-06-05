@@ -94,7 +94,7 @@ class DeviceSetupDlg(QDialog, ui_DeviceSetupDlg.Ui_deviceSetupDlg):
     def getDevices(self):
 
         # get devices
-        query = QtSql.QSqlQuery("  SELECT DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME FROM DEVICE, MEASUREMENT_SETUP  "+ 
+        query = QtSql.QSqlQuery("  SELECT DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME FROM " + self.schema + ".DEVICE, MEASUREMENT_SETUP  "+ 
             "WHERE MEASUREMENT_SETUP.DEVICE_ID = DEVICE.DEVICE_ID  and "+ 
             " MEASUREMENT_SETUP.WORKSTATION_ID = "+self.workStation+"  AND MEASUREMENT_SETUP.DEVICE_INTERFACE='Serial'"+
             "GROUP BY DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME")
@@ -156,7 +156,7 @@ class DeviceSetupDlg(QDialog, ui_DeviceSetupDlg.Ui_deviceSetupDlg):
         
         availableDevices=[]
         availableDeviceIds=[]
-        query = QtSql.QSqlQuery("  SELECT DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME FROM DEVICE, MEASUREMENT_SETUP  "+ 
+        query = QtSql.QSqlQuery("  SELECT DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME FROM " + self.schema + ".DEVICE, MEASUREMENT_SETUP  "+ 
             "WHERE MEASUREMENT_SETUP.DEVICE_ID = DEVICE.DEVICE_ID  and "+ 
             "  MEASUREMENT_SETUP.DEVICE_INTERFACE='Serial'"+
             "GROUP BY DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME")
@@ -182,7 +182,7 @@ class DeviceSetupDlg(QDialog, ui_DeviceSetupDlg.Ui_deviceSetupDlg):
         
         
         availableMeasurements=[]
-        query = QtSql.QSqlQuery("  SELECT measurement_types.measurement_type FROM measurement_types  "+ 
+        query = QtSql.QSqlQuery("  SELECT measurement_types.measurement_type FROM " + self.schema + ".measurement_types  "+ 
             "WHERE measurement_types.description = 'Serial' ORDER BY measurement_types.measurement_type")
         while query.next(): 
             availableMeasurements.append(query.value(0).toString())
@@ -202,7 +202,7 @@ class DeviceSetupDlg(QDialog, ui_DeviceSetupDlg.Ui_deviceSetupDlg):
         """
         currentDevices=[]
         currentDeviceIds=[]
-        query = QtSql.QSqlQuery("  SELECT DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME FROM DEVICE, MEASUREMENT_SETUP  "+ 
+        query = QtSql.QSqlQuery("  SELECT DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME FROM " + self.schema + ".DEVICE, " + self.schema + ".MEASUREMENT_SETUP  "+ 
             "WHERE MEASUREMENT_SETUP.DEVICE_ID = DEVICE.DEVICE_ID  and MEASUREMENT_SETUP.WORKSTATION_ID = "+self.workStation+" AND "+ 
             "  MEASUREMENT_SETUP.DEVICE_INTERFACE='Serial'"+
             "GROUP BY DEVICE.DEVICE_ID, DEVICE.DEVICE_NAME")
