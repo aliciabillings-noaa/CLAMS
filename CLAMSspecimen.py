@@ -1758,7 +1758,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND specimen_id = " +
                 self.specimenKey)
         query = self.db.dbQuery(sql)
-        print(self.measureType)
+
         for type, value in query:
             #  now try to get the index into our measurements array for this
             #  measurement type. This will work for every measurement *except*
