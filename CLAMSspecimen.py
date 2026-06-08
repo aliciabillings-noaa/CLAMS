@@ -978,7 +978,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     other_types = "'stomach_collect', 'stom_cont_1', 'stom_cont_2', 'stom_cont_3', 'stom_vol_1', " \
                                   "'stom_vol_2', 'stom_vol_3', 'stom_overall_wt'"
                 elif 'gonad_collection' in self.values[i]:
-                    other_types = "'gonad_weight'"
+                    other_types = "'gonad_weight', 'gonad_collect'"
                 elif 'luck_meas' in self.values[i]:
                     other_types = "'gonad_rna', 'liver_rna', 'liver_taken'"
 
@@ -1772,7 +1772,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 if type in self.lengthTypes:
                     ind = self.measureType.index('length')
                 # added for nwfsc 6/4/26 - some dialogs return multiple values so catch that here
-                elif type in ['stomach_collect']:
+                elif type in ['stomach_collect', 'gonad_collect']:
                     continue
                 else:
                     #  huh. This shouldn't happen....
