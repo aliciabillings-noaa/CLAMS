@@ -805,11 +805,16 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             #  process the result
             result = current_dialog.result
 
-            #  check if we got a value from the dialog
-            if result[0]:
-                val = result[1]
+            # updated 6/3/26 to check if return is a dict object
+            if isinstance(result, dict):
+                if list(result.items())[0][1]:
+                    val = result
             else:
-                return
+                #  check if we got a value from the dialog
+                if result[0]:
+                    val = result[1]
+                else:
+                    return
         else:
             #  check if this is a manually entered value or from a device
             if self.manualFlag:
@@ -861,7 +866,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             valObj = valObj(self.db, self.schema, self.activeSpcCode)
             # perform the validation
             result = valObj.validate(val, self.measureType, self.values)
-            if not result[0] and not result[0] == None:
+            if not result[0] and not result[0] is None:
                 # validation failed - ask if user wants to redo or override
                 self.message.setMessage(self.errorIcons[1],self.errorSounds[1], result[1], 'choice')
                 if self.message.exec():
@@ -949,7 +954,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         '''
 
         #  check if this is the first measurement for this specimen
-        if (self.specimenKey == None):
+        if self.specimenKey is None:
             # first measurement - get a specimen key
             self.getNewSpecimen()
 
@@ -963,12 +968,65 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
         #  check if we're editing (overwriting) a record or inserting a new one
         if self.editFieldFlag:
-            # overwrite record - UPDATE
-            sql =("UPDATE " + self.schema + ".measurements SET measurement_value ='" + self.values[i] + "' WHERE  ship="+
-                    self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
-                    " AND sample_id="+self.activeSample+" AND specimen_id = " +self.specimenKey +
-                    " AND measurement_type = '" + measure_type+"'")
-            self.db.dbExec(sql)
+            # added 6/3/26 to deal with multiple entries coming from dialog (ordered dict)
+            if isinstance(self.values[i], dict):
+                all_types = ", ".join(f"'{w}'" for w in self.values[i].keys())
+                other_types = ""
+
+                # todo: this shouldn't be hard coded here, but this will need to be tackled later
+                if 'diet_collection' in self.values[i]:
+                    other_types = "'stomach_collect', 'stom_cont_1', 'stom_cont_2', 'stom_cont_3', 'stom_vol_1', " \
+                                  "'stom_vol_2', 'stom_vol_3', 'stom_overall_wt'"
+                elif 'gonad_collection' in self.values[i]:
+                    other_types = "'gonad_weight'"
+                elif 'luck_meas' in self.values[i]:
+                    other_types = "'gonad_rna', 'liver_rna', 'liver_taken'"
+
+                for measure_type, value in self.values[i].items():
+                    # for some of the dict values, they may need to be deleted or inserted; not just updated
+                    # check for orphan records
+                    orphan_sql = (f"SELECT measurement_type FROM {self.schema}.measurements WHERE ship={self.ship} "
+                                  f"AND survey={self.survey} AND event_id={self.activeHaul} "
+                                  f"AND sample_id={self.activeSample} AND specimen_id={self.specimenKey} "
+                                  f"AND measurement_type NOT IN ({all_types})")
+                    if other_types:
+                        orphan_sql += f" AND measurement_type IN ({other_types})"
+                    orphan_query = self.db.dbQuery(orphan_sql)
+                    for row in orphan_query:
+                        orphan_val = str(orphan_query.value(0))
+                        del_sql = (f"DELETE FROM {self.schema}.measurements WHERE ship={self.ship} "
+                                   f"AND survey={self.survey} AND event_id={self.activeHaul} "
+                                   f"AND sample_id={self.activeSample} AND specimen_id={self.specimenKey} "
+                                   f"AND measurement_type = '{orphan_val}'")
+                        self.db.dbExec(del_sql)
+
+                    # check for existing record
+                    exist_sql = (f"SELECT * FROM {self.schema}.measurements WHERE ship={self.ship} "
+                                 f"AND survey={self.survey} AND event_id={self.activeHaul} "
+                                 f"AND sample_id={self.activeSample} AND specimen_id={self.specimenKey} "
+                                 f"AND measurement_type = '{measure_type}'")
+                    exist_query = self.db.dbQuery(exist_sql)
+
+                    if exist_query.first():
+                        query_txt = (f"UPDATE {self.schema}.measurements SET measurement_value ='{value}'"
+                                     f" WHERE ship={self.ship} AND survey={self.survey} AND event_id={self.activeHaul} "
+                                     f"AND sample_id={self.activeSample} AND specimen_id={self.specimenKey} "
+                                     f"AND measurement_type = '{measure_type}'")
+                        self.db.dbExec(query_txt)
+                    else:
+                        query_txt = (f"INSERT INTO {self.schema}.measurements (ship, survey, event_id, sample_id, specimen_id, "
+                                     f"measurement_type, device_id, measurement_value) VALUES ({self.ship}, "
+                                     f"{self.survey}, {self.activeHaul}, {self.activeSample}, {self.specimenKey}, "
+                                     f"'{measure_type}', {device_id}, '{value}')")
+                        self.db.dbE(query_txt)
+
+            else:
+                # overwrite record - UPDATE
+                sql =("UPDATE " + self.schema + ".measurements SET measurement_value ='" + self.values[i] + "' WHERE  ship="+
+                        self.ship+" AND survey="+self.survey+" AND event_id="+self.activeHaul+
+                        " AND sample_id="+self.activeSample+" AND specimen_id = " +self.specimenKey +
+                        " AND measurement_type = '" + measure_type+"'")
+                self.db.dbExec(sql)
 
             # update table
             self.updateMeasureView()
@@ -977,12 +1035,22 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             self.checkConditionals()
 
         else:
-            #  this is a new record - INSERT
-            sql = ("INSERT INTO " + self.schema + ".measurements (ship, survey, event_id, sample_id, specimen_id, " +
-                    "measurement_type, device_id, measurement_value) VALUES (" +self.ship+","+
-                    self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey +
-                    ",'" + measure_type + "'," + device_id + ",'" + self.values[i] + "')")
-            self.db.dbExec(sql)
+            if isinstance(self.values[i], dict):
+                # added 6/3/26 to deal with multiple entries from same dialog
+                if isinstance(self.values[i], dict):
+                    for measure_type, value in self.values[i].items():
+                        query_txt = (f"INSERT INTO {self.schema}.measurements (ship, survey, event_id, sample_id, "
+                                     f"specimen_id, measurement_type, device_id, measurement_value) "
+                                     f"VALUES ({self.ship}, {self.survey}, {self.activeHaul}, {self.activeSample}, "
+                                     f"{self.specimenKey}, '{measure_type}', {device_id}, '{value}')")
+                        self.db.dbExec(query_txt)
+            else:
+                #  this is a new record - INSERT
+                sql = ("INSERT INTO " + self.schema + ".measurements (ship, survey, event_id, sample_id, specimen_id, " +
+                        "measurement_type, device_id, measurement_value) VALUES (" +self.ship+","+
+                        self.survey+","+self.activeHaul+ ","+self.activeSample+","+ self.specimenKey +
+                        ",'" + measure_type + "'," + device_id + ",'" + self.values[i] + "')")
+                self.db.dbExec(sql)
 
             # update table
             self.updateMeasureView()
@@ -1690,7 +1758,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 self.ship+ " AND survey="+self.survey+" AND event_id="+self.activeHaul+" AND specimen_id = " +
                 self.specimenKey)
         query = self.db.dbQuery(sql)
-
+        print(self.measureType)
         for type, value in query:
             #  now try to get the index into our measurements array for this
             #  measurement type. This will work for every measurement *except*
@@ -1701,8 +1769,11 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
                 #  since we failed finding this measurement, this should be one of
                 #  the specific length measurements for this species+subcode
-                if (type in self.lengthTypes):
+                if type in self.lengthTypes:
                     ind = self.measureType.index('length')
+                # added for nwfsc 6/4/26 - some dialogs return multiple values so catch that here
+                elif type in ['stomach_collect']:
+                    continue
                 else:
                     #  huh. This shouldn't happen....
                     self.message.setMessage(self.errorIcons[1], self.errorSounds[1],
