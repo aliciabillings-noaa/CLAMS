@@ -1105,12 +1105,24 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
 
             for i in self.iterator:
                 btn = self.buttons[i]
+                # added by AB to re-enable buttons that already have measurement
+                if self.values[i] is not None:
+                    self.buttonEnable[i][0] = True
+
                 btn.setEnabled(self.buttonEnable[i][0])
                 if not self.buttonEnable[i][0]:
                     btn.setStyleSheet("background-color: gray")
+
+                # added by AB to reset the button color if the measure is enabled and there is no value yet
+                elif self.buttonEnable[i][0] and self.values[i] is None:
+                    if self.forcing[i] == '1':
+                        btn.setStyleSheet("background-color: red")
+                    else:
+                        btn.setStyleSheet("background-color: yellow")
+                
                 if len(self.buttonEnable[i]) > 1 and self.buttonEnable[i][1]:
                     self.forcing[i] = '1'
-                    #Only turn the button red if a measurement hasn't been taken yet.
+                    # Only turn the button red if a measurement hasn't been taken yet.
                     # Otherwise, ensure it stays green.
                     if self.values[i] is None:
                         btn.setStyleSheet("background-color: red")
