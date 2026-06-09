@@ -59,7 +59,10 @@ class PrintLabel:
         # TOP LINE; IWCPS Sample Haul: # SN: #
         z_doc.add_zpl_raw("^XA")
         z_doc.add_zpl_raw("^FO15,55")
-        z_doc.add_zpl_raw("^A0N,110,40^FDIWCPS " + center + " Sample\tHaul: " + str(event))
+        if center:
+            z_doc.add_zpl_raw("^A0N,110,40^FDIWCPS " + center + " Sample\tHaul: " + str(event))
+        else:
+            z_doc.add_zpl_raw("^A0N,110,40^FDIWCPS Sample\tHaul: " + str(event))
         if spec_num:
             z_doc.add_zpl_raw("\t\tSN: " + str(spec_num) + "^FS")
         else:

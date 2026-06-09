@@ -1692,7 +1692,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
         '''
 
         #  ensure that a species is selcted
-        if (self.activeSpcName == None):
+        if self.activeSpcName is None:
             #  no species selected - show error dialog
             self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
                     "Please pick a sample to print a label for, " +
@@ -1706,7 +1706,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 selected_project = project.FEATProjectDlg(self)
                 if selected_project.result() == 1:
                     self.printer.print_label(selected_project.project_name, self.activeSpcName, self.activeSpcCode,
-                                             self.activeHaul, selected_project.code, self.activeSampleKey)
+                                             self.activeHaul, selected_project.code, self.activeSampleKey,
+                                             self.settings['OrganizationName'])
             else:
                 #  get species code
                 speciesCode = self.activeSpcCode=self.speciesDict[self.activeSpcName]
