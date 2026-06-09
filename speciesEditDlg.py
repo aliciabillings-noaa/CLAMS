@@ -57,6 +57,8 @@ class SpeciesEditDlg(QDialog, ui_SpeciesEditDlg.Ui_speciesEditDlg):
         #self.transDevice = None
         self.okFlag = False
         self.db = parent.db
+        self.activeHaul = parent.activeHaul
+        self.schema = parent.schema
 
         self.devices = parent.devices
         self.sounds = parent.sounds
