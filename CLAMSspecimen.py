@@ -274,6 +274,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         self.printBtn.setEnabled(enabled)
         self.measureView.setEnabled(enabled)
 
+        if 'nwfsc' in self.settings['OrganizationName'].lower() or \
+                'swfsc' in self.settings['OrganizationName'].lower():
+            self.collectBtn.hide()
+            self.printBtn.setText('Print Label')
 
 
     def serialIOFilter(self):
@@ -1881,7 +1885,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         '''
 
         #  make sure that a specimen has been selected
-        if (self.specimenKey == None):
+        if self.specimenKey is None:
             self.message.setMessage(self.errorIcons[0], self.errorSounds[0], "Please Select a "+
                     "specimen to print a label for.")
             self.message.exec()
@@ -1890,7 +1894,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
         #  check that all required measurements have been obtained
         for i in self.iterator:
             btn = self.buttons[i]
-            if (self.values[i] == None) and (self.forcing[i] == '1') and (btn.isEnabled()):
+            if (self.values[i] is None) and (self.forcing[i] == '1') and (btn.isEnabled()):
                 #  a measurement is missing - ask the user what they want to do
                 self.message.setMessage(self.errorIcons[0], self.errorSounds[0], "You still need a " +
                                         self.measureType[i] + " measurement. Does this bother you, " +
@@ -1907,9 +1911,9 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             code = str(self.survey) + str(self.ship) + str(self.activeHaul).zfill(3) + str(self.specimenKey)
 
             lengthType = str(self.lengthTypeBox.currentText())
-            lw_sql = ("SELECT " + lengthType + ", organism_weight FROM " + self.schema
-                      + ".v_specimen_measurements WHERE survey=" + self.survey + " AND ship = " + self.ship
-                      + " AND event_id=" + self.activeHaul + " AND specimen_id = " + self.specimenKey)
+            lw_sql = (f"SELECT {lengthType}, organism_weight FROM {self.schema}.v_specimen_measurements "
+                      f"WHERE survey={self.survey} AND ship={self.ship} AND event_id={self.activeHaul} "
+                      f"AND specimen_id={self.specimenKey}")
             lw_query = self.db.dbQuery(lw_sql)
             length, weight = lw_query.first()
             self.printer.print_label(self.protocol, self.activeSpcName, self.activeSpcCode, self.activeHaul,
