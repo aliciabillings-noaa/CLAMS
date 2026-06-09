@@ -1917,7 +1917,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
             lw_query = self.db.dbQuery(lw_sql)
             length, weight = lw_query.first()
             self.printer.print_label(self.protocol, self.activeSpcName, self.activeSpcCode, self.activeHaul,
-                                     code, self.specimenKey, length, weight)
+                                     code, self.specimenKey, length, weight, self.settings['OrganizationName'])
         else:
             #  get data from db - query everything *BUT* length
             sql = ("SELECT ship, survey, event_id, specimen_id, species_code, common_name, "+
