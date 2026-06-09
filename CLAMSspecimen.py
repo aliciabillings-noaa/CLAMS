@@ -464,6 +464,13 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
     def getProtocol(self):
         '''getProtocol prompts the user to select a protocol for the currently active species.
         '''
+        # added 6/9/26 - get protocols that are only group_collection
+        g_protos = []
+        gc_sql = (f"SELECT protocol_name FROM {self.schema}.protocol_definitions "
+                  f"WHERE measurement_type='group_collection'")
+        gc_query = self.db.dbQuery(gc_sql)
+        for p_name, in gc_query:
+            g_protos.append(p_name)
 
         #  build a list of the active protocols for this species
         self.protocols = []
@@ -472,8 +479,10 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                 self.activeSpcCode + " AND subcategory= '"+self.activeSpcSubcat +"' AND active=1")
         query = self.db.dbQuery(sql)
         for protocol_name,  in query:
-            nProtocols = nProtocols + 1
-            self.protocols.append(protocol_name)
+            # added 6/9/26 - only add if not a group collection protocol
+            if protocol_name not in g_protos:
+                nProtocols = nProtocols + 1
+                self.protocols.append(protocol_name)
 
         if nProtocols == 0:
             QMessageBox.information(self, "Huh...", "<font size = 12>There are no protocols defined " +
