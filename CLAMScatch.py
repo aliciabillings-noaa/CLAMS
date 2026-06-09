@@ -1706,7 +1706,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 selected_project = project.FEATProjectDlg(self)
                 if selected_project.result() == 1:
                     self.printer.print_label(selected_project.project_name, self.activeSpcName, self.activeSpcCode,
-                                             self.activeHaul, selected_project.code, self.activeSampleKey,
+                                             self.activeHaul, selected_project.code, self.activeSampleKey, None, None,
                                              self.settings['OrganizationName'])
             else:
                 #  get species code
