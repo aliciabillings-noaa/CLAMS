@@ -333,10 +333,12 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
 
             #  only set up network and serial devices
             if self.deviceData[deviceName]['interface'] in ['network', 'serial']:
-                #  then add this device to the sensor monitor
-                self.sensorMonitor.addDevice(deviceName, deviceParams['port'], deviceParams['baud'],
-                        deviceParams['parseType'], deviceParams['parseExp'], deviceParams['parseIndex'],
-                        deviceParams['commandPrompt'])
+                # added 6/9/26 - remove network printer from monitor since it is throwing an error
+                if self.deviceData[deviceName]['interface'] != 'network' and deviceName != 'Label_Printer':
+                    #  then add this device to the sensor monitor
+                    self.sensorMonitor.addDevice(deviceName, deviceParams['port'], deviceParams['baud'],
+                            deviceParams['parseType'], deviceParams['parseExp'], deviceParams['parseIndex'],
+                            deviceParams['commandPrompt'])
 
             #  store the sound effect object for each device with an associated sound
             if 'soundFile' in deviceParams['soundFile']:
