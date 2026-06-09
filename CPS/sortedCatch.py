@@ -1370,33 +1370,45 @@ class sortedCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                     self.selRecord[0])
             self.db.dbExec(sql)
         else:
-            editDlg = speciesEditDlg.SpeciesEditDlg(header, selRecord, self)
-            editDlg.exec()
+            sampleId = int(selRecord[0])
+            sql = (f"SELECT count(*) from {self.schema}.specimen where sample_id={sampleId}")
+            query = self.db.dbQuery(sql)
+            specimenCnt, = query.first()
 
-            if editDlg and not editDlg.okFlag:
-            #  user cancelled action
-                return
+            if int(specimenCnt) <= 0:
+                editDlg = speciesEditDlg.SpeciesEditDlg(header, selRecord, self)
+                editDlg.exec()
 
-            if editDlg.activeSpcCode and editDlg.activeSpeciesName:
-                sql = ("update " + self.schema + ".samples set species_code=" +  
-                       editDlg.activeSpcCode + " where sample_id=" + selRecord[0])
-                self.db.dbExec(sql)
+                if editDlg and not editDlg.okFlag:
+                #  user cancelled action
+                    return
 
-                sql = ("update " + self.schema + ".sample_data set parameter_value='" +  
-                       editDlg.nameType + "' where sample_id=" + selRecord[0])
-                self.db.dbExec(sql)
+                if editDlg.activeSpcCode and editDlg.activeSpeciesName:
+                    sql = ("update " + self.schema + ".samples set species_code=" +  
+                        editDlg.activeSpcCode + " where sample_id=" + selRecord[0])
+                    self.db.dbExec(sql)
 
-                rowIdx = self.speciesList.currentRow()
-                self.speciesList.setItem(rowIdx, 0, QTableWidgetItem(editDlg.activeSpeciesName))
-            
-            if editDlg.type:
-                sql = ("update " + self.schema + ".samples set sample_type='" + editDlg.type +  "' where sample_id=" + selRecord[0])
-                self.db.dbExec(sql)
+                    sql = ("update " + self.schema + ".sample_data set parameter_value='" +  
+                        editDlg.nameType + "' where sample_id=" + selRecord[0])
+                    self.db.dbExec(sql)
 
-                rowIdx = self.speciesList.currentRow()
-                self.speciesList.setItem(rowIdx, 2, QTableWidgetItem(editDlg.type))
-            
-            self.reloadSamplesList()
+                    rowIdx = self.speciesList.currentRow()
+                    self.speciesList.setItem(rowIdx, 0, QTableWidgetItem(editDlg.activeSpeciesName))
+                
+                if editDlg.type:
+                    sql = ("update " + self.schema + ".samples set sample_type='" + editDlg.type +  "' where sample_id=" + selRecord[0])
+                    self.db.dbExec(sql)
+
+                    rowIdx = self.speciesList.currentRow()
+                    self.speciesList.setItem(rowIdx, 2, QTableWidgetItem(editDlg.type))
+                
+                self.reloadSamplesList()
+            else:
+                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+                        "Sample cannot be edited since specimens associated with this " \
+                        "sample already exist",'info')
+                self.message.exec()
+
 
         self.freeze=False
 
