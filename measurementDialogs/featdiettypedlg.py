@@ -500,12 +500,11 @@ class GetLabel(QDialog):
         creates the small popup to prompt user to print the label
         :return:
         """
+        # create the barcode number
+        self.code = str(self.survey) + str(self.ship) + str(self.active_event).zfill(3) + str(self.specimen_key)
         # set the project
         project = "Stomach"
         if self.printer is not None:
-            #if self.printer.printer_status():
-            code = str(self.survey) + str(self.ship) + str(self.active_event).zfill(3) + str(self.specimen_key)
-
             lengthType = str(self.lengthTypeBox.currentText())
             lw_sql = (f"SELECT {lengthType}, organism_weight FROM {self.schema}.v_specimen_measurements "
                       f"WHERE survey={self.survey} AND ship={self.ship} AND event_id={self.active_event} "
@@ -513,12 +512,7 @@ class GetLabel(QDialog):
             lw_query = self.db.dbQuery(lw_sql)
             length, weight = lw_query.first()
             self.printer.print_label(project, self.activeSpcName, self.activeSpcCode, self.active_event,
-                                         code, self.specimen_key, length, weight, self.settings['OrganizationName'])
-        #    else:
-        #        self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-        #                                "Printer not responding, please use a paper label",
-        #                                'info')
-        #        self.message.exec()
+                                     self.code, self.specimen_key, length, weight, self.settings['OrganizationName'])
 
         else:
             # otherwise, prompt to fill out a label
