@@ -1119,7 +1119,7 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                         btn.setStyleSheet("background-color: red")
                     else:
                         btn.setStyleSheet("background-color: yellow")
-                
+
                 if len(self.buttonEnable[i]) > 1 and self.buttonEnable[i][1]:
                     self.forcing[i] = '1'
                     # Only turn the button red if a measurement hasn't been taken yet.
@@ -1604,6 +1604,11 @@ class CLAMSSpecimen(QDialog, ui_CLAMSSpecimen.Ui_clamsSpecimen):
                     conditional
                  FROM {self.schema}.CONDITIONALS m
                  WHERE {final_val_where}"""
+        try:
+            self.db.dbQuery(f"SELECT conditional_order FROM {self.schema}.conditionals WHERE 1=0")
+            sql2 += " ORDER BY conditional_order ASC"
+        except:
+            pass
         query2 = self.db.dbQuery(sql2)
 
         self.conditionals = []
