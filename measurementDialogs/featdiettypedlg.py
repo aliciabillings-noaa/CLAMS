@@ -78,9 +78,11 @@ class FEATDietTypeDlg(QDialog, ui_FEATDietTypeDlg.Ui_Dialog):
         self.activeSpcCode = parent.activeSpcCode
         self.active_event = parent.activeHaul
         self.active_sample = parent.activeSample
+        self.lengthTypeBox = parent.lengthTypeBox
         self.settings = parent.settings
         self.edit_flag = parent.editFieldFlag
         self.specimen_key = parent.specimenKey
+        self.schema = parent.schema
         self.errorIcons = parent.errorIcons
         self.errorSounds = parent.errorSounds
         self.settings = parent.settings
@@ -456,10 +458,13 @@ class GetLabel(QDialog):
         super(QDialog, self).__init__(parent)
         self.survey = parent.survey
         self.ship = parent.ship
+        self.db = parent.db
+        self.schema = parent.schema
         self.activeSpcName = parent.activeSpcName
         self.activeSpcCode = parent.activeSpcCode
         self.active_event = parent.active_event
         self.specimen_key = parent.specimen_key
+        self.lengthTypeBox = parent.lengthTypeBox
         self.code = ""
         self.settings = parent.settings
         self.printer = parent.printer
@@ -495,24 +500,25 @@ class GetLabel(QDialog):
         creates the small popup to prompt user to print the label
         :return:
         """
-        # todo: how to get length and weight to print on the label
-        # length, weight = fun.get_len_wt(self.specimen_key)
-        length = weight = None
-        # create the barcode
-        self.code = str(str(self.survey) + str(self.ship) + str(self.active_event)
-                        + str(self.oto_last))
-
         # set the project
         project = "Stomach"
         if self.printer is not None:
-            if self.printer.printer_status():
-                self.printer.print_label(project, self.activeSpcName, self.activeSpcCode, self.active_event,
-                                         self.code, self.specimen_key, length, weight)
-            else:
-                self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
-                                        "Printer not responding, please use a paper label",
-                                        'info')
-                self.message.exec()
+            #if self.printer.printer_status():
+            code = str(self.survey) + str(self.ship) + str(self.active_event).zfill(3) + str(self.specimen_key)
+
+            lengthType = str(self.lengthTypeBox.currentText())
+            lw_sql = (f"SELECT {lengthType}, organism_weight FROM {self.schema}.v_specimen_measurements "
+                      f"WHERE survey={self.survey} AND ship={self.ship} AND event_id={self.active_event} "
+                      f"AND specimen_id={self.specimen_key}")
+            lw_query = self.db.dbQuery(lw_sql)
+            length, weight = lw_query.first()
+            self.printer.print_label(project, self.activeSpcName, self.activeSpcCode, self.active_event,
+                                         code, self.specimen_key, length, weight, self.settings['OrganizationName'])
+        #    else:
+        #        self.message.setMessage(self.errorIcons[2], self.errorSounds[2],
+        #                                "Printer not responding, please use a paper label",
+        #                                'info')
+        #        self.message.exec()
 
         else:
             # otherwise, prompt to fill out a label
