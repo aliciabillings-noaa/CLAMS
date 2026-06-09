@@ -272,21 +272,19 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
         self.activePartition = self.partitionBox.currentText()
 
         #  check if the codend status has been set
-        sql = ("SELECT * FROM " + self.schema + ".event_data WHERE ship = " + self.ship +
-                " AND survey = " + self.survey + " and event_id = " +
-                self.activeHaul+ " AND partition = '"+ self.activePartition +
-                "' AND event_parameter = 'CodendStatus'")
+        sql = (f"SELECT * FROM {self.schema}.event_data WHERE ship={self.ship} AND survey={self.survey} "
+               f"AND event_id={self.activeHaul} AND partition='{self.activePartition}' "
+               f"AND event_parameter = 'CodendStatus'")
         query = self.db.dbQuery(sql)
-        if not query.first():
+        first_row = query.first()
+        if not first_row or all(item is None for item in first_row):
             # value has not been recorded for this partition - display the status dialog
             self.codendstate.exec()
             codendstatus = self.codendstate.state_value
             #  and insert the status into event_data
-            sql = ("INSERT INTO " + self.schema + ".event_data (ship, survey, event_id, partition, " +
-                    "event_parameter, parameter_value) VALUES(" + self.ship +
-                    "," + self.survey + "," + self.activeHaul + ",'" +
-                    self.activePartition + "' ,'CodendStatus','" +
-                    codendstatus + "')")
+            sql = (f"INSERT INTO {self.schema}.event_data (ship, survey, event_id, partition, "
+                   f"event_parameter, parameter_value) VALUES({self.ship}, {self.survey}, {self.activeHaul}, "
+                   f"'{self.activePartition}' ,'CodendStatus','{codendstatus}')")
             self.db.dbExec(sql)
 
 
@@ -379,7 +377,7 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
     def editCodendState(self):
 
         #  make sure there is an active partition
-        if (self.activePartition == None):
+        if self.activePartition is None:
             #  no partition selected - issue error
             self.message.setMessage(self.errorIcons[1], self.errorSounds[1], "Sorry " +
                     self.firstName + ", you need to select a partition for" +
@@ -388,10 +386,9 @@ class CLAMSProcess(QDialog, ui_CLAMSProcess.Ui_clamsProcess):
             return
 
         #  get the existing codend status
-        sql = ("SELECT parameter_value FROM " + self.schema + ".event_data WHERE ship = " + self.ship +
-                " and survey = " + self.survey + " and event_id = " +
-                self.activeHaul + " and partition = '" + self.activePartition +
-                "' AND event_parameter = 'CodendStatus'")
+        sql = (f"SELECT parameter_value FROM {self.schema}.event_data WHERE ship={self.ship} AND survey={self.survey} "
+               f"AND event_id={self.activeHaul} AND partition='{self.activePartition}' "
+               f"AND event_parameter = 'CodendStatus'")
         query = self.db.dbQuery(sql)
         currentCodendState, = query.first()
 
