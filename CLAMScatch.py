@@ -1680,7 +1680,7 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
                 if self.settings['DisplayProtoSp'] == 'True':
                     # check if species is in the protocol_map table as Active
                     proto_sql = ("SELECT protocol_name, species_code FROM " +
-                                 self.schema + ".protocol_map WHERE species_code=" + spCode)
+                                 self.schema + ".protocol_map WHERE species_code=" + spCode + " AND active=1")
                     proto_query = self.db.dbQuery(proto_sql)
                     sp_protos = ['BagNTag']
                     for protocol, sp_code in proto_query:
