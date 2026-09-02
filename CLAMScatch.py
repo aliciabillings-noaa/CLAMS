@@ -1545,7 +1545,8 @@ class CLAMSCatch(QDialog, ui_CLAMSCatch.Ui_clamsCatch):
 
         #  get the mix species weight
         mixSpeciesWeight = 0
-        sql = ("SELECT SUM(baskets.weight) FROM " + self.schema + ".samples, baskets WHERE samples.sample_id = "+
+        sql = ("SELECT SUM(baskets.weight) FROM " + self.schema + ".samples, " + self.schema +
+               ".baskets WHERE samples.sample_id = "+
                 "baskets.sample_id AND samples.ship=baskets.ship AND " +
                 "samples.survey=baskets.survey AND samples.event_id=baskets.event_id " +
                 "AND samples.ship="+self.ship+" AND samples.survey="+
