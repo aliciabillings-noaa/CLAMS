@@ -52,6 +52,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.dbPassword = password
         self.settings = settings
         self.sbe = None
+        self.sbeProgress = None
 
         #  this is the default latitude used when converting SBE pressure to depth
         #  when the 'SBEConversionLat' parameter is not in the application_configuration
@@ -125,11 +126,6 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             self.setWindowIcon(QIcon(self.baseDir + os.sep + 'icons/giant_clam.png'))
         except:
             pass
-
-        #  create an instance of the SBE progress dialog - this dialog shows download progress
-        #  and it also has an abort button. You pass it the reference to the sbe object and it
-        #  handles the signals internally. You just need to show and hide it.
-        self.sbeProgress = sbeProgressDialog.sbeProgressDialog(self.sbe, parent=self)
 
         #  start a timer event to connect to the database
         startTimer = QTimer(self)
@@ -245,7 +241,9 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.sbe.SBEDownloadData.connect(self.downloadingData)
         self.sbe.SBEAbort.connect(self.downloadAbort)
 
-        #  create an instance of the SBE progress dialog
+        #  create an instance of the SBE progress dialog - this dialog shows download progress
+        #  and it also has an abort button. You pass it the reference to the sbe object and it
+        #  handles the signals internally. You just need to show and hide it.
         self.sbeProgress = sbeProgressDialog.sbeProgressDialog(self.sbe, parent=self)
 
         #  update status bar text with final COM Port
@@ -306,23 +304,20 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         except:
             self.haulLat = self.defaultEQLatitude
 
-
     def configureComPort(self):
-
         dialog = selectWinPortDialog.selectWinPortDialog(defaultPort=self.comPort,
-                    defaultBaud=self.baud, parent=self)
+                                                         defaultBaud=self.baud, parent=self)
         ok = dialog.exec()
-        if (ok):
-            #  update the serial params
+        if ok:
             self.comPort = dialog.port
             self.baud = dialog.baud
-            self.sbe.setConnectionParams(self.comPort, self.baud)
 
-            #  update the application settings
+            if self.sbe:
+                self.sbe.setConnectionParams(self.comPort, self.baud)
+
+            # Update settings and GUI
             self.appSettings.setValue('comport', self.comPort)
             self.appSettings.setValue('baud', self.baud)
-
-            #  update the GUI
             self.COMSettingsLabel.setText('COM Settings: ' + self.comPort + ', ' + str(self.baud))
 
 
