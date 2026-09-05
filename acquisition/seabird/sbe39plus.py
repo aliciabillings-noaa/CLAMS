@@ -451,14 +451,15 @@ class sbe39plus(QObject):
             self.serMonitor.stopMonitoring(devices=[self.deviceName])
 
     def formatTime(self, time, start=False):
-        """Formats datetime to native SBE 39plus ISO format wrapped in quotes.
-        Format required by SBE 39plus: DateTime="YYYY-MM-DDTHH:MM:SS"
+        """Formats datetime to native SBE 39plus format (mmddyyyyhhmmss).
+        Example output: DateTime=09052026160856
         """
-        time_str = time.strftime("%Y-%m-%dT%H:%M:%S")
+        # Format: MMDDYYYYHHMMSS (2-digit month, 2-digit day, 4-digit year, 24h time)
+        time_str = time.strftime("%m%d%Y%H%M%S")
 
         if start:
-            return [f'StartDateTime="{time_str}"']
-        return [f'DateTime="{time_str}"']
+            return [f'StartDateTime={time_str}']
+        return [f'DateTime={time_str}']
 
 
 class SBEError(Exception):
