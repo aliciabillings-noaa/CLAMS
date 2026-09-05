@@ -38,6 +38,7 @@ This should be handled better but for now this is how it is.
 
 import datetime
 import struct
+import re
 from PyQt6.QtCore import *
 from acquisition.SensorMonitor import SensorMonitor
 
@@ -56,7 +57,6 @@ class sbe39(QObject):
     SBEStatus = pyqtSignal(str, dict)
     SBECalibration = pyqtSignal(str, dict)
     SBEDownloadComplete = pyqtSignal(str, int, int)
-    SBETimeout = pyqtSignal(str)
 
     def __init__(self, serialPort, deviceName='SBE39', baud=9600, serialMonitor=None, parent=None):
         #  initialize the parent
@@ -69,6 +69,7 @@ class sbe39(QObject):
         self.status = {}
         self.calibration = {}
         self.connected = False
+        self.lowBattery = False
         self.sbeIsAsleep = False
         self.binaryUploadEnable = True
         self.isAborting = False
@@ -81,7 +82,7 @@ class sbe39(QObject):
         self.lastCommand = ''
 
         #  check if we're using an existing serial monitor or creating a new one
-        if (serialMonitor == None):
+        if serialMonitor is None:
             #  create a new instance of the serial monitor
             self.serMonitor = SensorMonitor.SensorMonitor()
         else:
@@ -172,28 +173,21 @@ class sbe39(QObject):
 
 
     def getStatus(self):
-        """getStatus gets the current status of the SBE. Note that you must connect the SBEStatus
-        signal so you are informed when the status data has been received and processed.
-        """
-
-        if (self.connected):
-            #  send the get status command
-            self.txCommand(['DS'])
+        if self.connected:
+            # Use GetSD or GetHD for SBE39plus native mode
+            self.txCommand(['GetSD'])
 
 
     def setTxRealTime(self, state):
         """setTxRealTime sets the real time output state. Set to True to enable real-time output
         and False to disable it.
         """
+        if self.connected:
+            state_str = 'Y' if state else 'N'
 
-        if (self.connected):
-            if (state):
-                state = 'Y'
-            else:
-                state = 'N'
-
-            #  send the tx real-time command
-            self.txCommand(['TXREALTIME=' + state])
+            # Send Native SBE 39plus command (OutputRealTime=Y/N)
+            # Note: If running older/legacy firmware, use 'TXREALTIME=' instead.
+            self.txCommand([f'OutputRealTime={state_str}'])
 
 
     def setSamplingInterval(self, num):
@@ -203,17 +197,16 @@ class sbe39(QObject):
 
             Note that values less than 3 will be set to 0 and result in continuous sampling.
         """
-
-        if (self.connected):
-            #  clamp values to a valid range and convert number to an integer string
-            if (num < 3):
+        if self.connected:
+            # Clamp values to valid integer range (0 to 32767)
+            num = int(num)
+            if num < 0:
                 num = 0
-            elif (num > 32767):
+            elif num > 32767:
                 num = 32767
-            num = str(int(num))
 
-            #  send the interval command
-            self.txCommand(['INTERVAL=' + num])
+            # Send Native SBE 39plus command (SampleInterval=x)
+            self.txCommand([f'SampleInterval={num}'])
 
 
     def setBaud(self, baud):
@@ -271,14 +264,8 @@ class sbe39(QObject):
 
 
     def getCalParms(self):
-        """getCalParms gets the calibration parameters from the SBE and stores them in
-        the calibration property. Note that you need to connect the SBECalibration signal
-        to know when these parameters have been received.
-        """
-
-        if (self.connected):
-            #  send the DC command
-            self.txCommand(['DC'])
+        if self.connected:
+            self.txCommand(['GetCC'])
 
 
     def disconnect(self):
@@ -351,24 +338,16 @@ class sbe39(QObject):
         values. It is your problem if you say set the internal clock to UTC and your
         start time to local time.
         """
-
-        if (self.connected):
-
-            #  if time is not passed use the current time
-            if (time == None):
-                #  get the current time
-                if (localTime):
-                    #  get the local time
+        if self.connected:
+            if time is None:
+                if localTime:
                     time = datetime.datetime.now()
                 else:
-                    #  get UTC time
-                    time = datetime.datetime.utcnow()
+                    # Use timezone-aware UTC then convert to naive for formatting
+                    time = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            if delay:
+                time = time + datetime.timedelta(minutes=delay)
 
-                if delay:
-                    #  apply delay if provided
-                    time = time + datetime.timedelta(minutes=delay)
-
-            #  transmit the commands
             self.txCommand(self.formatTime(time, start=True))
 
 
@@ -387,46 +366,35 @@ class sbe39(QObject):
                      CURRENTLY BINARY DOWNLOAD IS NOT IMPLEMENTED.
         """
 
-        if (self.connected):
+        if self.connected:
 
-            #  force ASCII download since binary download isn't implemented
-            mode='ascii'
+            # Force ASCII mode (binary unpacking not implemented)
+            mode = 'ascii'
 
-            if (stop):
-                #  stop sample provided - use that
+            if stop:
+                # Stop sample provided - use that
                 stop = int(stop)
             else:
-                #  stop sample not provided - get it from status
-                stop = int(self.status['sample number'])
-                #  subtract 4 from the stop sample number to skip the few bogus
-                #  samples at the end of the download.
-                if (stop > 5):
+                # Stop sample not provided - get it from status dictionary
+                stop = int(self.status.get('sample number', 0))
+                # Subtract 4 from stop sample to avoid bogus/partial trailing records
+                if stop > 5:
                     stop = stop - 4
 
-            #  initialize some variables
+            # Initialize progress variables
             self.dlProgress = 0
             self.nRecDL = 0
 
-            #  force ASCII upload if binary upload isn't available.
-            if (self.binaryUploadEnable == False):
-                mode='ASCII'
+            # Determine total records to download
+            self.nTotalRecords = max((stop - int(start)) + 1, 1)
 
-            #  determine the total records to download
-            self.nTotalRecords = (stop - start) + 1
+            # Convert input numbers to string formats
+            start_str = str(int(start))
+            stop_str = str(int(stop))
 
-            #  convert our input numbers to an integer strings
-            start = str(int(start))
-            stop = str(int(stop))
-
-            if (mode.lower() == 'ascii'):
-                #  send the download ASCII command
-                self.txCommand(['DD' + start + ',' + stop])
-            else:
-                #  set binary time to on
-                self.setBinaryTime(True)
-
-                #  send the download binary command
-                self.txCommand(['DB' + start + ',' + stop])
+            # --- THIS IS THE UPDATED COMMAND FOR NATIVE SBE 39plus ---
+            # SBE 39plus Native uses 'GetSamples:start,stop' instead of 'DDstart,stop'
+            self.txCommand([f'GetSamples:{start_str},{stop_str}'])
 
 
     def abort(self):
@@ -467,22 +435,17 @@ class sbe39(QObject):
             NOTE: THIS METHOD STOPS LOGGING BEFORE SETTING THE CLOCK.
 
         """
-
-        if (self.connected):
-            #  stop the device
+        if self.connected:
+            # Stop logging before setting clock
             self.stop()
 
-            #  if time is not passed use the current time
-            if (time == None):
-                #  get the current time
-                if (localTime):
-                    #  get the local time
+            if time is None:
+                if localTime:
                     time = datetime.datetime.now()
                 else:
-                    #  get UTC time
-                    time = datetime.datetime.utcnow()
+                    time = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
-            #  transmit the commands
+            # Transmit the formatted commands
             self.txCommand(self.formatTime(time))
 
 
@@ -544,189 +507,157 @@ class sbe39(QObject):
 
 
     def rxData(self, name, val, err):
-        '''rxData is an internal method that processes the lines of data received from
-        the SBE device. Commands are sent and procesed serially and this method maintains the
+        """
+        rxData is an internal method that processes the lines of data received from
+        the SBE device. Commands are sent and processed serially and this method maintains the
         current connection state in lastCommand. When lastCommand = '' we're not in a
         command/response sequence. Otherwise lastCommand contains the command string of the
         command it is in the process of handling.
-        '''
-
-        #  Filter errors
-        #
-        #  There are some errors we don't care about. For example, if we issue a STOP
-        #  command when the device is already stopped. The SBE38plus will issue an error
-        #  message and we want to ignore it.
-
-        #  Filter the inactive command error issued after the stop command when the
-        #  device is already stopped.
-        if (self.lastCommand.lower().find('stop') > -1) and (val.lower().find('inactive command') > -1):
+        :param name:
+        :param val:
+        :param err:
+        :return:
+        """
+        # Filter inactive command error issued after the stop command when device is stopped
+        if ('stop' in self.lastCommand.lower()) and ('inactive command' in val.lower()):
             return
 
-        #  emit a signal containing the SBE serial data. You can use this to show
-        #  or record "live" data from the device.
+        # Emit a signal containing raw SBE serial data for live viewing/logging
         if val:
             self.SBEData.emit(self.deviceName, val)
 
-        #  swallow the first "S>" if we (may) have just started the SBE. Some units send one
-        #  more "S>" after starting and some do not.
-        if (val == 'S>') and (self.justStarted):
+        # Swallow initial "S>" prompt if we just started logging
+        if (val == 'S>') and self.justStarted:
             self.justStarted = False
             val = ''
 
-        #  if we're in the process of connecting or waking the device and we receive
-        #  the command prompt we've woken the sbe (or so we think).
-        if (self.sbeIsAsleep == True) and (val == 'S>'):
-            #  older devices don't always respond after the first S> so we wait for 3
-            if (self.extraSleepy == 3):
-                #  we've finished the connecting/reconnecting process
-                self.sbeIsAsleep = False
-                self.extraSleepy = 0
-                #  emit the SBEConnected signal if this is the first time we are connecting
-                if (self.isConnecting == True):
-                    self.SBEConnected.emit(self.deviceName)
-                    self.isConnecting = False
-            else:
-                #  increment our extra-sleepy counter
-                self.extraSleepy = self.extraSleepy + 1
+        # Handle connection / wake-up prompt detection (Supports legacy "S>" and native XML prompts)
+        if self.sbeIsAsleep and (val == 'S>' or '<ExecCommand' in val):
+            self.sbeIsAsleep = False
+            self.extraSleepy = 0
+            if self.isConnecting:
+                self.SBEConnected.emit(self.deviceName)
+                self.isConnecting = False
 
-        #  ignore real-time output data from this point on
-        if val.lower().find('<datapacket>') > -1: # or <insert SBE39 RT output handling here>
+        # Ignore real-time data packet wrappers
+        if '<datapacket>' in val.lower():
             return
 
-        if (self.CTS == False):
-            #  restart our rxTimeout timer since we've received data and we're in a
-            #  command/response sequence. If we're simply rx'ing data because real-time
-            #  output is enabled we don't want to start the timer.
+        # Restart rxTimeoutTimer if receiving data during an active command sequence
+        if not self.CTS:
             self.rxTimeoutTimer.start()
 
-        #  if we're in the *middle* of processing a response, handle it here.
-        if ((self.lastCommand.lower().find('ds') == 0) or
-                (self.lastCommand.lower().find('dc') == 0) or
-                (self.lastCommand.lower().find('*db') == 0)):
+        cmd = self.lastCommand.lower().strip()
 
-            #  we're processing a response that doesn't require progress tracking
+        # BUFFER METADATA RESPONSES (DS, GETSD, GETHD, DC, GETCC)
+        if (cmd.startswith('ds') or cmd.startswith('getsd') or cmd.startswith('gethd') or
+                cmd.startswith('dc') or cmd.startswith('getcc') or cmd.startswith('*db')):
             self.rxBuffer.append(val)
 
-        elif (self.lastCommand.lower().find('dd') == 0) or (self.lastCommand.lower().find('db') == 0):
-            #  currently processing a response that requires progress tracking
+        # PARSE DATA DOWNLOAD STREAMS (DD, GETSAMPLES, DB)
+        elif cmd.startswith('dd') or cmd.startswith('getsamples') or cmd.startswith('db'):
 
-            if (self.lastCommand.lower().find('db') == 0):
-                #  check if we've rx'd the final line of data
-                if (val[-2:] == 'S>'):
-                    #  store the data from the last line then strip the command prompt
+            if cmd.startswith('db'):
+                # Binary download processing
+                if val.endswith('S>'):
                     self.rxBuffer.append(val[:-2])
                     val = val[-2:]
                 else:
-                    #  no command prompt sent - just append data
                     self.rxBuffer.append(val)
             else:
-                #  parse and store ASCII data
-                if (val != 'S>'):
-                    parts = val.split(',')
-                    #  check that this is a valid line of data (4 values)
-                    if (len(parts) == 4):
-                        try:
-                            #  attempt to convert values
-                            time = datetime.datetime.strptime(parts[2].strip() + parts[3], '%d %b %Y %H:%M:%S')
-                            temp = float(parts[0])
-                            pressure = float(parts[1])
+                # ASCII download processing (Supports legacy DD comma format & SBE39plus GetSamples stream)
+                if val != 'S>' and not val.startswith('</'):
+                    # Strip any inline XML tags if present in the data stream
+                    clean_val = re.sub(r'<[^>]+>', '', val).strip()
+                    if clean_val:
+                        parts = [p.strip() for p in clean_val.split(',')]
 
-                            #  increment our record counter
-                            self.nRecDL = self.nRecDL + 1.
+                        # Native and Legacy ASCII outputs deliver 3 to 4 comma-separated values
+                        if len(parts) >= 3:
+                            try:
+                                temp = float(parts[0])
 
-                            #  emit a signal containing this line of data
-                            self.SBEDownloadData.emit(self.deviceName, [time, temp, pressure])
+                                # Determine pressure and datetime format based on array length
+                                if len(parts) == 4:
+                                    pressure = float(parts[1])
+                                    time_str = f"{parts[2]} {parts[3]}"
+                                else:
+                                    pressure = 0.0
+                                    time_str = parts[1] if len(parts) == 2 else f"{parts[1]} {parts[2]}"
 
-                            #  calculate progress and emit signal if changed
-                            dlProgress = (self.nRecDL /self.nTotalRecords) * 100.
-                            if (dlProgress != self.dlProgress):
-                                self.dlProgress = dlProgress
-                                self.SBEProgress.emit(self.deviceName, self.dlProgress)
+                                # Parse datetime string
+                                try:
+                                    time = datetime.datetime.strptime(time_str, '%d %b %Y %H:%M:%S')
+                                except ValueError:
+                                    # Try alternative ISO format if SBE39plus outputs YYYY-MM-DDTHH:MM:SS
+                                    time = datetime.datetime.strptime(time_str.split('.')[0], '%Y-%m-%dT%H:%M:%S')
 
-                        except:
-                            #  conversion failed - bad/garbled data - ignore this line
-                            pass
+                                self.nRecDL += 1.0
 
-        #  check if we've rx'd the command prompt which indicates the end of a command/response sequence.
-        if (val == 'S>'):
-            #  our next step depends on what the command was...
-            if (self.isAborting):
-                #  we were told to abort a download
+                                # Emit downloaded sample signal
+                                self.SBEDownloadData.emit(self.deviceName, [time, temp, pressure])
+
+                                # Update download progress
+                                if self.nTotalRecords > 0:
+                                    dlProgress = (self.nRecDL / self.nTotalRecords) * 100.0
+                                    if dlProgress != self.dlProgress:
+                                        self.dlProgress = dlProgress
+                                        self.SBEProgress.emit(self.deviceName, self.dlProgress)
+
+                            except Exception:
+                                # Garbled or header line - swallow and continue
+                                pass
+
+        # CHECK FOR COMMAND RESPONSE COMPLETION PROMPTS
+        if val == 'S>' or '</StatusData>' in val or '</CalibrationData>' in val or '</HardwareData>' in val:
+
+            if self.isAborting:
                 self.isAborting = False
                 self.SBEAbort.emit(self.deviceName)
 
-            elif self.lastCommand.lower().find('ds') == 0:
-                #  we've rx'd the entire status message - process it
+            elif cmd.startswith('ds') or cmd.startswith('getsd') or cmd.startswith('gethd'):
                 self.processStatus()
-
-                #  emit status signal
                 self.SBEStatus.emit(self.deviceName, self.status)
 
-            elif self.lastCommand.lower().find('*db') == 0:
-                #  we've rx'd the entire binary parameters message - process it
+            elif cmd.startswith('*db'):
                 self.processBinParms()
 
-                #  NEED TO ADD A SIGNAL HERE OR WILL WE JUST USE THIS INTERNALLY?
-
-            elif self.lastCommand.lower().find('dc') == 0:
-                #  we've rx'd the entire cal parms message - process it
+            elif cmd.startswith('dc') or cmd.startswith('getcc'):
                 self.processCalParms()
-
-                #  else emit calibration signal
                 self.SBECalibration.emit(self.deviceName, self.calibration)
 
-            elif self.lastCommand.lower().find('db') == 0:
-                #  we've rx'd the entire binary download - what do we do now?
-
-                #  binary unpacking is not implemented.
-                print(len(self.rxBuffer))
+            elif cmd.startswith('db'):
+                print(f"Downloaded binary buffer length: {len(self.rxBuffer)}")
                 for line in self.rxBuffer:
-                    print(struct.unpack_from('f', line))
+                    try:
+                        print(struct.unpack_from('f', line.encode()))
+                    except Exception:
+                        pass
 
-            elif self.lastCommand.lower().find('dd') == 0:
-                #  we've rx'd the entire ASCII download - emit a download complete message
-
-                #  calculate the number of dropped samples
-                nDropped = self.nTotalRecords - self.nRecDL
-
-                #  stop the timer in case the application pauses handling the SBEDownloadComplete signal
+            elif cmd.startswith('dd') or cmd.startswith('getsamples'):
+                nDropped = max(0, int(self.nTotalRecords - self.nRecDL))
                 self.rxTimeoutTimer.stop()
+                self.SBEDownloadComplete.emit(self.deviceName, int(self.nRecDL), int(nDropped))
 
-                #  emit a signal to inform listeners that we're done downloading
-                self.SBEDownloadComplete.emit(self.deviceName, self.nRecDL, nDropped)
-
-            #  we are done processing the last request
+            # Reset connection state for next command queue execution
             self.lastCommand = ''
             self.CTS = True
             self.rxTimeoutTimer.stop()
 
-
-        #  Now we handle the special cases...
-        elif (val.lower().find('startnow') > -1) or (val.lower().find('start now') > -1):
-            #  the startnow command will put the SBE to sleep if interval>0 right after it
-            #  sends out the "start now" response signaling that the command completed
-            #  successfully. When this happens we need to update the connection state so
-            #  we wake the device the next time we interact with it.
+        # HANDLE SPECIAL RESPONSES AND TIMEOUTS
+        elif ('startnow' in val.lower()) or ('start now' in val.lower()):
             self.sbeIsAsleep = True
             self.extraSleepy = 0
             self.attempts = 0
             self.CTS = True
             self.rxTimeoutTimer.stop()
-            #  lastly we need to set the justStarted property since some versions of the
-            #  firmware spit out one more "S>" after starting and then go to sleep so we
-            #  need to swallow the next "S>" we see. Not ideal but...
             self.justStarted = True
 
-        #  the SBE39Plus requires certain commands to be entered twice to confirm intent
-        #  An example is the SAMPLENUM command.
-        elif val.find('<!--Repeat command') > -1:
-            #  need to send the repeated command directly since there may
-            #  be other commands in the queue
+        elif '<!--Repeat command' in val:
+            # Re-send confirmation command required by SBE39plus
             self.serMonitor.txData(self.deviceName, self.lastCommand + '\r')
 
-        elif val.lower().find('timeout') > -1:
-            #  the last thing we check is if we're timed out due to inactivity. If the SBE
-            # has timed out and gone to sleep we update connection state variables
+        elif 'timeout' in val.lower():
             self.sbeIsAsleep = True
             self.attempts = 0
 
@@ -757,92 +688,35 @@ class sbe39(QObject):
         from the data received from the "dc" command and inserts it into a dict.
         """
 
-        #  reset the calibration parameters dict
         self.calibration = {}
+        full_text = "\n".join(self.rxBuffer)
 
-        #  work thru each line in the buffer and process
+        # --- Native SBE 39plus XML Parsing ---
+        if '<CalibrationData' in full_text:
+            # Extract all XML tags matching <KEY>value</KEY>
+            matches = re.findall(r'<([A-Za-z0-9_]+)>\s*([^<]+)\s*</\1>', full_text)
+            for key, val in matches:
+                try:
+                    self.calibration[key] = float(val)
+                except ValueError:
+                    self.calibration[key] = val
+
+            self.rxBuffer = []
+            return
+
+        # --- Fallback: Legacy Text Parsing ---
         for line in self.rxBuffer:
-
-            if (line.lower().find('temperature') > -1):
-                #  process the temp sensor cal date
+            if '=' in line:
+                parts = line.split('=')
+                key = parts[0].strip()
+                val_str = parts[1].strip()
+                try:
+                    self.calibration[key] = float(val_str)
+                except ValueError:
+                    self.calibration[key] = val_str
+            elif 'temperature' in line.lower() and ':' in line:
                 self.calibration['temp cal date'] = line.split(':')[1].strip()
 
-            elif (line.find('TA0') > -1):
-                #  process TA0 parm
-                self.calibration['TA0'] = float(line.split('=')[1].strip())
-
-            elif (line.find('TA1') > -1):
-                #  process TA1 parm
-                self.calibration['TA1'] = float(line.split('=')[1].strip())
-
-            elif (line.find('TA2') > -1):
-                #  process TA2 parm
-                self.calibration['TA2'] = float(line.split('=')[1].strip())
-
-            elif (line.find('TA3') > -1):
-                #  process TA3 parm
-                self.calibration['TA3'] = float(line.split('=')[1].strip())
-
-            elif (line.lower().find('pressure') > -1):
-                #  process the presssure sensor cal date
-                line = line.split(',')
-                self.calibration['pressure s/n'] = line[0].split('S/N')[1].strip()
-                if line[1].find(':') < 0:
-                    line = line[1].split('  ')
-                else:
-                    line = line[1].split(':')
-                self.calibration['pressure range'] = line[0].split('=')[1].strip()
-                self.calibration['pressure cal date'] = line[1].strip()
-
-            elif (line.find('PA0') > -1):
-                #  process PA0 parm
-                self.calibration['PA0'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PA1') > -1):
-                #  process PA1 parm
-                self.calibration['PA1'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PA2') > -1):
-                #  process PA2 parm
-                self.calibration['PA2'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTHA0') > -1):
-                #  process PTHA0 parm
-                self.calibration['PTHA0'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTHA1') > -1):
-                #  process PTHA1 parm
-                self.calibration['PTHA1'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTHA2') > -1):
-                #  process PTHA2 parm
-                self.calibration['PTHA2'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTCA0') > -1):
-                #  process PTCA0 parm
-                self.calibration['PTCA0'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTCA1') > -1):
-                #  process PTCA1 parm
-                self.calibration['PTCA1'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTCA2') > -1):
-                #  process PTCA2 parm
-                self.calibration['PTCA2'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTCB0') > -1):
-                #  process PTCB0 parm
-                self.calibration['PTCB0'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTCB1') > -1):
-                #  process PTCB1 parm
-                self.calibration['PTCB1'] = float(line.split('=')[1].strip())
-
-            elif (line.find('PTCB2') > -1):
-                #  process PTCB2 parm
-                self.calibration['PTCB2'] = float(line.split('=')[1].strip())
-
-        #  clear out the buffer
         self.rxBuffer = []
 
 
@@ -851,91 +725,76 @@ class sbe39(QObject):
         command and inserts it into a dict.
         """
 
-        #  reset the status parameters dict
+        # Reset status dict
         self.status = {}
 
-        #  work thru each line in the buffer and process
-        for line in self.rxBuffer:
+        full_text = "\n".join(self.rxBuffer)
 
-            if (line.lower().find('serial no') > -1):
-                #  process the status header
-                line = line.split('  ')
+        # --- Native SBE 39plus XML Parsing Branch ---
+        if '<StatusData' in full_text or '<HardwareData' in full_text:
+            # Helper function to extract content from XML tags like <TagName>value</TagName>
+            def get_tag(tag, text):
+                match = re.search(f'<{tag}>(.*?)</{tag}>', text, re.IGNORECASE)
+                return match.group(1).strip() if match else None
 
-                # the SBE39 uses 'V' for the version char and SBE39Plus uses 'v'
-                if 'V' in line[0]:
-                    verChar = 'V'
-                else:
-                    verChar = 'v'
-                self.status['device'] = line[0].split(verChar)[0].strip()
-                self.status['version'] = line[0].split(verChar)[1].strip()
-                ver_bits = self.status['version'].split('.')
+            self.status['device'] = 'SBE39plus'
+            self.status['serial number'] = get_tag('SerialNumber', full_text) or ''
+
+            # Parse Time: Native XML uses <DateTime>YYYY-MM-DDTHH:MM:SS</DateTime>
+            time_str = get_tag('DateTime', full_text)
+            if time_str:
                 try:
-                    self.status['version_numeric'] = float(ver_bits[0] + '.' + ver_bits[1])
-                except:
-                    self.status['version_numeric'] = 0
-                if self.status['version_numeric'] < 1.7:
-                    self.binaryUploadEnable = False
-                self.status['serial number'] = line[1].split('.')[1].strip()
-                if verChar == 'V':
-                    #  the SBE39's time string ends up being split above - we join it here before parsing.
-                    timeStr = ' '.join(line[3:5]).strip()
-                    self.status['time'] = datetime.datetime.strptime(timeStr, '%d %b %Y %H:%M:%S')
-                else:
-                    #  this is an SBE39Plus which doesn't have a split time string
-                    self.status['time'] = datetime.datetime.strptime(line[2].strip(), '%d %b %Y %H:%M:%S')
+                    # Try ISO format first (2026-09-05T06:55:00)
+                    self.status['time'] = datetime.datetime.strptime(time_str.split('.')[0], '%Y-%m-%dT%H:%M:%S')
+                except ValueError:
+                    try:
+                        self.status['time'] = datetime.datetime.strptime(time_str, '%d %b %Y %H:%M:%S')
+                    except ValueError:
+                        self.status['time'] = time_str
 
-            elif (line.lower().find('volt') > -1):
-                #  process the battery voltage
+            self.status['voltage'] = get_tag('MainState', full_text) or get_tag('Vmain', full_text) or ''
+            self.status['sample interval'] = get_tag('SampleInterval', full_text) or '0'
+            self.status['sample number'] = get_tag('Samples', full_text) or get_tag('SampleNumber', full_text) or '0'
+            self.status['logging status'] = 'logging' if get_tag('LoggingState', full_text) == '1' else 'not logging'
+            self.status['real-time output'] = 'yes' if get_tag('OutputRealTime', full_text) == '1' else 'no'
 
-                #  first check for low battery warning
-                if line.lower().find('low battery') > -1:
+            self.rxBuffer = []
+            return
+
+        # --- Fallback: Legacy SBE 39 Text Parsing Branch ---
+        for line in self.rxBuffer:
+            if 'serial no' in line.lower():
+                parts = line.split('  ')
+                verChar = 'V' if 'V' in parts[0] else 'v'
+                self.status['device'] = parts[0].split(verChar)[0].strip()
+                self.status['version'] = parts[0].split(verChar)[1].strip()
+                self.status['serial number'] = parts[1].split('.')[1].strip() if len(parts) > 1 else ''
+
+                if len(parts) >= 3:
+                    time_str = parts[2].strip() if verChar == 'v' else ' '.join(parts[3:5]).strip()
+                    try:
+                        self.status['time'] = datetime.datetime.strptime(time_str, '%d %b %Y %H:%M:%S')
+                    except ValueError:
+                        pass
+
+            elif 'volt' in line.lower():
+                if 'low battery' in line.lower():
                     self.lowBattery = True
                     continue
-
-                #  this is not the low battery warning, so assume this is the voltage status
                 volt_parts = line.split(',')
-                self.status['voltage'] = volt_parts[0].split('=')[1].strip()
-                if len(volt_parts) > 1:
-                    self.status['backup_voltage'] = volt_parts[1].split('=')[1].strip()
+                self.status['voltage'] = volt_parts[0].split('=')[1].strip() if '=' in volt_parts[0] else ''
 
-            elif (line.lower().find('logging') > -1):
-                #  process logging status
-                if (line.lower().find('not') > -1):
-                    self.status['logging status'] = 'not logging'
-                else:
-                    self.status['logging status'] = 'logging'
+            elif 'logging' in line.lower():
+                self.status['logging status'] = 'not logging' if 'not' in line.lower() else 'logging'
 
-            elif (line.lower().find('interval') > -1):
-                #  process sample interval
+            elif 'interval' in line.lower() and '=' in line:
                 self.status['sample interval'] = line.split('=')[1].strip()
 
-            elif (line.lower().find('samplenumber') > -1):
-                #  process sample number
-                line = line.split(',')
-                self.status['sample number'] = line[0].split('=')[1].strip()
-                self.status['sample free'] = line[1].split('=')[1].strip()
+            elif 'samplenumber' in line.lower() or 'sample number' in line.lower():
+                if '=' in line:
+                    line_parts = line.split(',')
+                    self.status['sample number'] = line_parts[0].split('=')[1].strip()
 
-            elif (line.lower().find('sync') > -1):
-                #  process serial sync
-                self.status['serial sync'] = line.split('mode')[1].strip()
-
-            elif (line.lower().find('output') > -1):
-                #  process real-time output
-                self.status['real-time output'] = line.split('output')[1].strip()
-
-            elif (line.lower().find('configuration') > -1):
-                #  process configuration
-                self.status['configuration'] = line.split('=')[1].strip()
-
-            elif (line.lower().find('upload') > -1):
-                #  process binary upload config
-                self.status['binary upload config'] = line.split('upload')[1].strip()
-
-            elif (line.lower().find('temperature') > -1):
-                 #  process configuration
-                self.status['temperature'] = line.split('=')[1].strip().split(' ')[0]
-
-        #  clear out the buffer
         self.rxBuffer = []
 
 
@@ -960,17 +819,10 @@ class sbe39(QObject):
         method formats both the values for setting the RTC and for setting the delayed
         start times.
         """
-        #  construct the two time strings
-        mdy = 'mmddyy={:02d}{:02d}'.format(time.month, time.day) + str(time.year)[2:4]
-        hms = 'hhmmss={:02d}{:02d}{:02d}'.format(time.hour, time.minute, time.second +
-                                                 int(round(time.microsecond/1000000.)))
-
-        #  if the "start" keyword is set we format the text for the start later commands
-        if (start):
-            mdy = 'START' + mdy
-            hms = 'START' + hms
-
-        return [mdy,hms]
+        time_str = time.strftime("%Y%m%d%H%M%S")
+        if start:
+            return [f'StartDateTime={time_str}']
+        return [f'DateTime={time_str}']
 
 
 class SBEError(Exception):
