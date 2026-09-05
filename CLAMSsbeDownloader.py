@@ -92,6 +92,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.sbeIntervalDlg.sbeSetIntervalSignal.connect(self.intervalSet)
 
         #  connect the SBE39 signals
+        """
         self.sbe.SBEStatus.connect(self.sbeStatusUpdate)
         self.sbe.SBEConnected.connect(self.connected)
         self.sbe.SBETimeout.connect(self.sbeTimeout)
@@ -100,6 +101,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.sbe.SBEDownloadComplete.connect(self.downloadingData)
         self.sbe.SBEDownloadData.connect(self.downloadingData)
         self.sbe.SBEAbort.connect(self.downloadAbort)
+        """
 
         #  connect this GUI's button signals
         self.actionExit.triggered.connect(self.close)
