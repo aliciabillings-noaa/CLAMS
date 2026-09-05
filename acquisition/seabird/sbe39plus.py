@@ -108,6 +108,7 @@ class sbe39plus(QObject):
         """Enables or disables real-time output using native OutputRealTime= command."""
         if self.connected:
             state_str = 'Y' if state else 'N'
+            # Send OutputRealTime=Y
             self.txCommand([f'OutputRealTime={state_str}'])
 
 
@@ -266,29 +267,50 @@ class sbe39plus(QObject):
                     self.CTS = False
                     self.rxTimeoutTimer.start()
 
-
     def rxData(self, name, val, err):
         """Processes incoming data buffer from SensorMonitor."""
         if ('stop' in self.lastCommand.lower()) and ('inactive command' in val.lower()):
             return
-
-        if val:
-            self.SBEData.emit(self.deviceName, val)
 
         if (val == 'S>') and self.justStarted:
             self.justStarted = False
             val = ''
 
         # Wake up check accepting S> or SBE 39plus XML tags
-        if self.sbeIsAsleep and (val == 'S>' or '<ExecCommand' in val or '<Executed' in val or val.strip() == '<Executed/>'):
+        if self.sbeIsAsleep and (
+                val == 'S>' or '<ExecCommand' in val or '<Executed' in val or val.strip() == '<Executed/>'):
             self.sbeIsAsleep = False
             self.extraSleepy = 0
             if self.isConnecting:
                 self.SBEConnected.emit(self.deviceName)
                 self.isConnecting = False
 
-        if '<datapacket>' in val.lower():
+        # --- REAL-TIME DATA PACKET PARSING ---
+        # SBE 39plus streams <DataPacket> or CSV formatted lines every 3 seconds
+        if '<datapacket>' in val.lower() or '<sample>' in val.lower():
+            # Extract values inside XML tags like <T1>12.3456</T1> or <P1>10.123</P1>
+            temp_match = re.search(r'<t1>\s*([\d\.-]+)\s*</t1>', val, re.IGNORECASE)
+            press_match = re.search(r'<p1>\s*([\d\.-]+)\s*</p1>', val, re.IGNORECASE)
+            time_match = re.search(r'<date>\s*([^<]+)\s*</date>.*<time>\s*([^<]+)\s*</time>', val,
+                                   re.IGNORECASE | re.DOTALL)
+
+            if temp_match:
+                temp_str = temp_match.group(1)
+                press_str = press_match.group(1) if press_match else "0.0"
+                dt_str = f"{time_match.group(1)} {time_match.group(2)}" if time_match else ""
+
+                formatted_rt = f"Real-Time Sample -> Temp: {temp_str} C, Press: {press_str} dbar {dt_str}"
+                self.SBEData.emit(self.deviceName, formatted_rt)
+            else:
+                # Fallback: Strip XML tags and display clean line
+                clean_text = re.sub(r'<[^>]+>', ' ', val).strip()
+                if clean_text:
+                    self.SBEData.emit(self.deviceName, clean_text)
             return
+
+        # Emit raw string for non-datapacket lines (Status responses, commands, etc.)
+        if val and not self.sbeIsAsleep:
+            self.SBEData.emit(self.deviceName, val)
 
         if not self.CTS:
             self.rxTimeoutTimer.start()
@@ -300,7 +322,7 @@ class sbe39plus(QObject):
                 cmd.startswith('ds') or cmd.startswith('dc')):
             self.rxBuffer.append(val)
 
-        # Parse sample download streams
+        # Parse sample download streams (GetSamples)
         elif cmd.startswith('getsamples') or cmd.startswith('dd'):
             if val != 'S>' and not val.startswith('</'):
                 clean_val = re.sub(r'<[^>]+>', '', val).strip()
@@ -333,7 +355,7 @@ class sbe39plus(QObject):
                         except Exception:
                             pass
 
-        # Detect command execution end
+        # Detect command execution completion
         if val == 'S>' or '</StatusData>' in val or '</CalibrationData>' in val or '</HardwareData>' in val or '<Executed/>' in val:
             if self.isAborting:
                 self.isAborting = False

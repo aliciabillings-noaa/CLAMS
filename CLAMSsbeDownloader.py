@@ -486,7 +486,9 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
     def startLogging(self):
         ok = QMessageBox.question(self, 'Start Logging', 'Reset the sample number to 0 and start logging? \n' +
                 'Existing data will be overwritten!', QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-        if (ok == QMessageBox.StandardButton.Ok):
+        if ok == QMessageBox.StandardButton.Ok:
+            self.sbe.stop()
+
             # set the sample number to 0
             self.sbe.setSampleNumber(0)
 
@@ -670,16 +672,25 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
     def showSBEData(self, name, val, color='black'):
         if val:
-            # Strip XML tags if receiving SBE 39plus DataPackets
-            clean_val = re.sub(r'<[^>]+>', '', val).strip()
+            # Check if this is a raw XML string that wasn't pre-formatted
+            if val.strip().startswith('<') and val.strip().endswith('>'):
+                # Extract XML tag-value pairs: <SampleInterval>3</SampleInterval> -> SampleInterval: 3
+                matches = re.findall(r'<([A-Za-z0-9_]+)>\s*([^<]+)\s*</\1>', val)
+                if matches:
+                    val = " | ".join([f"{k}: {v}" for k, v in matches])
+                else:
+                    # Remove XML brackets but leave text contents
+                    val = re.sub(r'<[^>]+>', ' ', val).strip()
 
-            if clean_val:
-                self.dataTextBuffer.append(clean_val)
+            if val:
+                self.dataTextBuffer.append(val)
                 if len(self.dataTextBuffer) > self.maxDataTextLines:
                     self.dataTextBuffer.pop(0)
                 text = '\n'.join(self.dataTextBuffer)
                 self.dataText.setPlainText(text)
-                self.dataText.verticalScrollBar().setValue(self.dataText.verticalScrollBar().maximum())
+                self.dataText.verticalScrollBar().setValue(
+                    self.dataText.verticalScrollBar().maximum()
+                )
 
 
     def closeEvent(self, event=None):
