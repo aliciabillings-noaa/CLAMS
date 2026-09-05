@@ -33,7 +33,7 @@ import dbConnection
 
 class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
-    def __init__(self, dataSource, user, password, settings, parent=None):
+    def __init__(self, dataSource, user, password, settings, schema=None, hostname=None, port=None, parent=None):
         super(CLAMSsbeDownloader, self).__init__(parent)
         self.setupUi(self)
 
@@ -44,12 +44,17 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.maxDataTextLines = 500
         self.downloadErrors = 0
         self.maxDownloadErrors = 25
+        self.settings = settings
+
+        #  set database credentials
         self.db = None
-        self.schema = user
+        self.schema = schema
         self.dbName = dataSource
         self.dbUser = user
         self.dbPassword = password
         self.settings = settings
+        self.hostname = hostname
+        self.port = port
 
         #  this is the default latitude used when converting SBE pressure to depth
         #  when the 'SBEConversionLat' parameter is not in the application_configuration
@@ -913,6 +918,10 @@ if __name__ == "__main__":
     dataSource = initSettings.value('ODBC_Data_Source', '')
     user = initSettings.value('User', '')
     password = initSettings.value('Password', '')
+    schema = initSettings.value('Schema', '')
+    hostname = initSettings.value('Hostname', '')
+    port = initSettings.value('Port', None)
+    port = int(port, 0) if port else None
 
     #  extract the application paths and settings
     settings = {}
@@ -928,7 +937,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     #  create an instance of the CLAMSsbeDownloader form
-    form = CLAMSsbeDownloader(dataSource, user, password, settings)
+    form = CLAMSsbeDownloader(dataSource, user, password, settings, schema, hostname, port)
 
     #  show it
     form.show()
