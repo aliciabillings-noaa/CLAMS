@@ -59,13 +59,13 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         #  this is the default latitude used when converting SBE pressure to depth
         #  when the 'SBEConversionLat' parameter is not in the application_configuration
         #  table, or if the value provided there is not a float.
-        self.defaultEQLatitude = 44.0
+        self.defaultEQLatitude = 56.0
 
         #  restore the application state
         self.appSettings = QSettings('CLAMS', 'CLAMSsbeDownloader')
         size = self.appSettings.value('winsize', QSize(690,560))
         position = self.appSettings.value('winposition', QPoint(10,10))
-        self.comPort  = self.appSettings.value('comport', 'COM20')
+        self.comPort  = self.appSettings.value('comport', 'COM4')
         baud  = self.appSettings.value('baud', 9600)
         try:
             self.baud  = int(baud)
