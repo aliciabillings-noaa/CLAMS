@@ -17,6 +17,7 @@ import sys
 import math
 import socket
 import functools
+import re
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -382,13 +383,13 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         depth = round(self.pressureToDepth(line[2], self.haulLat), 3)
 
         #  insert data into database
-        sql = ("INSERT INTO clamsbase2.event_stream_data (ship, survey, event_id, device_id, " +
+        sql = (f"INSERT INTO {self.schema}.event_stream_data (ship, survey, event_id, device_id, " +
                 "time_stamp, measurement_type, measurement_value) VALUES (" + self.shipLabel.text() +
                 "," + self.surveyLabel.text() + "," + self.haulLabel.text() + "," + self.device_id +
                 ",TO_TIMESTAMP('" + time + "','MM/DD/YYYY HH24:MI:SS.FF'),'SBETemperature','" +
                 str(line[1]) + "')")
         self.db.dbExec(sql)
-        sql =("INSERT INTO clamsbase2.event_stream_data (ship, survey, event_id, device_id, " +
+        sql = (f"INSERT INTO {self.schema}.event_stream_data (ship, survey, event_id, device_id, " +
                 "time_stamp, measurement_type, measurement_value) VALUES ("+self.shipLabel.text() +
                 "," + self.surveyLabel.text() + "," + self.haulLabel.text() + "," + self.device_id +
                 ",TO_TIMESTAMP('"+time+"','MM/DD/YYYY HH24:MI:SS.FF'),'SBEDepth','"+str(depth)+"')")
@@ -491,6 +492,9 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
             #  set the SBE clock
             self.sbe.setRTC()
+
+            # get realtime data
+            self.sbe.setTxRealTime(True)
 
             #  start logging
             self.sbe.startNow()
@@ -664,30 +668,18 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             #  there was an error
             QMessageBox.critical(self, 'Error', 'Error downloading data: ' + str(err))
 
-
     def showSBEData(self, name, val, color='black'):
-
         if val:
-            if False:
-                #  Display output in HTML. This results in the removal of all tags from the
-                #  xml based real time display. That's not that big of a deal
-                text = '<text style="color:' + color + '>' + val + '<br />'
-                self.dataTextBuffer.append(text)
-                if len(self.dataTextBuffer) > self.maxDataTextLines:
-                    self.dataTextBuffer.pop(0)
-                text = ''.join(self.dataTextBuffer)
-                text = QString('<html><body><p>' + text + '</p></body></html>')
-                self.dataText.setHtml(text)
-            else:
-                #  Display the output in plain text
-                self.dataTextBuffer.append(val)
+            # Strip XML tags if receiving SBE 39plus DataPackets
+            clean_val = re.sub(r'<[^>]+>', '', val).strip()
+
+            if clean_val:
+                self.dataTextBuffer.append(clean_val)
                 if len(self.dataTextBuffer) > self.maxDataTextLines:
                     self.dataTextBuffer.pop(0)
                 text = '\n'.join(self.dataTextBuffer)
                 self.dataText.setPlainText(text)
-
-            #  ensure that the window is scrolled to see the new line of text.
-            self.dataText.verticalScrollBar().setValue(self.dataText.verticalScrollBar().maximum())
+                self.dataText.verticalScrollBar().setValue(self.dataText.verticalScrollBar().maximum())
 
 
     def closeEvent(self, event=None):
