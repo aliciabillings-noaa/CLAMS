@@ -25,6 +25,7 @@ from ui import ui_CLAMSsbeDownloader
 import connectdlg
 import sbeSetLocation
 from acquisition.seabird import sbe39
+from acquisition.seabird import sbe39plus
 from acquisition.seabird import sbeSetInterval
 from acquisition.seabird import sbeProgressDialog
 from acquisition.SensorMonitor import selectWinPortDialog
@@ -50,6 +51,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.dbUser = user
         self.dbPassword = password
         self.settings = settings
+        self.sbe = None
 
         #  this is the default latitude used when converting SBE pressure to depth
         #  when the 'SBEConversionLat' parameter is not in the application_configuration
@@ -88,9 +90,6 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         #  connect the dialog's sbeSetInterval signal - emitted when the user clicks o.k.
         #  on the sbeSetInterval dialog
         self.sbeIntervalDlg.sbeSetIntervalSignal.connect(self.intervalSet)
-
-        #  create an instance of the SBE39 class
-        self.sbe = sbe39.sbe39(self.comPort, baud=self.baud)
 
         #  connect the SBE39 signals
         self.sbe.SBEStatus.connect(self.sbeStatusUpdate)
@@ -190,14 +189,11 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         try:
             self.db.dbOpen()
         except Exception as err:
-            QMessageBox.critical(self,"ERROR", "Unable to connect to the database. " + err.error)
+            QMessageBox.critical(self,"ERROR", "Unable to connect to the database. " + str(err))
             self.close()
             return
 
-        #  determine our hostname and query database for workstation number. Changed to
-        #  use socket.gethostname() since os.getenv("COMPUTERNAME") was only returning
-        #  15 char NETBIOS name and some workstations were exceeding the 15 char limit.
-        #computerName = os.getenv("COMPUTERNAME")
+        #  determine our hostname and query database for workstation number
         computerName = socket.gethostname()
         query = self.db.dbQuery("SELECT workstation_id FROM " + self.schema +
                 ".workstations WHERE hostname ='" + computerName + "'")
@@ -210,6 +206,48 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
                     "before you can run CLAMS on it.")
             self.close()
             return
+
+        #  read in general application settings from database
+        sql = ("SELECT parameter, parameter_value FROM " + self.schema +
+                ".application_configuration ")
+        query = self.db.dbQuery(sql)
+        for parameter, parameter_value in query:
+            self.settings.update({parameter: parameter_value})
+
+        # --- 1. UPDATE DEFAULT CONVERSION LATITUDE FROM SETTINGS ---
+        if 'SBEConversionLat' in self.settings:
+            try:
+                self.defaultEQLatitude = float(self.settings['SBEConversionLat'])
+            except ValueError:
+                pass  # Fall back to self.defaultEQLatitude = 56.0
+
+        # --- 2. UPDATE DEFAULT COM PORT FROM SETTINGS ---
+        if 'SBEComPort' in self.settings:
+            self.comPort = self.settings['SBEComPort']
+
+        # --- 3. INSTANTIATE SBE DRIVER (SBE39 vs SBE39PLUS) ---
+        sbe_model = self.settings.get('SBEModel', 'SBE39').strip().upper()
+
+        if sbe_model == 'SBE39PLUS':
+            self.sbe = sbe39plus.sbe39plus(self.comPort, baud=self.baud)
+        else:
+            self.sbe = sbe39.sbe39(self.comPort, baud=self.baud)
+
+        #  connect the SBE signals
+        self.sbe.SBEStatus.connect(self.sbeStatusUpdate)
+        self.sbe.SBEConnected.connect(self.connected)
+        self.sbe.SBETimeout.connect(self.sbeTimeout)
+        self.sbe.SBEData.connect(self.showSBEData)
+        self.sbe.SBEProgress.connect(self.showProgress)
+        self.sbe.SBEDownloadComplete.connect(self.downloadComplete)
+        self.sbe.SBEDownloadData.connect(self.downloadingData)
+        self.sbe.SBEAbort.connect(self.downloadAbort)
+
+        #  create an instance of the SBE progress dialog
+        self.sbeProgress = sbeProgressDialog.sbeProgressDialog(self.sbe, parent=self)
+
+        #  update status bar text with final COM Port
+        self.COMSettingsLabel.setText('COM Settings: ' + self.comPort + ', ' + str(self.baud))
 
         #  load plankton icon
         if not QDir().exists(self.settings['IconDir']):
@@ -226,17 +264,9 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             QMessageBox.warning(self, "ERROR", "<font size = 12>Sound directory not found. " +
                     "SBE Downloader will operate without sound.")
         else:
-            #  we use a single sound to indicate download is complete
             self.completeSound = QSoundEffect()
             self.completeSound.setSource(QUrl.fromLocalFile(self.settings['SoundsDir'] +
                     'dp_starwars_yahoo.wav'))
-
-        #  read in general application settings
-        sql = ("SELECT parameter, parameter_value FROM " + self.schema +
-                ".application_configuration ")
-        query = self.db.dbQuery(sql)
-        for parameter, parameter_value in query:
-            self.settings.update({parameter:parameter_value})
 
         # populate from active ship, survey, and event stuff
         try:
@@ -266,15 +296,12 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
                 " and event_parameter = 'EQLatitude'")
         eqLatitude, = query.first()
         if eqLatitude is None:
-            #  event doesn't have an EQ entry, use default value
-            if 'SBEConversionLat' in self.settings:
-                eqLatitude = self.settings['SBEConversionLat']
-            else:
-                eqLatitude = self.defaultEQLatitude
+            #  event doesn't have an EQ entry, use default value from settings or hardcoded default
+            eqLatitude = self.defaultEQLatitude
+
         try:
             self.haulLat = float(eqLatitude)
         except:
-            #  value couldn't be converted to a float - use default value
             self.haulLat = self.defaultEQLatitude
 
 
@@ -436,29 +463,23 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         We only care about the details when we are connecting to the SBE since
         that is when we extract the serial number. Otherwise we don't do anything.
         '''
-
-        if (self.connecting):
-            #  if we're in the process of connecting, get this SBE's device ID from CLAMS
+        if self.connecting:
             self.connecting = False
-
             self.serialNumber = status['serial number']
 
-            # get clamsbase device id for this sbe
-            query = self.db.dbQuery("SELECT device_id FROM" + self.schema + ". devices WHERE model like 'SBE39%' AND serial_number='" +
-                    self.serialNumber + "'")
+            # Match both SBE39 and SBE39Plus device models in the DEVICES table
+            sql = ("SELECT device_id FROM " + self.schema +
+                   ".devices WHERE (model LIKE 'SBE39%' OR model LIKE 'SBE 39%') " +
+                   "AND serial_number='" + self.serialNumber + "'")
+            query = self.db.dbQuery(sql)
             self.device_id, = query.first()
 
-            #  if we can't find one, disconnect and issue error
-            if (self.device_id == None):
-                #  disconnect
+            if self.device_id is None:
                 self.sbe.disconnect()
-
-                #  update the GUI
                 self.setGUIButtons(False)
-
-                #  issue the error
-                QMessageBox.critical(self, 'Error', "Can't find an SBE with serial number " + self.serialNumber +
-                        " in the DEVICES table.\nPlease add this device before downloading.")
+                QMessageBox.critical(self, 'Error',
+                                     "Can't find an SBE with serial number " + self.serialNumber +
+                                     " in the DEVICES table.\nPlease add this device before downloading.")
 
 
     def startLogging(self):
