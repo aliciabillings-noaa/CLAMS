@@ -34,7 +34,7 @@ import dbConnection
 
 class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
-    def __init__(self, dataSource, user, password, settings, parent=None):
+    def __init__(self, dataSource, user, password, settings, schema=None, hostname=None, port=None,parent=None):
         super(CLAMSsbeDownloader, self).__init__(parent)
         self.setupUi(self)
 
@@ -46,7 +46,9 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         self.downloadErrors = 0
         self.maxDownloadErrors = 25
         self.db = None
-        self.schema = user
+        self.schema = schema
+        self.hostname = hostname
+        self.port = port
         self.dbName = dataSource
         self.dbUser = user
         self.dbPassword = password
@@ -169,7 +171,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         #  if we're missing any credentials, get them from the user
         if self.dbName == '' or self.dbUser == '' or self.dbPassword == '':
             connectionDialog = connectdlg.ConnectDlg(self.dbName, self.dbUser,
-                    self.dbPassword, createConnection=False, parent=self)
+                                                     self.dbPassword, createConnection=False, parent=self)
             ok = connectionDialog.exec()
             if not ok:
                 self.close()
@@ -180,8 +182,8 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
 
         #  create an instance of our dbConnection
         self.db = dbConnection.dbConnection(self.dbName, self.dbUser,
-                self.dbPassword, label=self.schema, isOracle=isOracle,
-                driver=driver)
+                                            self.dbPassword, label=self.schema, isOracle=isOracle,
+                                            driver=driver, hostname=self.hostname, port=self.port)
         self.db.bioSchema = self.schema
 
         try:
@@ -303,6 +305,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
             self.haulLat = float(eqLatitude)
         except:
             self.haulLat = self.defaultEQLatitude
+
 
     def configureComPort(self):
         dialog = selectWinPortDialog.selectWinPortDialog(defaultPort=self.comPort,
@@ -931,6 +934,10 @@ if __name__ == "__main__":
     dataSource = initSettings.value('ODBC_Data_Source', '')
     user = initSettings.value('User', '')
     password = initSettings.value('Password', '')
+    schema = initSettings.value('Schema', '')
+    hostname = initSettings.value('Hostname', '')
+    port = initSettings.value('Port', None)
+    port = int(port, 0) if port else None
 
     #  extract the application paths and settings
     settings = {}
