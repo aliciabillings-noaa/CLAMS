@@ -189,7 +189,7 @@ class CLAMSsbeDownloader(QMainWindow, ui_CLAMSsbeDownloader.Ui_sbeDownloader):
         #  create an instance of our dbConnection
         self.db = dbConnection.dbConnection(self.dbName, self.dbUser,
                 self.dbPassword, label=self.schema, isOracle=isOracle,
-                driver=driver)
+                driver=driver, hostname=self.hostname, port=self.port)
         self.db.bioSchema = self.schema
 
         try:
