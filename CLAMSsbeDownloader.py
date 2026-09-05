@@ -953,7 +953,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     #  create an instance of the CLAMSsbeDownloader form
-    form = CLAMSsbeDownloader(dataSource, user, password, settings)
+    form = CLAMSsbeDownloader(dataSource, user, password, settings, schema, hostname, port)
 
     #  show it
     form.show()
