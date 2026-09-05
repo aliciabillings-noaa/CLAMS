@@ -399,38 +399,43 @@ class sbe39plus(QObject):
 
         self.rxBuffer = []
 
+    import re
 
     def processStatus(self):
-        """Parses status attributes from GetSD XML or text response."""
+        """processStatus extracts the status information from DS, GetSD, or GetHD."""
         self.status = {}
         full_text = "\n".join(self.rxBuffer)
 
-        if '<StatusData' in full_text or '<HardwareData' in full_text:
-            def get_tag(tag, text):
-                match = re.search(f'<{tag}>(.*?)</{tag}>', text, re.IGNORECASE)
-                return match.group(1).strip() if match else None
+        # --- 1. XML Parsing (Native SBE 39plus) ---
+        if '<StatusData' in full_text or '<HardwareData' in full_text or '<SerialNumber>' in full_text:
+            # Match <SerialNumber>12345</SerialNumber> OR SerialNumber="12345"
+            sn_match = re.search(r'<SerialNumber>\s*([0-9A-Za-z]+)\s*</SerialNumber>', full_text, re.IGNORECASE) or \
+                       re.search(r'SerialNumber=[\'"]([0-9A-Za-z]+)[\'"]', full_text, re.IGNORECASE)
 
-            self.status['device'] = 'SBE39plus'
-            self.status['serial number'] = get_tag('SerialNumber', full_text) or ''
+            if sn_match:
+                self.status['serial number'] = sn_match.group(1).strip()
 
-            time_str = get_tag('DateTime', full_text)
-            if time_str:
-                try:
-                    self.status['time'] = datetime.datetime.strptime(time_str.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-                except ValueError:
-                    try:
-                        self.status['time'] = datetime.datetime.strptime(time_str, '%d %b %Y %H:%M:%S')
-                    except ValueError:
-                        self.status['time'] = time_str
-
-            self.status['voltage'] = get_tag('MainState', full_text) or get_tag('Vmain', full_text) or ''
-            self.status['sample interval'] = get_tag('SampleInterval', full_text) or '0'
-            self.status['sample number'] = get_tag('Samples', full_text) or get_tag('SampleNumber', full_text) or '0'
-            self.status['logging status'] = 'logging' if get_tag('LoggingState', full_text) == '1' else 'not logging'
-            self.status['real-time output'] = 'yes' if get_tag('OutputRealTime', full_text) == '1' else 'no'
+            # Extract sample count / sample number
+            sample_match = re.search(r'<(?:Samples|SampleNumber)>\s*(\d+)\s*</', full_text, re.IGNORECASE)
+            if sample_match:
+                self.status['sample number'] = sample_match.group(1).strip()
 
             self.rxBuffer = []
             return
+
+        # --- 2. Robust Text Parsing (Legacy SBE 39) ---
+        for line in self.rxBuffer:
+            line_lower = line.lower()
+
+            # Handles: "SERIAL NO. 1234", "SERIAL NO 1234", "sn: 1234", "sn=1234"
+            if 'serial' in line_lower or 'sn' in line_lower:
+                sn_match = re.search(r'(?:serial\s*no\.?|sn[:=]?)\s*([0-9]+)', line, re.IGNORECASE)
+                if sn_match:
+                    self.status['serial number'] = sn_match.group(1).strip()
+
+            elif 'samplenumber' in line_lower or 'sample number' in line_lower:
+                if '=' in line:
+                    self.status['sample number'] = line.split('=')[1].split(',')[0].strip()
 
         self.rxBuffer = []
 
