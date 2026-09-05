@@ -452,8 +452,10 @@ class sbe39plus(QObject):
 
 
     def formatTime(self, time, start=False):
-        """Formats datetime to YYYYMMDDHHMMSS."""
-        time_str = time.strftime("%Y%m%d%H%M%S")
+        """Formats datetime to native SBE 39plus ISO format (YYYY-MM-DDTHH:MM:SS)."""
+        # Format as ISO 8601: YYYY-MM-DDTHH:MM:SS
+        time_str = time.strftime("%Y-%m-%dT%H:%M:%S")
+
         if start:
             return [f'StartDateTime={time_str}']
         return [f'DateTime={time_str}']
